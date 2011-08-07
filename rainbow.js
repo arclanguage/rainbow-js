@@ -407,7 +407,6 @@ var classes = {};
 // new ArcError( Exception );
 function ArcError( message, opt_e ) {
     Error.call( this, message );
-    this.message_ = message;
     this.e_ = opt_e;
     this.arcStack_ = [];
 }
@@ -783,7 +782,7 @@ ArcParser.isNonSymAtom = function ( s ) {
 ArcParser.readFirstObjectFromString = function ( s ) {
     var result = null;
     if ( !ArcParser.readObjectAsync(
-        new StringInputPort( s ).original(), function ( e, o ) {
+        new StringInputPort( s ).unwrap(), function ( e, o ) {
             if ( e ) throw e;
             result = o;
         }, !!"sync" ) )
@@ -1317,7 +1316,7 @@ Symbol.cast = function ( argument, caller ) {
 Symbol.prototype.addCoercion = function ( from, fn ) {
     if ( this.coerceFrom_ === null )
         this.coerceFrom_ = {};
-    this.coerceFrom[ from.name() ] = fn;
+    this.coerceFrom_[ from.name() ] = fn;
 };
 
 Symbol.prototype.getCoercion = function ( from ) {
@@ -2430,7 +2429,7 @@ ArcException.prototype.type = function () {
 
 ArcException.prototype.message = function () {
     if ( this.original_ !== null )
-        return ArcString.make( this.original_.getMessage() );
+        return ArcString.make( this.original_.message );
     else
         return ArcException.NO_MESSAGE_;
 };
@@ -3671,8 +3670,7 @@ VM.prototype.threadAsync = function ( then, opt_sync ) {
             then( new ArcError(
                 "Unhandled exception on " +
                 "thread#" + self.threadId + ": " +
-                ae.getOriginal().getMessage() + msg,
-                ae.getOriginal() ) );
+                ae.getOriginal().message + msg, ae.getOriginal() ) );
         }
     }, opt_sync );
     if ( opt_sync && !achievedSync )
@@ -3949,10 +3947,10 @@ VM.prototype.pushParam = function ( index ) {
     // PORT NOTE: In Java, this was handled by catching
     // ArrayIndexOutOfBoundsException.
     if ( 0 <= this.ap && this.ap < this.args.length ) {
-        this.args[ ap ] = this.currentParams[ index ];
+        this.args[ this.ap ] = this.currentParams[ index ];
     } else {
         this.newArgArray_( this.args.length * 2 );
-        this.args[ ap ] = this.currentParams[ index ];
+        this.args[ this.ap ] = this.currentParams[ index ];
     }
 };
 
@@ -3961,10 +3959,10 @@ VM.prototype.pushA = function ( arg ) {
     // PORT NOTE: In Java, this was handled by catching
     // ArrayIndexOutOfBoundsException.
     if ( 0 <= this.ap && this.ap < this.args.length ) {
-        this.args[ ap ] = arg;
+        this.args[ this.ap ] = arg;
     } else {
         this.newArgArray_( this.args.length * 2 );
-        this.args[ ap ] = arg;
+        this.args[ this.ap ] = arg;
     }
 };
 
@@ -10697,7 +10695,7 @@ Closure.prototype.fn = function () {
 var Evaluation = {};
 
 Evaluation.isSpecialSyntax = function ( expression ) {
-    return expression instanceof symbol &&
+    return expression instanceof Symbol &&
         SSyntax.isSpecial( expression );
 };
 
@@ -13403,7 +13401,7 @@ SSExpand.andToks_ = function ( symbol ) {
 // PORT NOTE: We changed the parameters of the private
 // SSExpand.expandToks( Iterator ).
 SSExpand.expandToks_ = function ( list, i ) {
-    var s = SSExpand.readValue( list[ i++ ] );
+    var s = SSExpand.readValueObject_( list[ i++ ] );
     var sep = null;
     if ( i < list.length ) {
         sep = list[ i++ ];
@@ -16196,12 +16194,11 @@ function StringInputPort( s ) {
     var peekedBytes = [];
     var charI = 0;
     function getBytes() {
-        var result = charI < s.length;
-        if ( result ) {
-            var code = s.charCodeAt( charI++ );
-            peekedBytes.push( code >>> 8 & 0xFF, code & 0xFF );
-        }
-        return result;
+        if ( s.length <= charI )
+            return false;
+        var code = s.charCodeAt( charI++ );
+        peekedBytes.push( code >>> 8 & 0xFF, code & 0xFF );
+        return true;
     }
     function readByte() {
         return peekedBytes.length !== 0 || getBytes() ?
@@ -16218,14 +16215,18 @@ function StringInputPort( s ) {
             var self = this;
             var b1 = readByte();
             var b2 = readByte();
-            then( null, b1 << 8 | b2 );
+            // PORT TODO: Figure out what to really do in the case
+            // where there's just one byte left in the stream, but
+            // we're reading or peeking at a character code....
+            then( null, b2 === null ? null : b1 << 8 | b2 );
             return true;
         },
         peekCharCodeAsync: function ( then, opt_sync ) {
-//            setTimeout( function () {
-                then( null, 2 <= peekedBytes.length || getBytes() ?
-                    peekedBytes[ 0 ] << 8 | peekedBytes[ 1 ] : null );
-//            }, 0 );
+            // PORT TODO: Figure out what to really do in the case
+            // where there's just one byte left in the stream, but
+            // we're reading or peeking at a character code....
+            then( null, 2 <= peekedBytes.length || getBytes() ?
+                peekedBytes[ 0 ] << 8 | peekedBytes[ 1 ] : null );
             return true;
         },
         close: function () {}
@@ -16702,20 +16703,20 @@ OutString.prototype.invokePair = function ( args ) {
 
 
 // ===================================================================
-// from functions/io/CallWStdin.java
+// from functions/io/CallWStdIn.java
 // ===================================================================
 // Needed early: Builtin
 // Needed late: SetThreadLocal IO Input ArcObject
 
-function CallWStdin() {
+function CallWStdIn() {
     Builtin.call( this );
     this.init( "call-w/stdin" );
 }
 
-CallWStdin.prototype = new Builtin();
-CallWStdin.prototype.className = "CallWStdin";
+CallWStdIn.prototype = new Builtin();
+CallWStdIn.prototype.className = "CallWStdIn";
 
-CallWStdin.prototype.invoke = function ( vm, args ) {
+CallWStdIn.prototype.invoke = function ( vm, args ) {
     var i = new SetThreadLocal( IO.stdIn_, IO.stdIn() );
     i.belongsTo( this );
     vm.pushFrame( i );
@@ -16725,20 +16726,20 @@ CallWStdin.prototype.invoke = function ( vm, args ) {
 
 
 // ===================================================================
-// from functions/io/CallWStdout.java
+// from functions/io/CallWStdOut.java
 // ===================================================================
 // Needed early: Builtin
 // Needed late: SetThreadLocal IO Input ArcObject
 
-function CallWStdout() {
+function CallWStdOut() {
     Builtin.call( this );
     this.init( "call-w/stdout" );
 }
 
-CallWStdout.prototype = new Builtin();
-CallWStdout.prototype.className = "CallWStdout";
+CallWStdOut.prototype = new Builtin();
+CallWStdOut.prototype.className = "CallWStdOut";
 
-CallWStdout.prototype.invoke = function ( vm, args ) {
+CallWStdOut.prototype.invoke = function ( vm, args ) {
     var i = new SetThreadLocal( IO.stdOut_, IO.stdOut() );
     i.belongsTo( this );
     vm.pushFrame( i );
@@ -17002,22 +17003,22 @@ Console.interpretAllAsync_ = function (
             throw new TypeError();
         sb.push( arg + " " );
     }
-    var input = new StringInputPort( sb.join( "" ) ).original();
+    var input = new StringInputPort( sb.join( "" ) ).unwrap();
     
     var achievedSync = true;
-    function read( e, o ) {
+    function read( e, expression ) {
         if ( e ) return void then( e );
-        if ( o === null ) return void then();
+        if ( expression === null ) return void then();
         if ( !Console.interpretAsync_( vm, expression, function (
             e ) {
             
             if ( e ) return void then( e );
-            if ( !input.readObjectAsync( read, opt_sync ) )
+            if ( !ArcParser.readObjectAsync( input, read, opt_sync ) )
                 achievedSync = false;
         }, opt_sync ) )
             achievedSync = false;
     }
-    if ( !input.readObjectAsync( read, opt_sync ) )
+    if ( !ArcParser.readObjectAsync( input, read, opt_sync ) )
         achievedSync = false;
     return achievedSync;
 };
@@ -17025,7 +17026,9 @@ Console.interpretAllAsync_ = function (
 Console.replAsync_ = function ( vm, then, opt_sync ) {
     System_out_print( "arc> " );
     var achievedSync = true;
-    if ( !ArcParser.readObjectAsync( function ( e, expression ) {
+    if ( !ArcParser.readObjectAsync( System_in, function (
+            e, expression ) {
+            
             if ( e ) {
                 if ( !(e instanceof ParseException) )
                     return void then( e );
@@ -17052,7 +17055,7 @@ Console.replAsync_ = function ( vm, then, opt_sync ) {
 Console.interpretAsync_ = function (
     vm, expression, then, opt_sync ) {
     
-    return Console.compileAndEvalAsync( vm, expression,
+    return Console.compileAndEvalAsync_( vm, expression,
         function ( e, result ) {
         
         if ( e ) {
@@ -17060,9 +17063,11 @@ Console.interpretAsync_ = function (
             System_out_println( "Message    : " + e.getMessage() );
             System_out_print( "Java stack : " );
             printStackTrace( e, System_out );
+            then();
             return;
         }
         System_out_println( result );
+        then();
     }, opt_sync );
 };
 
@@ -17109,7 +17114,7 @@ Console.AndEval.prototype.operate = function ( vm ) {
     expression.addInstructions( i );
     var instructions = Pair.buildFrom1( i );
     instructions.visit( Console.mkVisitor_( expression ) );
-    vm.pushInvocation( null, instructions );
+    vm.pushInvocation2( null, instructions );
 };
 
 

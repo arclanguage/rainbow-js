@@ -179,6 +179,8 @@ function makeInputAndOutput() {
     return { i: input, o: output };
 }
 
+root.consoleIn = makeInputAndOutput();
+
 root.rainbowStdin = makeInputAndOutput();
 root.rainbowStdout = makeInputAndOutput();
 root.rainbowStderr = makeInputAndOutput();
@@ -234,8 +236,38 @@ root.onload = function () {
     function doEval() {
         var command = prompt.value + "\n";
         prompt.value = "";
-        root.rainbowStdin.o.writeString( command );
+        root.consoleIn.o.writeString( command );
     }
+    
+    function readAllConsoleInAvailable( then ) {
+        var chars = [];
+        var error = null;
+        while ( true ) {
+            if ( !root.consoleIn.i.readCharCodeAsync( function (
+                    e, c ) {
+                    
+                    if ( e )
+                        error = e;
+                    else
+                        chars.push( root.String.fromCharCode( c ) );
+                }, !!"sync" ) )
+                return void then( null, chars.join( "" ) );
+            
+            if ( error )
+                return void then( error );
+        }
+    }
+    function processConsoleIn( e, c ) {
+        if ( e || c === null ) return;
+        readAllConsoleInAvailable( function ( e, string ) {
+            if ( e ) return;
+            scrollbackText.data += string;
+            scrollback.scrollTop = scrollback.scrollHeight;
+            root.rainbowStdin.o.writeString( string );
+            root.consoleIn.i.peekCharCodeAsync( processConsoleIn );
+        } );
+    }
+    root.consoleIn.i.peekCharCodeAsync( processConsoleIn );
     
     function processStdout( e, c ) {
         if ( e || c === null ) return;
@@ -253,28 +285,7 @@ root.onload = function () {
     }
     root.rainbowStderr.i.readCharCodeAsync( processStderr );
     
-    // Consume all remaining input.
-    function consume( e, c ) {
-        if ( e ) return;
-        root.rainbowStdin.i.readCharCodeAsync( consume, !!"sync" );
-    }
-    function processStdin( e, o ) {
-        if ( e ) {
-            root.rainbowStderr.o.writeString(
-                "Error: " + e + "\n" +
-                "Consuming all remaining input.\n" );
-            root.rainbowStdin.i.readCharCodeAsync(
-                consume, !!"sync" );
-            root.ArcParser.readObjectAsync(
-                root.rainbowStdin.i, processStdin );
-            return;
-        }
-        root.rainbowStdout.o.writeString( "Read in: " + o + "\n" );
-        root.ArcParser.readObjectAsync(
-            root.rainbowStdin.i, processStdin );
-    }
-    root.ArcParser.readObjectAsync(
-        root.rainbowStdin.i, processStdin );
+    root.Console.mainAsync( function () {} );
 };
 
 
@@ -283,13 +294,16 @@ root.onload = function () {
 </script>
 </head>
 <body>
-<p>This page loads rainbow.js (all 528 KB!) but uses very little of
-  it. Below is an RPL, a read-print-loop, which just reads
-  s-expressions and prints them out again:</p>
+<p>This page loads rainbow.js (all 537 KB!) and exposes the REPL
+  below. So far, it seems that literal expressions like <code>2</code>
+  and <code>#xFF</code> work, and so do quoted expressions like
+  <code>'(1 2 3)</code>. Pretty much everything else is bound to cause
+  some kind of error.</p>
+<p>Don't even try using utilities defined in arc.arc. We don't load it
+  yet!</p>
 <div id="repl"></div>
-<p>If you enter something but nothing shows up, it might mean you've
-  left a paren or a quote unclosed. To fix this, you can enter
-  <code>#</code> all by itself. This will always cause a syntax error,
-  and syntax errors reset the input.</p>
+<p>If you get yourself stuck inside an unclosed quote or paren, and
+  you don't want to bother fixing it, try entering <code>#</code> on a
+  line all by itself. This happens to always cause a syntax error.</p>
 </body>
 </html>
