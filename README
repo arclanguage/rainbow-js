@@ -1,0 +1,101 @@
+                              Rainbow.js
+                              ==========
+
+This is a port of Conan Dalton's Rainbow, a Java implementation of
+Arc, to JavaScript. It's almost completely untested at the moment, so
+don't expect to use it for much! Of course, bug fixes are welcome. ^_^
+
+As a JavaScript program, this is *really freaking big*. It's over
+10000 lines of code. It also happens to break
+http://dean.edwards.name/packer/ for some reason, so for now I'm
+leaving it unminified at over half a megabyte. But don't worry,
+building this codebase involved a lot of copying and pasting, copying
+and pasting. ^_-
+
+For any other JavaScript project, I'd have used a bunch of
+higher-order abstractions or even a macro system (and I've already
+made those things, as you can see at
+https://github.com/rocketnia/lathe). However, the main goal of this
+particular project is to have the code be as similar to the original
+code as reasonably possible, so that any given bug fix or enhancement
+to either codebase is likely to benefit the other. In fact, I would
+not necessarily call Rainbow.js an implementation of Arc, because it's
+more faithful to Rainbow than to Arc.
+
+A secondary goal of this project is to be performant. Rainbow is the
+fastest faithful Arc implementation, as far as I'm concerned, so it's
+worth maintaining that where possible. As such, I didn't resort to
+higher-order functions like Array.prototype.forEach just for the sake
+of convenience.
+
+A *tertiary* goal of this project is to be compatible with lots of
+browsers, and also with ECMAScript 5's strict mode and the Closure
+Compiler.
+
+Despite the focus on keeping the Rainbow.js code similar to the
+original, it differs in at least the following ways:
+
+- There is no support for threads, file system utilities, or
+  Java-specific operations. However, for certain thread operations and
+  Java-specific operations that make sense in a single-threaded
+  JavaScript program (even if they don't do anything useful!), a
+  JavaScript equivalent is given under the same name.
+
+- Input streams in the implementation of Rainbow.js are asynchronous,
+  but in the language itself they're still synchronous. This is done
+  by making the evaluation model itself asynchronous. Actually,
+  there's still one place where Arc code is run synchronously: when
+  calculating the toString of a Rainbow tagged value. If input would
+  block in this context, an ArcError is thrown instead.
+
+- In order to allow for asynchronous IO during the compilation phase
+  of a Rainbow command (as though anyone would ever really use that
+  :-p ), compilation is now performed by way of Instructions, the same
+  way as execution is performed. For example, in Java Rainbow, calling
+  'eval creates a new VM object, whereas in Rainbow.js it uses the
+  same VM it's executing in. This means the behavior of capturing a
+  continuation during compile time (during the expansion of a macro)
+  may be quite different. For the moment, I recommend not actually
+  capturing continuations at that time; the instructions are currently
+  implemented in terms of a lot of mutation "on the heap", which a
+  captured continuation won't restore, so it's bound to be a bit ugly.
+
+- The Java version of Rainbow uses the Java/CC parser generator. I see
+  no suitable replacement for that in JavaScript: Most
+  JavaScript-targeting parser generators support parsing from strings
+  but don't support incremental parsing from streams (which is to be
+  expected, considering the fact that JavaScript doesn't really have a
+  standard, widely-used stream type), and although ANTLR seems to be a
+  bit of an exception, ANTLR's support for JavaScript seems to be a
+  bit unstable. Instead of bothering to port the Java/CC grammar
+  specification to some other kind of grammar specification that
+  doesn't really solve the right problem, I've hand-rolled the parser.
+  My parser actually implements a syntax that's not quite the same as
+  Rainbow's, in order to make the implementation easier. Where it
+  differs from Rainbow (e.g. the way it parses "(#\newlyne)" as an
+  error rather than as "(#\n ewlyne)"), I believe it's actually closer
+  in behavior to Arc 3.1.
+
+There are other significant design issues worth mentioning, which I
+*don't* consider code differences:
+
+- Where Java Rainbow uses doubles, longs, ints, and chars, Rainbow.js
+  uses JavaScript numbers--which are 64-bit floating point values,
+  with about 53 bits of precision when used for exact integer
+  calculations. Some floating-point calculations and some calculations
+  on very large integers may not be perfectly consistent with Rainbow.
+
+- Where Java Rainbow relies on the platform's default charset for the
+  purposes of mapping bytes to characters and vice versa, Rainbow.js
+  currently uses a big-endian UTF-16, since
+  String.prototype.charCodeAt returns UTF-16 code units.
+
+Some other miscellaneous notes:
+
+It may have been possible to add synchronous IO without changing the
+evaluation model too harshly, by using Rainbow's existing support for
+first-class continuations. However, I instead implemented it in a way
+that will not cause the VM to be copied.
+
+Incidentally, given the asynchronous evaluation model, it may turn out
+to be possible to implement full threading semantics.

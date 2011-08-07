@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+<title>It's Rainbow in JavaScript!</title>
+<!-- http://rocketnia.github.com/rainbow-js/test/index.html -->
+<!--
+
+This software is derived from Rainbow, software which is
+copyright (c) Conan Dalton 2011, distributed under the
+Perl Foundation's Artistic License 2.0. In the sense described in
+section (4)(c)(i) of that document, using its own terminology,
+permission to use this "Modified Version" is granted under the
+"Original License."
+
+This software may also be derived from Arc, software which is
+copyright (c) Paul Graham and Robert Morris, distributed under the
+Perl Foundation's Artistic License 2.0. In the sense described in
+section (4)(b) of that document, using its own terminology, this
+"Modified Version" bears a name that is different from any name used
+for Arc.
+
+-->
+<meta name="viewport" content=
+   "initial-scale = 1.0, maximum-scale = 1.0, width = device-width" />
+<style type="text/css">
+#repl .scrollback {
+    display: block;
+    width: 95%;
+    height: 100px;
+    overflow: auto;
+    border: 2px solid black;
+}
+#repl .prompt { display: block; width: 95%; }
+#repl .eval {}
+</style>
+<script type="text/javascript" src="../rainbow.js"></script>
+<script type="text/javascript">"use strict";
+
+(function () {
+
+var root = window;
+
+root.onload = function () {
+    
+    var ENTER_KEY = 13;
+    
+    var repl = root.document.getElementById( "repl" );
+    
+    var scrollback = root.document.createElement( "pre" );
+    scrollback.className = "scrollback";
+    var scrollbackText = root.document.createTextNode( "" );
+    scrollback.appendChild( scrollbackText );
+    repl.appendChild( scrollback );
+    
+    var prompt = root.document.createElement( "textarea" );
+    prompt.className = "prompt";
+    prompt.addEventListener( "keydown", function ( event ) {
+        if ( event.which === ENTER_KEY )
+            event.preventDefault();
+    }, !"capture" );
+    prompt.addEventListener( "keyup", function ( event ) {
+        if ( event.which === ENTER_KEY )
+            doEval();
+    }, !"capture" );
+    repl.appendChild( prompt );
+    
+    var evalButton = root.document.createElement( "button" );
+    evalButton.className = "eval";
+    evalButton.appendChild( root.document.createTextNode( "Eval" ) );
+    evalButton.addEventListener( "click", function ( event ) {
+        doEval();
+    }, !"capture" );
+    repl.appendChild( evalButton );
+    
+    function doEval() {
+        var command = prompt.value;
+        
+        scrollbackText.data += ">>> " + command + "\n";
+        scrollback.scrollTop = scrollback.scrollHeight;
+        
+        try {
+            var result = root.eval.call( null, command );
+            var success = true;
+        } catch ( e ) {
+            var message = "(error rendering error)";
+            try { message = "" + e; } catch ( e ) {}
+            scrollbackText.data += "Error: " + message + "\n\n";
+        }
+        if ( success )
+            scrollbackText.data += "-" + "-> " + result + "\n\n";
+        
+        scrollback.scrollTop = scrollback.scrollHeight;
+        
+        prompt.value = "";
+    }
+};
+
+
+})();
+
+</script>
+</head>
+<body>
+<p>This page loads rainbow.js (all 528 KB!) but doesn't do anything
+  with it. Below is a <i>JavaScript</i> REPL for your convenience:</p>
+<div id="repl"></div>
+</body>
+</html>
