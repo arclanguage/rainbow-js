@@ -309,11 +309,11 @@
 // functions/io/ReadB.java
 // functions/io/ReadC.java
 // functions/io/Sread.java
+// Console.java
 //
 //
 // Skipped so far:
 //
-// Console.java
 // types/ArcSocket.java
 // types/FileInputPort.java
 // types/FileOutputPort.java
@@ -389,10 +389,11 @@ function System_out_println( string ) {
     System_out.writeString( "" + string + "\n" );
 }
 
-function printStackTrace( e ) {
+function printStackTrace( e, opt_stream ) {
+    if ( void 0 === opt_stream ) opt_stream = System_err;
     // PORT TODO: Find an equivalent for this Java.
-//    e.printStackTrace();
-    System_err.writeString( "" + e + "\n" );
+//    e.printStackTrace( opt_stream );
+    opt_stream.writeString( "" + e + "\n" );
 }
 
 var classes = {};
@@ -499,9 +500,9 @@ ParseException.prototype = new Error();
 // from Truth.java
 // from vm/Instruction.java
 // ===================================================================
-// Needed late: ArcError Hash Invoke_N.Other ArcString ParseException
-// ArcCharacter Rational Symbol Real Complex FreeSym ArcNumber Literal
-// "hash codes"
+// Needed late: ArcError Hash Invoke_N.Other StringInputPort
+// ParseException ArcString ArcCharacter Rational Symbol Real Complex
+// FreeSym ArcNumber Literal "hash codes"
 
 
 // PORT NOTE: This was originally abstract.
@@ -777,6 +778,17 @@ ArcParser.isNonSymAtom = function ( s ) {
     }
     
     return false;
+};
+
+ArcParser.readFirstObjectFromString = function ( s ) {
+    var result = null;
+    if ( !ArcParser.readObjectAsync(
+        new StringInputPort( s ).original(), function ( e, o ) {
+            if ( e ) throw e;
+            result = o;
+        }, !!"sync" ) )
+        throw new ParseException();
+    return result;
 };
 
 ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
@@ -3220,11 +3232,16 @@ Tagged.prototype.stringify_ = function () {
     fn.invoke( vm, Pair.buildFrom1( [ rep ] ) );
     // PORT TODO: Find an equivalent for this Java.
 //    return (String) JavaObject.unwrap( vm.thread(), String.class );
-    // ASYNC PORT NOTE: This is one use of .thread() we're actually
-    // keeping. If it would ever attempt an asynchronous operation, it
-    // throws an exception instead, and that's fine for the purposes
-    // JavaScript's .toString().
-    return "" + JavaObject.unwrap( vm.thread() );
+    // ASYNC PORT NOTE: This error text didn't exist in Java.
+    var ourResult;
+    if ( !vm.threadAsync( function ( e, result ) {
+            if ( e ) throw e;
+            ourResult = result;
+        }, !!"sync" ) )
+        throw new ArcError(
+            "An asynchronous operation was attempted during a " +
+            "toString()." );
+    return "" + JavaObject.unwrap( ourResult );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
@@ -3629,56 +3646,19 @@ function VM() {
 VM.prototype = new ArcObject();
 VM.prototype.className = "VM";
 
-// PORT NOTE: We've renamed all uses of
-// VM.thread( LexicalClosure, Pair ) to thread2. This was easy,
-// because it's unused.
-VM.prototype.thread2 = function ( lc, instructions ) {
-    // TODO: dump this, inline to callers
-    this.pushInvocation2( lc, instructions );
-    return this.thread();
-};
+// PORT NOTE: We've removed VM.thread( LexicalClosure, Pair ), which
+// was unused.
 
-VM.prototype.thread = function () {
-    var oldThreshold = this.ipThreshold;
-    this.ipThreshold = this.ip;
-    try {
-        // ASYNC PORT NOTE: This error text didn't exist in Java.
-        while ( !this.loop_( !!"sync" ) )
-            this.handleError_( new ArcError(
-                "An asynchronous operation was attempted in a " +
-                "synchronous context" ) );
-    } finally {
-        this.ipThreshold = oldThreshold;
-    }
-    if ( this.error_ !== null ) {
-        var ae = this.error_;
-        this.error_ = null;
-        var stackTrace = ae.getStackTrace();
-        var msg = "\nAt instruction " + ae.getOperating();
-        if ( stackTrace !== null )
-            for ( var i = 0, len = stackTrace.length; i < len; i++ )
-                msg += "\n" + stackTrace[ i ].profileName();
-        throw new ArcError(
-            "Unhandled exception on thread#" + this.threadId + ": " +
-            ae.getOriginal().getMessage() + msg, ae.getOriginal() );
-    }
-    this.interceptor_.end( this );
-    return this.popA();
-};
-
-// ASYNC PORT NOTE: This didn't exist in Java.
-VM.prototype.threadAsync = function ( then ) {
+// ASYNC PORT NOTE: The Java version wasn't asynchronous.
+VM.prototype.threadAsync = function ( then, opt_sync ) {
     var oldThreshold = this.ipThreshold;
     this.ipThreshold = this.ip;
     var self = this;
-    function step() {
-        if ( !this.loop_( !"sync", step ) )
-            return;
-        
+    var achievedSync = this.loopAsync_( function () {
         self.ipThreshold = oldThreshold;
         if ( self.error_ === null ) {
-            this.interceptor_.end( this );
-            then( null, this.popA() );
+            self.interceptor_.end( self );
+            then( null, self.popA() );
         } else {
             var ae = self.error_;
             self.error_ = null;
@@ -3694,50 +3674,71 @@ VM.prototype.threadAsync = function ( then ) {
                 ae.getOriginal().getMessage() + msg,
                 ae.getOriginal() ) );
         }
-    }
-    step();
+    }, opt_sync );
+    if ( opt_sync && !achievedSync )
+        this.ipThreshold = oldThreshold;
+    return achievedSync;
 };
 
-// ASYNC PORT NOTE: The Java version didn't have a sync parameter or a
-// return value.
-VM.prototype.loop_ = function ( sync, opt_onReady ) {
+// ASYNC PORT NOTE: The Java version wasn't asynchronous.
+VM.prototype.loopAsync_ = function ( then, opt_sync ) {
     this.interceptor_.check( this );
-    while ( this.ipThreshold <= this.ip )
-        try {
-            if ( this.ins[ this.ip ] instanceof Nil ) {
-                this.ip--;
-            } else {
-                this.currentLc = this.lcs[ this.ip ];
-                this.currentParams = this.params[ this.ip ];
-                // PORT NOTE: This local variable didn't exist in
-                // Java.
-                var newOperating = this.ins[ this.ip ].car();
-                // PORT NOTE: This was a cast in Java.
-                if ( !(newOperating instanceof Instruction) )
-                    throw new TypeError();
-                this.operating_ = newOperating;
-                // PORT NOTE: This local variable didn't exist in
-                // Java.
-                var newInsIp = this.ins[ this.ip ].cdr();
-                // PORT NOTE: This was a cast in Java.
-                if ( !(newInsIp instanceof Pair) )
-                    throw new TypeError();
-                this.ins[ this.ip ] = newInsIp;
-                if ( this.operating_.implementsAsync ) {
-                    // ASYNC PORT NOTE: The Async interface didn't
-                    // exist in Java, and neither did this case.
-                    if ( !this.operating_.operateAsync(
-                        this, sync, opt_onReady ) )
-                        return false;
+    var self = this;
+    var achievedSync = true;
+    function loop() {
+        while ( self.ipThreshold <= self.ip ) {
+            try {
+                if ( self.ins[ self.ip ] instanceof Nil ) {
+                    self.ip--;
                 } else {
-                    this.operating_.operate( this );
+                    self.currentLc = self.lcs[ self.ip ];
+                    self.currentParams = self.params[ self.ip ];
+                    // PORT NOTE: This local variable didn't exist in
+                    // Java.
+                    var newOperating = self.ins[ self.ip ].car();
+                    // PORT NOTE: This was a cast in Java.
+                    if ( !(newOperating instanceof Instruction) )
+                        throw new TypeError();
+                    self.operating_ = newOperating;
+                    // PORT NOTE: This local variable didn't exist in
+                    // Java.
+                    var newInsIp = self.ins[ self.ip ].cdr();
+                    // PORT NOTE: This was a cast in Java.
+                    if ( !(newInsIp instanceof Pair) )
+                        throw new TypeError();
+                    self.ins[ self.ip ] = newInsIp;
+                    if ( self.operating_.implementsAsync ) {
+                        // ASYNC PORT NOTE: The Async interface didn't
+                        // exist in Java, and neither did this case.
+                        var achievedSyncThisTime = true;
+                        achievedSyncThisTime =
+                            self.operating_.operateAsync( self,
+                                function ( e ) {
+                                
+                                if ( e )
+                                    self.handleError_( e );
+                                else
+                                    self.interceptor_.check( self );
+                                if ( !achievedSyncThisTime )
+                                    loop();
+                            }, opt_sync );
+                        if ( !achievedSyncThisTime ) {
+                            achievedSync = false;
+                            return;
+                        }
+                    } else {
+                        self.operating_.operate( self );
+                        self.interceptor_.check( self );
+                    }
                 }
-                this.interceptor_.check( this );
+            } catch ( e ) {
+                self.handleError_( e );
             }
-        } catch ( e ) {
-            this.handleError_( e );
         }
-    return true;
+        then();
+    }
+    loop();
+    return achievedSync;
 };
 
 VM.prototype.loadCurrentContext = function () {
@@ -13426,18 +13427,12 @@ SSExpand.expandToks_ = function ( list, i ) {
 // PORT TODO: This seems really different from Arc. Figure out if it
 // should be. But don't correct it!
 SSExpand.readValueString_ = function ( s ) {
-    var result = null;
-    if ( !ArcParser.readObjectAsync(
-        new StringInputPort( s ).original(), function ( e, o ) {
-            if ( e ) {
-                if ( !(e instanceof ParseException) ) throw e;
-                throw new ArcError(
-                    "Couldn't read value of symbol: " + s, e );
-            }
-            result = o;
-        }, !!"sync" ) )
-        throw new ParseException();
-    return result;
+    try {
+        return ArcParser.readFirstObjectFromString( s );
+    } catch ( e ) { if ( !(e instanceof ParseException) ) throw e;
+        throw new ArcError(
+            "Couldn't read value of symbol: " + s, e );
+    }
 };
 
 SSExpand.readValueObject_ = function ( symbol ) {
@@ -16797,36 +16792,12 @@ ReadB.Go.prototype = new Instruction();
 ReadB.Go.prototype.implementsAsync = true;
 ReadB.Go.prototype.className = "ReadB.Go";
 
-ReadB.Go.prototype.operateAsync = function (
-    vm, opt_sync, opt_onReady ) {
-    
-    if ( this.ready_ ) {
-        vm.pushA( this.result_ );
-        return true;
-    } else if ( this.hasError_ ) {
-        throw this.result_;
-    }
-    var onReady = void 0;
-    this.port_.readByteAsync( function ( e, result ) {
-        if ( e ) {
-            this.hasError_ = true;
-            this.result_ = e;
-        } else {
-            this.ready_ = true;
-            this.result_ = result;
-        }
-        if ( onReady !== void 0 )
-            onReady();
+ReadB.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return this.port_.readByteAsync( function ( e, result ) {
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
     }, opt_sync );
-    if ( this.ready_ ) {
-        vm.pushA( this.result_ );
-        return true;
-    } else if ( this.hasError_ ) {
-        throw this.result_;
-    } else {
-        onReady = opt_onReady;
-        return false;
-    }
 };
 
 ReadB.Go.prototype.operate = function ( vm ) {
@@ -16879,36 +16850,12 @@ ReadC.Go.prototype = new Instruction();
 ReadC.Go.prototype.implementsAsync = true;
 ReadC.Go.prototype.className = "ReadC.Go";
 
-ReadC.Go.prototype.operateAsync = function (
-    vm, opt_sync, opt_onReady ) {
-    
-    if ( this.ready_ ) {
-        vm.pushA( this.result_ );
-        return true;
-    } else if ( this.hasError_ ) {
-        throw this.result_;
-    }
-    var onReady = void 0;
-    this.port_.readCharacterAsync( function ( e, result ) {
-        if ( e ) {
-            this.hasError_ = true;
-            this.result_ = e;
-        } else {
-            this.ready_ = true;
-            this.result_ = result;
-        }
-        if ( onReady !== void 0 )
-            onReady();
+ReadC.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return this.port_.readCharacterAsync( function ( e, result ) {
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
     }, opt_sync );
-    if ( this.ready_ ) {
-        vm.pushA( this.result_ );
-        return true;
-    } else if ( this.hasError_ ) {
-        throw this.result_;
-    } else {
-        onReady = opt_onReady;
-        return false;
-    }
 };
 
 ReadC.Go.prototype.operate = function ( vm ) {
@@ -16957,42 +16904,213 @@ Sread.Go.prototype = new Instruction();
 Sread.Go.prototype.implementsAsync = true;
 Sread.Go.prototype.className = "Sread.Go";
 
-Sread.Go.prototype.operateAsync = function (
-    vm, opt_sync, opt_onReady ) {
-    
-    if ( this.ready_ ) {
-        vm.pushA( this.result_ );
-        return true;
-    } else if ( this.hasError_ ) {
-        throw this.result_;
-    }
-    var onReady = void 0;
-    this.port_.readObjectAsync( this.eof_, function ( e, result ) {
-        if ( e ) {
-            this.hasError_ = true;
-            this.result_ = e;
-        } else {
-            this.ready_ = true;
-            this.result_ = result;
-        }
-        if ( onReady !== void 0 )
-            onReady();
+Sread.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return this.port_.readObjectAsync( this.eof_, function (
+        e, result ) {
+        
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
     }, opt_sync );
-    if ( this.ready_ ) {
-        vm.pushA( this.result_ );
-        return true;
-    } else if ( this.hasError_ ) {
-        throw this.result_;
-    } else {
-        onReady = opt_onReady;
-        return false;
-    }
 };
 
 Sread.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
+// ===================================================================
+// from Console.java
+// ===================================================================
+// Needed early: ArcObject Visitor Instruction
+// Needed late: Environment VM Symbol ArcParser StringInputPort
+// ParseException ArcError Compiler
+
+// PORT NOTE: This is substantially different from the original.
+
+var Console = {};
+
+Console.o = ArcObject.NIL;
+Console.debugJava = false;
+Console.stackfunctions = true;
+
+// PORT TODO: If the "options" parameter is going to come from
+// someplace that the Closure Compiler won't compile alongside this,
+// change this to use things like options[ "nosf" ] which won't be
+// minified. (Of course, we're not even using the Closure Compiler
+// yet.)
+Console.mainAsync = function ( options, then, opt_sync ) {
+    var started = new Date().getTime();
+    var programArgs = Console.parseAll_( options.args || [] );
+    
+    if ( options.nosf )
+        Console.stackfunctions = false;
+    
+    Environment.init();
+    var vm = new VM();
+//    vm.setInterceptor( VMInterceptor.DEBUG );
+    
+    Symbol.mkSym( "*argv*" ).setValue(
+        Pair.buildFrom1( programArgs ) );
+    Symbol.mkSym( "call*" ).setValue( new Hash() );
+    Symbol.mkSym( "sig" ).setValue( new Hash() );
+    
+    var achievedSync = true;
+    
+    if ( !Console.interpretAllAsync_( vm, options.e || [], function (
+            e ) {
+            
+            if ( e ) return void then( e );
+            
+            if ( options.q ) {
+                then();
+            } else {
+                var ready = new Date().getTime();
+                System_out_println(
+                    "repl in " + (ready - started) + "ms" );
+                if ( !Console.replAsync_( vm, then, opt_sync ) )
+                    achievedSync = false;
+            }
+        }, opt_sync ) )
+        achievedSync = false;
+    
+    return achievedSync;
+};
+
+Console.parseAll_ = function ( list ) {
+    var result = [];
+    for ( var i = 0, len = list.length; i < len; i++ ) {
+        // PORT NOTE: This local variable didn't exist in Java.
+        var it = list[ i ];
+        // PORT NOTE: This was a cast in Java.
+        if ( Object.prototype.toString.call( it ) !==
+            "[object String]" )
+            throw new TypeError();
+        result.push( ArcParser.readFirstObjectFromString( "" + it ) );
+    }
+    return result;
+};
+
+Console.interpretAllAsync_ = function (
+    vm, expressionsToEval, then, opt_sync ) {
+    
+    var sb = [];
+    for ( var i = 0, len = expressionsToEval.length; i < len; i++ ) {
+        var arg = expressionsToEval[ i ];
+        // PORT NOTE: This was a cast in Java.
+        if ( Object.prototype.toString.call( arg ) !==
+            "[object String]" )
+            throw new TypeError();
+        sb.push( arg + " " );
+    }
+    var input = new StringInputPort( sb.join( "" ) ).original();
+    
+    var achievedSync = true;
+    function read( e, o ) {
+        if ( e ) return void then( e );
+        if ( o === null ) return void then();
+        if ( !Console.interpretAsync_( vm, expression, function (
+            e ) {
+            
+            if ( e ) return void then( e );
+            if ( !input.readObjectAsync( read, opt_sync ) )
+                achievedSync = false;
+        }, opt_sync ) )
+            achievedSync = false;
+    }
+    if ( !input.readObjectAsync( read, opt_sync ) )
+        achievedSync = false;
+    return achievedSync;
+};
+
+Console.replAsync_ = function ( vm, then, opt_sync ) {
+    System_out_print( "arc> " );
+    var achievedSync = true;
+    if ( !ArcParser.readObjectAsync( function ( e, expression ) {
+            if ( e ) {
+                if ( !(e instanceof ParseException) )
+                    return void then( e );
+                printStackTrace( e );
+                if ( !Console.replAsync_( vm, then, opt_sync ) )
+                    achievedSync = false;
+                return;
+            }
+            if ( expression === null )
+                return void then();
+            if ( !Console.interpretAsync_( vm, expression, function (
+                    e ) {
+                    
+                    if ( e ) return void then( e );
+                    if ( !Console.replAsync_( vm, then, opt_sync ) )
+                        achievedSync = false;
+                }, opt_sync ) )
+                achievedSync = false;
+        }, opt_sync ) )
+        achievedSync = false;
+    return achievedSync;
+};
+
+Console.interpretAsync_ = function (
+    vm, expression, then, opt_sync ) {
+    
+    return Console.compileAndEvalAsync( vm, expression,
+        function ( e, result ) {
+        
+        if ( e ) {
+            if ( !(e instanceof ArcError) ) return void then( e );
+            System_out_println( "Message    : " + e.getMessage() );
+            System_out_print( "Java stack : " );
+            printStackTrace( e, System_out );
+            return;
+        }
+        System_out_println( result );
+    }, opt_sync );
+};
+
+// PORT NOTE: This was an anonymous class in Java.
+Console.Anon_mkVisitor_ = function ( owner ) {
+    Visitor.call( this );
+    this.owner_ = owner;
+};
+
+Console.Anon_mkVisitor_.prototype = new Visitor();
+Console.Anon_mkVisitor_.prototype.className =
+    "Console.Anon_mkVisitor_";
+
+Console.Anon_mkVisitor_.prototype.acceptInstruction = function ( o ) {
+    o.belongsTo( this.owner_ );
+};
+
+Console.mkVisitor_ = function ( owner ) {
+    return new Console.Anon_mkVisitor_( owner );
+};
+
+Console.compileAndEvalAsync_ = function (
+    vm, expression, then, opt_sync ) {
+    
+    vm.pushFrame( new Console.AndEval() );
+    Compiler.compile( vm, expression, [] );
+    return vm.threadAsync( then, opt_sync );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+Console.AndEval = function () {
+    Instruction.call( this );
+    // ASYNC PORT TODO: Come up with a better owner for this.
+    this.belongsTo(
+        ArcString.make( "Console.compileAndEvalAsync_" ) );
+};
+
+Console.AndEval.prototype = new Instruction();
+Console.AndEval.prototype.className = "Console.AndEval";
+
+Console.AndEval.prototype.operate = function ( vm ) {
+    var expression = vm.popA().reduce();
+    var i = [];
+    expression.addInstructions( i );
+    var instructions = Pair.buildFrom1( i );
+    instructions.visit( Console.mkVisitor_( expression ) );
+    vm.pushInvocation( null, instructions );
+};
 
 
 // ===================================================================
