@@ -58,6 +58,7 @@
 //
 // ArcError.java
 // LexicalClosure.java
+// parser/ParseException.java
 // types/*
 //   types/ArcObject.java
 // ../../cc/*
@@ -477,6 +478,19 @@ LexicalClosure.prototype.size = function () {
 
 
 // ===================================================================
+// from parser/ParseException.java
+// ===================================================================
+
+function ParseException() {
+    Error.call( this );
+}
+
+// PORT TODO: Figure out a way to do this inheritance and also get a
+// real stack trace.
+ParseException.prototype = new Error();
+
+
+// ===================================================================
 // from types/ArcObject.java
 // from parser/ArcParser.java
 // from types/Symbol.java
@@ -745,7 +759,7 @@ ArcParser.isNonSymAtom = function ( s ) {
         || /^-?[01-9]+/.test( s )
         || /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?/.test( s )
         || s === "+inf.0"
-        || s === "0inf.0"
+        || s === "-inf.0"
         || s === "+nan.0"
         || s === "+i"
         || s === "-i"
@@ -819,29 +833,30 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
         } );
     }
     function finishInterpolatedString( parts, then ) {
+        function partsPlus( part ) {
+            var lenm1 = parts.length - 1;
+            var last = parts[ lenm1 ];
+            return typeof part === "string" &&
+                last instanceof ArcString ?
+                    parts.slice( 0, lenm1 ).concat(
+                        [ ArcString.make( last.value() + part ) ] ) :
+                typeof part === "string" ?
+                    parts.concat( [ ArcString.make( part ) ] ) :
+                    parts.concat( [ part ] );
+        }
         function y( c ) {
-            var newParts;
-            var lenm1 = contents.length - 1;
-            var last = contents[ lenm1 ];
-            if ( typeof c === "string" && last instanceof ArcString )
-                newParts = parts.slice( 0, lenm1 ).concat(
-                    [ ArcString.make( last.value() + c ) ] );
-            else
-                newParts = parts.concat( [ ArcString.make( c ) ] );
-            finishInterpolatedString( newParts, then );
+            finishInterpolatedString( partsPlus( c ), then );
         }
         readChar( function ( e, c ) {
             if ( e ) return void then( e );
             if ( c === null )
                 then( new ParseException() );
             else if ( c === "\"" )
-                then( null, "" );
+                then( null, parts );
             else if ( c === "\\" )
                 readChar( function ( e, c2 ) {
                     if ( e ) return void then( e );
-                    if ( c2 === null )
-                        then( new ParseException() );
-                    else if ( c2 === "\"" )
+                    if ( c2 === "\"" )
                         y( "\"" );
                     else if ( c2 === "\\" )
                         y( "\\" );
@@ -859,27 +874,33 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                             else
                                 then( new ParseException() );
                         } );
+                    else
+                        then( new ParseException() );
                 } );
             else if ( c === "#" )
                 readChar( function ( e, c2 ) {
                     if ( e ) return void then( e );
-                    if ( c === "\"" )
-                        then( null, "#" );
-                    else if ( c === "(" )
+                    if ( c2 === "\"" )
+                        then( null, partsPlus( "#" ) );
+                    else if ( c2 === "(" )
                         readObject( function ( e, o ) {
                             if ( e ) return void then( e );
                             readWhite( function ( e ) {
                                 if ( e ) return void then( e );
                                 readChar( function ( e, c3 ) {
                                     if ( e ) return void then( e );
-                                    if ( c === ")" )
+                                    if ( c3 === ")" )
                                         y( o );
                                     else
                                         then( new ParseException() );
                                 } );
                             } );
                         } );
+                    else
+                        then( new ParseException() );
                 } );
+            else
+                y( c );
         } );
     }
     function finishNamedCharacter( soFar, then ) {
@@ -904,6 +925,8 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                     code( parseInt( soFar, 10 ) );
                 else if ( /^u[0-9a-f]+$/i.test( soFar ) )
                     code( parseInt( soFar.substring( 1 ), 16 ) );
+                else if ( soFar.length === 1 )
+                    code( soFar.charCodeAt( 0 ) );
                 else
                     then( new ParseException() );
             } else {
@@ -953,7 +976,7 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                 else if ( c === end )
                     readChar( function ( e, c ) {
                         if ( e ) return void then( e );
-                        then( null, Pair.buildFrom1( soFar ) );
+                        then( null, soFar );
                     } );
                 else
                     readObject( function ( e, o ) {
@@ -990,15 +1013,15 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                 var matches;
                 if ( /^-?[01-9]+\/[01-9]+$/.test( soFar ) )
                     then( null, Rational.parse( soFar ) );
-                else if ( /^-?[01-9]+/.test( soFar ) )
+                else if ( /^-?[01-9]+$/.test( soFar ) )
                     then( null,
                         Rational.make1( parseInt( soFar, 10 ) ) );
-                else if ( /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?/.
+                else if ( /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?$/.
                     test( soFar ) )
                     then( null, Real.parse( soFar ) );
                 else if ( soFar === "+inf.0" )
                     then( null, Real.positiveInfinity() );
-                else if ( soFar === "0inf.0" )
+                else if ( soFar === "-inf.0" )
                     then( null, Real.negativeInfinity() );
                 else if ( soFar === "+nan.0" )
                     then( null, Real.nan() );
@@ -1091,8 +1114,15 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                                 } );
                             } );
                         else
-                            then( null, Pair.buildFrom1(
-                                [ Symbol.mkSym( "unquote" ), o ] ) );
+                            readObject( function ( e, o ) {
+                                if ( e ) return void then( e );
+                                if ( o === null )
+                                    then( new ParseException() );
+                                else
+                                    then( null, Pair.buildFrom1( [
+                                        Symbol.mkSym( "unquote" ),
+                                        o ] ) );
+                            } );
                     } );
                 else if ( c === "`" )
                     readObject( function ( e, o ) {
@@ -1117,14 +1147,24 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                             [ Symbol.mkSym( "quote" ), o ] ) );
                     } );
                 else if ( c === "(" )
-                    finishList( [], ")", then );
+                    finishList( [], ")", function ( e, list ) {
+                        if ( e ) return void then( e );
+                        if ( list.length === 0 ) {
+                            then( null, ArcObject.EMPTY_LIST );
+                        } else {
+                            try { var result = Pair.parse( list ); }
+                            catch ( e ) { return void then( e ); };
+                            then( null, result );
+                        }
+                    } );
                 else if ( c === "[" )
                     finishList( [], "]", function ( e, list ) {
                         if ( e ) return void then( e );
                         then( null, Pair.buildFrom1( [
                             Symbol.mkSym( "fn" ),
-                            Pair.buildFrom1( Symbol.mkSym( "_" ) ),
-                            list ] ) );
+                            Pair.buildFrom1(
+                                [ Symbol.mkSym( "_" ) ] ),
+                            Pair.buildFrom1( list ) ] ) );
                     } );
                 else
                     finishAtom( c, then );
@@ -1184,7 +1224,7 @@ Symbol.prototype.disp = function () {
 };
 
 Symbol.prototype.toString = function () {
-    return this.parseableName;
+    return this.parseableName_;
 };
 
 Symbol.nu = function ( s, parseableName ) {
@@ -1315,15 +1355,11 @@ Pair.prototype.xcar = function () {
     return this.car_;
 };
 
-Pair.prototype.xcar = function () {
-    return this.car_;
-};
-
 Pair.prototype.car = function () {
     return this.car_;
 };
 
-Pair.prototype.car = function () {
+Pair.prototype.cdr = function () {
     return this.cdr_;
 };
 
@@ -1354,7 +1390,7 @@ Pair.prototype.toString = function () {
     if ( this.isSpecial() ) {
         var s = this.car();
         // PORT NOTE: This local variable didn't exist in Java.
-        var prefix = Pair.specials_.get( s.name() );
+        var prefix = Pair.specials_[ s.name() ];
         // PORT NOTE: This local variable didn't exist in Java.
         var cdr = this.cdr();
         // PORT NOTE: This was a cast in Java.
@@ -1379,10 +1415,8 @@ Pair.internalToString_ = function ( o ) {
         o = o.cdr();
     }
     
-    if ( !(o instanceof Nil) ) {
-        result.append( " . " );
-        result.append( o );
-    }
+    if ( !(o instanceof Nil) )
+        result.push( " . ", o );
     return result.join( "" );
 };
 
@@ -1390,7 +1424,7 @@ Pair.prototype.setCdr = function ( cdr ) {
     this.cdr_ = cdr;
 };
 
-Pair.prototype.parse = function ( items ) {
+Pair.parse = function ( items ) {
     if ( items === null || items.length === 0 )
         return ArcObject.NIL;
     
@@ -1398,10 +1432,10 @@ Pair.prototype.parse = function ( items ) {
         return Pair.illegalDot_( items );
     
     return new Pair(
-        items[ 0 ], this.internalParse_( items.slice( 1 ) ) );
+        items[ 0 ], Pair.internalParse_( items.slice( 1 ) ) );
 };
 
-Pair.prototype.internalParse_ = function ( items ) {
+Pair.internalParse_ = function ( items ) {
     if ( items.length === 0 )
         return ArcObject.NIL;
     
@@ -1423,7 +1457,7 @@ Pair.prototype.internalParse_ = function ( items ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(car instanceof ArcObject) )
         throw new TypeError();
-    return new Pair( car, this.internalParse_( items.slice( 1 ) ) );
+    return new Pair( car, Pair.internalParse_( items.slice( 1 ) ) );
 };
 
 Pair.illegalDot_ = function ( items ) {
@@ -1452,7 +1486,7 @@ Pair.buildFrom2 = function ( items, last ) {
 };
 
 Pair.buildFrom1 = function ( items ) {
-    return pair.buildFrom2( items, ArcObject.NIL );
+    return Pair.buildFrom2( items, ArcObject.NIL );
 };
 
 Pair.prototype.type = function () {
@@ -2027,7 +2061,7 @@ ArcCharacter.prototype.className = "ArcCharacter";
 
 // PORT NOTE: We've made sure all uses of .make were renamed.
 ArcCharacter.makeFromCharCode = function ( ch ) {
-    return ArcCharacter.chars_[ ch ] === null ?
+    return ArcCharacter.chars_[ ch ] === void 0 ?
         new ArcCharacter( ch ) : ArcCharacter.chars_[ ch ];
 };
 
@@ -2231,7 +2265,7 @@ ArcString.prototype.toString = function ( vm, args ) {
     return this.escape_( this.value_ );
 };
 
-ArcString.prototype.escape = function ( value ) {
+ArcString.prototype.escape_ = function ( value ) {
     var sb = [];
     sb.push( "\"" );
     var v = value;
@@ -2725,6 +2759,10 @@ Complex.ZERO = new Complex( 0, 0 );
 
 // PORT NOTE: We've changed all uses of the zero- and one-parameter
 // Rationals to uses of this one.
+// PORT TODO: It seems this actually normalizes its *denominator* to
+// be negative when the value as a whole is negative. This makes the
+// value impossible to write out and read back in. But don't fix it!
+// Get it fixed in the original.
 function Rational( numerator, denominator ) {
     ArcNumber.call( this );
     if ( denominator === 0 && numerator !== 0 )
@@ -2971,11 +3009,11 @@ Real.make = function ( v ) {
 };
 
 Real.prototype.toString = function () {
-    if ( value === -1 / 0 )
+    if ( this.value_ === -1 / 0 )
         return "-inf.0";
-    else if ( value === 1 / 0 )
+    else if ( this.value_ === 1 / 0 )
         return "+inf.0";
-    else if ( this.value_ !== this.value )
+    else if ( this.value_ !== this.value_ )
         return "+nan.0";
     else
         // PORT TODO: Find an equivalent for this Java.
@@ -3001,7 +3039,7 @@ Real.prototype.value = function () {
 };
 
 Real.prototype.isInteger = function () {
-    return Math.floor( value ) === value;
+    return Math.floor( this.value_ ) === this.value_;
 };
 
 Real.prototype.toDouble = function () {
@@ -13287,7 +13325,7 @@ Eval.ReduceAndExecute.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Builtin
 // Needed late: Symbol Evaluation ArcError Pair ArcParser
-// ParseException Nil ArcObject
+// StringInputPort ParseException Nil ArcObject
 
 function SSExpand() {
     Builtin.call( this );
@@ -13370,13 +13408,21 @@ SSExpand.expandToks_ = function ( list, i ) {
 };
 
 // PORT NOTE: We renamed each private SSExpand.readValue().
+// PORT TODO: This seems really different from Arc. Figure out if it
+// should be. But don't correct it!
 SSExpand.readValueString_ = function ( s ) {
-    try {
-        return new ArcParser( s ).expression();
-    } catch ( e ) { if ( !(e instanceof ParseException) ) throw e;
-        throw new ArcError(
-            "Couldn't read value of symbol: " + s, e );
-    }
+    var result = null;
+    if ( !ArcParser.readObjectAsync(
+        new StringInputPort( s ).original(), function ( e, o ) {
+            if ( e ) {
+                if ( !(e instanceof ParseException) ) throw e;
+                throw new ArcError(
+                    "Couldn't read value of symbol: " + s, e );
+            }
+            result = o;
+        }, !!"sync" ) )
+        throw new ParseException();
+    return result;
 };
 
 SSExpand.readValueObject_ = function ( symbol ) {

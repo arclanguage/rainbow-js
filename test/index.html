@@ -197,7 +197,7 @@ root.System_err = root.rainbowStderr.o;
 
 var root = window;
 
-// TODO: Turn this into a Rainbow REPL rather than a JavaScript REPL.
+// TODO: Turn this into a REPL rather than just an RPL.
 
 root.onload = function () {
     
@@ -233,34 +233,14 @@ root.onload = function () {
     
     function doEval() {
         var command = prompt.value + "\n";
-        
-        root.rainbowStdout.o.writeString( ">>> " + command );
-        scrollback.scrollTop = scrollback.scrollHeight;
-        
-        // TODO: Actually make this have some effect.
-        root.rainbowStdin.o.writeString( command );
-        
-        try {
-            var result = root.eval.call( null, command );
-            var success = true;
-        } catch ( e ) {
-            var message = "(error rendering error)";
-            try { message = "" + e; } catch ( e ) {}
-            root.rainbowStdout.o.writeString(
-                "Error: " + message + "\n\n" );
-        }
-        if ( success )
-            root.rainbowStdout.o.writeString(
-                "-" + "-> " + result + "\n\n" );
-        
-        scrollback.scrollTop = scrollback.scrollHeight;
-        
         prompt.value = "";
+        root.rainbowStdin.o.writeString( command );
     }
     
     function processStdout( e, c ) {
         if ( e || c === null ) return;
         scrollbackText.data += root.String.fromCharCode( c );
+        scrollback.scrollTop = scrollback.scrollHeight;
         root.rainbowStdout.i.readCharCodeAsync( processStdout );
     }
     root.rainbowStdout.i.readCharCodeAsync( processStdout );
@@ -268,9 +248,33 @@ root.onload = function () {
     function processStderr( e, c ) {
         if ( e || c === null ) return;
         scrollbackText.data += root.String.fromCharCode( c );
+        scrollback.scrollTop = scrollback.scrollHeight;
         root.rainbowStderr.i.readCharCodeAsync( processStderr );
     }
     root.rainbowStderr.i.readCharCodeAsync( processStderr );
+    
+    // Consume all remaining input.
+    function consume( e, c ) {
+        if ( e ) return;
+        root.rainbowStdin.i.readCharCodeAsync( consume, !!"sync" );
+    }
+    function processStdin( e, o ) {
+        if ( e ) {
+            root.rainbowStderr.o.writeString(
+                "Error: " + e + "\n" +
+                "Consuming all remaining input.\n" );
+            root.rainbowStdin.i.readCharCodeAsync(
+                consume, !!"sync" );
+            root.ArcParser.readObjectAsync(
+                root.rainbowStdin.i, processStdin );
+            return;
+        }
+        root.rainbowStdout.o.writeString( "Read in: " + o + "\n" );
+        root.ArcParser.readObjectAsync(
+            root.rainbowStdin.i, processStdin );
+    }
+    root.ArcParser.readObjectAsync(
+        root.rainbowStdin.i, processStdin );
 };
 
 
@@ -279,8 +283,13 @@ root.onload = function () {
 </script>
 </head>
 <body>
-<p>This page loads rainbow.js (all 528 KB!) but doesn't do anything
-  with it. Below is a <i>JavaScript</i> REPL for your convenience:</p>
+<p>This page loads rainbow.js (all 528 KB!) but uses very little of
+  it. Below is an RPL, a read-print-loop, which just reads
+  s-expressions and prints them out again:</p>
 <div id="repl"></div>
+<p>If you enter something but nothing shows up, it might mean you've
+  left a paren or a quote unclosed. To fix this, you can enter
+  <code>#</code> all by itself. This will always cause a syntax error,
+  and syntax errors reset the input.</p>
 </body>
 </html>
