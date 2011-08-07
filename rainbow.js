@@ -63,7 +63,7 @@
 //   types/ArcObject.java
 // ../../cc/*
 //   ../../cc/ArcParser.jj
-//   ../../cc/ComplexParser.jj
+//   ../../cc/ComplexParser.jj (no code needed)
 //   types/Symbol.java
 //   types/Pair.java
 // Nil.java
@@ -756,14 +756,14 @@ ArcParser = {};
 
 ArcParser.isNonSymAtom = function ( s ) {
     if ( /^-?[01-9]+\/[01-9]+$/.test( s )
-        || /^-?[01-9]+/.test( s )
-        || /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?/.test( s )
+        || /^-?[01-9]+$/.test( s )
+        || /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?$/.test( s )
         || s === "+inf.0"
         || s === "-inf.0"
         || s === "+nan.0"
         || s === "+i"
         || s === "-i"
-        || /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i/.
+        || /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
             test( s )
         || /\\(?!\|)/.test( s ) )
         return true;
@@ -1030,7 +1030,7 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                 else if ( soFar === "-i" )
                     then( null, new Complex( 0, -1 ) );
                 else if ( matches =
-                    /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i/.
+                    /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
                         exec( soFar ) )
                     then( null, new Complex(
                         Real.parse( matches[ 1 ] ).value(),
@@ -2541,7 +2541,7 @@ ArcThreadLocal.TYPE = Symbol.mkSym( "thread-local" );
 // from types/Complex.java
 // ===================================================================
 // Needed early: LiteralObject
-// Needed late: ComplexParser ArcError Real
+// Needed late: Real ParseException ArcError
 
 // PORT NOTE: We've gotten rid of all uses of Complex that passed
 // ArcNumbers instead of primitives.
@@ -2554,8 +2554,23 @@ function Complex( real, imaginary ) {
 Complex.prototype = new ArcNumber();
 Complex.prototype.className = "Complex";
 
+// PORT NOTE: The Java version used ComplexParser here.
 Complex.parse = function ( number ) {
-    return new ComplexParser( number ).complex();
+    var matches;
+    if ( soFar === "+i" )
+        return new Complex( 0, 1 );
+    else if ( soFar === "-i" )
+        return new Complex( 0, -1 );
+    else if ( matches =
+        /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
+            exec( soFar ) )
+        return new Complex(
+            Real.parse( matches[ 1 ] ).value(),
+            Real.parse(
+                matches[ 2 ] + (matches[ 3 ] || "1") ).
+                value() );
+    else
+        throw new ParseException();
 };
 
 Complex.prototype.isInteger = function () {
