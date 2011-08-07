@@ -6,8 +6,10 @@
 <!-- http://rocketnia.github.com/rainbow-js/test/index.html -->
 <!--
 
+Copyright (c) 2011 Ross Angle
+
 This software is derived from Rainbow, software which is
-copyright (c) Conan Dalton 2011, distributed under the
+copyright (c) 2011 Conan Dalton, distributed under the
 Perl Foundation's Artistic License 2.0. In the sense described in
 section (4)(c)(i) of that document, using its own terminology,
 permission to use this "Modified Version" is granted under the
@@ -27,19 +29,175 @@ for Arc.
 #repl .scrollback {
     display: block;
     width: 95%;
-    height: 100px;
+    height: 200px;
     overflow: auto;
+    resize: vertical;
     border: 2px solid black;
 }
 #repl .prompt { display: block; width: 95%; }
 #repl .eval {}
 </style>
+<script type="text/javascript">"use strict";
+
+(function () {
+
+var root = window;
+
+
+function shaveBytesFromAroundString( string ) {
+    var chars = [];
+    var leftoverByte = string.charCodeAt( 0 ) & 0xFF;
+    for ( var i = 1, len = string.length; i < len; i++ ) {
+        var code = string.charCodeAt( i );
+        chars.push( root.String.fromCharCode(
+            leftoverByte << 8 | (code >>> 8 & 0xFF) ) );
+        leftoverByte = code & 0xFF;
+    }
+    return chars.join( "" );
+}
+
+// TODO: See what to do about concurrent reads. Right now we just
+// always favor the latest read and never respond to the previous
+// ones.
+function makeInputAndOutput() {
+    var buffer = "";
+    var ignoringFirstByte = false;
+    var closed = false;
+    var callback = null, callbackMethod = null;
+    
+    function useCallback() {
+        if ( callback === null )
+            return;
+        var then = callback, thenMethod = callbackMethod;
+        callback = null, callbackMethod = null;
+        thenMethod( then );
+    }
+    
+    var output = {};
+    output.writeString = function ( string ) {
+        if ( closed ) return;
+        buffer += string;
+        useCallback();
+    };
+    output.writeByte = function ( theByte ) {
+        if ( closed ) return;
+        buffer = ignoringFirstByte ?
+            shaveBytesFromAroundString( buffer ) +
+                String.fromCharCode( theByte << 8 ) :
+            shaveBytesFromAroundString(
+                "\0" + buffer + String.fromCharCode( theByte << 8 ) );
+        ignoringFirstByte = !ignoringFirstByte;
+        useCallback();
+    };
+    output.close = function () {
+        closed = true;
+        useCallback();
+    };
+    output.flush = function () {};
+    
+    var input = {};
+    var readByteAsync = input.readByteAsync = function (
+        then, opt_sync ) {
+        
+        if ( buffer !== "" ) {
+            var code = buffer.charCodeAt( 0 );
+            var b = (ignoringFirstByte ? code : code >>> 8) & 0xFF;
+            if ( ignoringFirstByte )
+                buffer = buffer.substring( 1 );
+            ignoringFirstByte = !ignoringFirstByte;
+            then( null, b );
+            return true;
+        } else if ( closed ) {
+            then( null, null );
+            return true;
+        } else if ( opt_sync ) {
+            return false;
+        } else {
+            callback = then, callbackMethod = readByteAsync;
+            return false;
+        }
+    };
+    function peekOrReadCharCodeAsync(
+        then, reading, method, opt_sync ) {
+        
+        if ( buffer !== "" ) {
+            var c;
+            if ( ignoringFirstByte ) {
+                if ( buffer.length === 1 ) {
+                    if ( closed ) {
+                        // TODO: Figure out what to really do in this
+                        // case. There's just one byte left in the
+                        // stream, but we're reading or peeking at a
+                        // character code....
+                        if ( reading ) {
+                            buffer = "";
+                            ignoringFirstByte = false;
+                        }
+                        then( null, null );
+                        return true;
+                    } else if ( opt_sync ) {
+                        return false;
+                    } else {
+                        callback = then, callbackMethod = method;
+                        return false;
+                    }
+                }
+                
+                c = (buffer.charCodeAt( 0 ) << 8 & 0xFF00) |
+                    (buffer.charCodeAt( 1 ) >>> 8 & 0xFF);
+            } else {
+                c = buffer.charCodeAt( 0 );
+            }
+            if ( reading )
+                buffer = buffer.substring( 1 );
+            then( null, c );
+            return true;
+        } else if ( closed ) {
+            then( null, null );
+            return true;
+        } else if ( opt_sync ) {
+            return false;
+        } else {
+            callback = then, callbackMethod = method;
+            return false;
+        }
+    }
+    var readCharCodeAsync = input.readCharCodeAsync = function (
+        then, opt_sync ) {
+        
+        return peekOrReadCharCodeAsync(
+            then, !!"reading", readCharCodeAsync, opt_sync );
+    };
+    var peekCharCodeAsync = input.peekCharCodeAsync = function (
+        then, opt_sync ) {
+        
+        return peekOrReadCharCodeAsync(
+            then, !"reading", peekCharCodeAsync, opt_sync );
+    };
+    input.close = function () {};
+    
+    return { i: input, o: output };
+}
+
+root.rainbowStdin = makeInputAndOutput();
+root.rainbowStdout = makeInputAndOutput();
+root.rainbowStderr = makeInputAndOutput();
+
+root.System_in = root.rainbowStdin.i;
+root.System_out = root.rainbowStdout.o;
+root.System_err = root.rainbowStderr.o;
+
+})();
+
+</script>
 <script type="text/javascript" src="../rainbow.js"></script>
 <script type="text/javascript">"use strict";
 
 (function () {
 
 var root = window;
+
+// TODO: Turn this into a Rainbow REPL rather than a JavaScript REPL.
 
 root.onload = function () {
     
@@ -74,10 +232,13 @@ root.onload = function () {
     repl.appendChild( evalButton );
     
     function doEval() {
-        var command = prompt.value;
+        var command = prompt.value + "\n";
         
-        scrollbackText.data += ">>> " + command + "\n";
+        root.rainbowStdout.o.writeString( ">>> " + command );
         scrollback.scrollTop = scrollback.scrollHeight;
+        
+        // TODO: Actually make this have some effect.
+        root.rainbowStdin.o.writeString( command );
         
         try {
             var result = root.eval.call( null, command );
@@ -85,15 +246,31 @@ root.onload = function () {
         } catch ( e ) {
             var message = "(error rendering error)";
             try { message = "" + e; } catch ( e ) {}
-            scrollbackText.data += "Error: " + message + "\n\n";
+            root.rainbowStdout.o.writeString(
+                "Error: " + message + "\n\n" );
         }
         if ( success )
-            scrollbackText.data += "-" + "-> " + result + "\n\n";
+            root.rainbowStdout.o.writeString(
+                "-" + "-> " + result + "\n\n" );
         
         scrollback.scrollTop = scrollback.scrollHeight;
         
         prompt.value = "";
     }
+    
+    function processStdout( e, c ) {
+        if ( e || c === null ) return;
+        scrollbackText.data += root.String.fromCharCode( c );
+        root.rainbowStdout.i.readCharCodeAsync( processStdout );
+    }
+    root.rainbowStdout.i.readCharCodeAsync( processStdout );
+    
+    function processStderr( e, c ) {
+        if ( e || c === null ) return;
+        scrollbackText.data += root.String.fromCharCode( c );
+        root.rainbowStderr.i.readCharCodeAsync( processStderr );
+    }
+    root.rainbowStderr.i.readCharCodeAsync( processStderr );
 };
 
 

@@ -18,6 +18,41 @@
 // "Modified Version" bears a name that is different from any name
 // used for Arc.
 
+// To load this file, the variables System_in, System_out, and
+// System_err must already be defined. Here's an example
+// implementation where stdin is always at EOF and stdout and stderr
+// are noops:
+
+//var System_in = {
+//    readByteAsync: function ( then, opt_sync ) {
+//        then( null, null );
+//        return true;
+//    },
+//    readCharCodeAsync: function ( then, opt_sync ) {
+//        then( null, null );
+//        return true;
+//    },
+//    peekCharCodeAsync: function ( then, opt_sync ) {
+//        then( null, null );
+//        return true;
+//    },
+//    close: function () {}
+//};
+//var System_out = {
+//    writeString: function ( string ) {},
+//    writeByte: function ( theByte ) {},
+//    close: function () {},
+//    flush: function () {}
+//};
+//var System_err = {
+//    writeString: function ( string ) {},
+//    writeByte: function ( theByte ) {},
+//    close: function () {},
+//    flush: function () {}
+//};
+
+// TODO: Actually document these stream interfaces.
+
 
 // Tackled so far:
 //
@@ -338,40 +373,8 @@
 // Parts of the port that didn't come from any file
 // ===================================================================
 
-// PORT TODO: Put real IO here.
 // PORT TODO: Figure out whether setTimeout is better or worse than
 // invoking the callback on the same stack (risking an overflow).
-
-var System_out = {
-    writeString: function ( string ) {},
-    writeByte: function ( theByte ) {},
-    close: function () {},
-    flush: function () {}
-};
-var System_err = {
-    writeString: function ( string ) {},
-    writeByte: function ( theByte ) {},
-    close: function () {},
-    flush: function () {}
-};
-var System_in = {
-    readByteAsync: function ( then, opt_sync ) {
-        then( null, null );
-//        setTimeout( function () { then( null, null ); }, 0 );
-        return true;
-    },
-    readCharCodeAsync: function ( then, opt_sync ) {
-        then( null, null );
-//        setTimeout( function () { then( null, null ); }, 0 );
-        return true;
-    },
-    peekCharCodeAsync: function ( then, opt_sync ) {
-        then( null, null );
-//        setTimeout( function () { then( null, null ); }, 0 );
-        return true;
-    },
-    close: function () {}
-};
 
 function System_out_print( string ) {
     System_out.writeString( "" + string );
@@ -16140,7 +16143,7 @@ function StringInputPort( s ) {
         var result = charI < s.length;
         if ( result ) {
             var code = s.charCodeAt( charI++ );
-            peekedBytes.push( code >> 8 & 0xFF, code & 0xFF );
+            peekedBytes.push( code >>> 8 & 0xFF, code & 0xFF );
         }
         return result;
     }
@@ -16193,7 +16196,7 @@ function StringOutputPort() {
         var result = charI < s.length;
         if ( result ) {
             var code = s.charCodeAt( charI++ );
-            peekedBytes.push( code >> 8 & 0xFF, code & 0xFF );
+            peekedBytes.push( code >>> 8 & 0xFF, code & 0xFF );
         }
         return result;
     }
@@ -16206,7 +16209,7 @@ function StringOutputPort() {
             for ( var i = 0, len = string.length; i < len; i++ ) {
                 var code = string.charCodeAt( i );
                 self.parts_.push( String.fromCharCode(
-                    self.leftoverByte_ << 8 | (code >> 8 & 0xFF) ) );
+                    self.leftoverByte_ << 8 | (code >>> 8 & 0xFF) ) );
                 self.leftoverByte_ = code & 0xFF;
             }
         },
