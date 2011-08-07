@@ -1,5 +1,24 @@
-// A port of Rainbow to JavaScript.
+// rainbow.js
 //
+// A port of Rainbow to JavaScript.
+
+// Copyright (c) 2011 Ross Angle
+//
+// This software is derived from Rainbow, software which is
+// copyright (c) 2011 Conan Dalton, distributed under the
+// Perl Foundation's Artistic License 2.0. In the sense described in
+// section (4)(c)(i) of that document, using its own terminology,
+// permission to use this "Modified Version" is granted under the
+// "Original License."
+//
+// This software may also be derived from Arc, software which is
+// copyright (c) Paul Graham and Robert Morris, distributed under the
+// Perl Foundation's Artistic License 2.0. In the sense described in
+// section (4)(b) of that document, using its own terminology, this
+// "Modified Version" bears a name that is different from any name
+// used for Arc.
+
+
 // Tackled so far:
 //
 // ArcError.java
@@ -7492,7 +7511,7 @@ Invocation.prototype.inlineDoForm_ = function () {
 };
 
 Invocation.prototype.addOptimisedHandler_ = function ( i ) {
-    var cname = "rainbow.vm.instructions.invoke.optimize.Invoke" +
+    var cname = "rainbow.vm.instructions.invoke.optimise.Invoke" +
         this.sig_();
     if ( cname in this.constructors_ ) {
         var C = this.constructors_[ cname ];
