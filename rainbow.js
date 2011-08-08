@@ -393,7 +393,11 @@ function printStackTrace( e, opt_stream ) {
     if ( void 0 === opt_stream ) opt_stream = System_err;
     // PORT TODO: Find an equivalent for this Java.
 //    e.printStackTrace( opt_stream );
-    opt_stream.writeString( "" + e + "\n" );
+    opt_stream.writeString(
+        "" + e + "\n" + (e.stack || e) + "\n" );
+    while ( e instanceof ArcError && (e = e.getCause()) )
+        opt_stream.writeString(
+            "Caused by: " + e + "\n" + (e.stack || e) + "\n" );
 }
 
 var classes = {};
@@ -407,6 +411,8 @@ var classes = {};
 // new ArcError( Exception );
 function ArcError( message, opt_e ) {
     Error.call( this, message );
+    this.message = message;
+    this.stack = new Error().stack;
     this.e_ = opt_e;
     this.arcStack_ = [];
 }
@@ -417,6 +423,11 @@ ArcError.prototype = new Error();
 
 ArcError.prototype.getMessage = function () {
     return this.message;
+};
+
+// PORT NOTE: This didn't exist in Java.
+ArcError.prototype.getCause = function () {
+    return this.e_;
 };
 
 
@@ -432,10 +443,11 @@ function LexicalClosure( length, parent ) {
 }
 
 LexicalClosure.prototype.add = function ( value ) {
-    if ( bindings.length <= this.count_ )
+    if ( this.bindings_.length <= this.count_ )
         throw new ArcError(
             "Can't add " + value + " to bindings: already full " +
-            "(" + this.count_ + ") " + Pair.buildFrom1( bindings ) );
+            "(" + this.count_ + ") " +
+            Pair.buildFrom1( this.bindings_ ) );
     this.bindings_[ this.count_ ] = value;
     this.count_++;
 };
@@ -687,6 +699,7 @@ ArcObject.prototype.visit = function ( v ) {
 
 ArcObject.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
+    
     return this;
 };
 
@@ -1292,7 +1305,8 @@ Symbol.prototype.setValue = function ( value ) {
 
 Symbol.prototype.value = function () {
     if ( this.value_ === null )
-        throw new ArcError( "Symbol " + name + " is not bound" );
+        throw new ArcError(
+            "Symbol " + this.name_ + " is not bound" );
     return this.value_;
 };
 
@@ -1661,6 +1675,13 @@ Pair.unwrapList_ = function ( result, list ) {
     Pair.unwrapList_( result, cdr );
 };
 
+Pair.prototype.toArray = function () {
+    var result = new Array( ~~this.size() );
+    var i = 0;
+    this.toArray_( result, i );
+    return result;
+};
+
 Pair.prototype.toArray_ = function ( result, i ) {
     if ( i < result.length ) {
         result[ i ] = this.car_;
@@ -1966,6 +1987,11 @@ Instruction.prototype.type = function () {
 // and rename them.
 Instruction.prototype.toStringWithLc = function ( lc ) {
     return this.toString();
+};
+
+// PORT NOTE: This didn't exist in Java. We're using it to debug.
+Instruction.prototype.toString = function () {
+    return "(" + this.className + ")";
 };
 
 Instruction.prototype.symValue = function ( s ) {
@@ -4164,7 +4190,7 @@ ListBuilder.prototype.last = function ( o ) {
 };
 
 ListBuilder.prototype.list = function () {
-    return Pair.buildFrom2( list, last );
+    return Pair.buildFrom2( this.list_, this.last_ );
 };
 
 ListBuilder.prototype.type = function () {
@@ -6752,7 +6778,8 @@ SingleAssignment.prototype.replaceBoundSymbols = function (
     
     var sa = new SingleAssignment( null );
     sa.name = this.name.replaceBoundSymbols( lexicalBindings );
-    sa.expression = this.expression.replaceBoundSymbols( lexicalBindings );
+    sa.expression =
+        this.expression.replaceBoundSymbols( lexicalBindings );
     // PORT NOTE: This local variable didn't exist in Java.
     var newNext = this.next_.replaceBoundSymbols( lexicalBindings );
     // PORT NOTE: This was a cast in Java.
@@ -6896,6 +6923,10 @@ Assignment.prototype.className = "Assignment";
 
 Assignment.prototype.type = function () {
     return Symbol.mkSym( "assignment" );
+};
+
+Assignment.prototype.take = function ( o ) {
+    this.assignment.take( o );
 };
 
 Assignment.prototype.addInstructions = function ( i ) {
@@ -7251,7 +7282,7 @@ IfThen.prototype.add = function ( c ) {
 IfThen.prototype.take = function ( expression ) {
     if ( this.ifExpression === null )
         this.ifExpression = expression;
-    else if ( thenExpression === null )
+    else if ( this.thenExpression === null )
         this.thenExpression = expression;
     else
         this.next.take( expression );
@@ -7523,7 +7554,7 @@ Invocation.prototype.toString = function () {
 
 Invocation.prototype.addInstructions = function ( i ) {
     this.inlineDoForm_( i ) || this.addOptimisedHandler_( i ) ||
-        this.defaultAddInstructions_( i );
+        this.defaultAddInstructions( i );
 };
 
 Invocation.prototype.reduce = function () {
@@ -7555,10 +7586,10 @@ Invocation.prototype.reduce = function () {
     return this;
 };
 
-Invocation.prototype.inlineDoForm_ = function () {
+Invocation.prototype.inlineDoForm_ = function ( i ) {
     if ( this.parts.len() === 1
         && this.parts.car() instanceof Bind ) {
-        var fn = parts.car();
+        var fn = this.parts.car();
         fn.buildInstructions( i );
         return true;
     }
@@ -7573,7 +7604,7 @@ Invocation.prototype.addOptimisedHandler_ = function ( i ) {
         if ( C === null )
             return false;
         try {
-            this.addOptimisedInstructions_( i, new C( parts ) );
+            this.addOptimisedInstructions_( i, new C( this.parts ) );
             return true;
         } catch ( e ) { if ( !(e instanceof Error) ) throw e;
             throw new ArcError(
@@ -7821,7 +7852,7 @@ QuasiQuotation.prototype.addInstructions = function ( i ) {
 };
 
 QuasiQuotation.prototype.toString = function () {
-    return "`" + this.target;
+    return "`" + this.target_;
 };
 
 QuasiQuotation.prototype.unquotes = function () {
@@ -7853,19 +7884,19 @@ QuasiQuotation.prototype.appendUnquotes_ = function (
     }
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuote.isUnQuote( expr )
-            || QuasiQuote.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation.isUnQuote( expr )
+            || QuasiQuotation.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
             this.appendUnquotes_( l, expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuote.isUnQuoteSplicing( current ) )
+            if ( QuasiQuotation.isUnQuoteSplicing( current ) )
                 this.appendUnquotes_( l, current, nesting );
-            else if ( QuasiQuote.isUnQuote( current )
-                || QuasiQuote.isQuasiQuote( current )
-                || QuasiQuote.isPair_( current ) )
+            else if ( QuasiQuotation.isUnQuote( current )
+                || QuasiQuotation.isQuasiQuote( current )
+                || QuasiQuotation.isPair_( current ) )
                 this.appendUnquotes_( l, current, nesting );
         }
 };
@@ -7875,7 +7906,7 @@ QuasiQuotation.prototype.addInstructions2 = function ( i, target ) {
 };
 
 QuasiQuotation.prototype.addInstructions_ = function (
-    i, target, nesting ) {
+    i, expr, nesting ) {
     
     if ( QuasiQuotation.isUnQuote( expr ) ) {
         if ( nesting === 1 ) {
@@ -7908,9 +7939,11 @@ QuasiQuotation.prototype.addInstructions_ = function (
         return;
     }
     
+    i.push( new NewList() );
+    
     while ( !expr.isNotPair() )
-        if ( QuasiQuote.isUnQuote( expr )
-            || QuasiQuote.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation.isUnQuote( expr )
+            || QuasiQuotation.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
             this.addInstructions_( i, expr, nesting );
             expr = expr.cdr().cdr();
@@ -7918,12 +7951,15 @@ QuasiQuotation.prototype.addInstructions_ = function (
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuote.isUnQuoteSplicing( current ) ) {
+            if ( QuasiQuotation.isUnQuoteSplicing( current ) ) {
                 this.addInstructions_( i, current, nesting );
-            } else if ( QuasiQuote.isUnQuote( current )
-                || QuasiQuote.isQuasiQuote( current )
-                || QuasiQuote.isPair_( current ) ) {
+            } else if ( QuasiQuotation.isUnQuote( current )
+                || QuasiQuotation.isQuasiQuote( current )
+                || QuasiQuotation.isPair_( current ) ) {
                 this.addInstructions_( i, current, nesting );
+                i.push( new Append() );
+            } else {
+                i.push( new Literal( current ) );
                 i.push( new Append() );
             }
         }
@@ -7988,7 +8024,7 @@ QuasiQuotation.prototype.inline5 = function (
     p, arg, unnest, lexicalNesting, paramIndex ) {
     
     return new QuasiQuotation( QuasiQuotation.inline5_( p, arg,
-        unnest, lexicalNesting, paramIndex, this.target, 1 ) );
+        unnest, lexicalNesting, paramIndex, this.target_, 1 ) );
 };
 
 QuasiQuotation.inline5_ = function (
@@ -8029,22 +8065,22 @@ QuasiQuotation.inline5_ = function (
     var last = ArcObject.NIL;
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuote.isUnQuote( expr )
-            || QuasiQuote.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation.isUnQuote( expr )
+            || QuasiQuotation.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
-            last = QuasiQuote.inline5_( p, arg, unnest,
+            last = QuasiQuotation.inline5_( p, arg, unnest,
                 lexicalNesting, paramIndex, expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuote.isUnQuoteSplicing( current ) )
-                list.push( QuasiQuote.inline5_( p, arg, unnest,
+            if ( QuasiQuotation.isUnQuoteSplicing( current ) )
+                list.push( QuasiQuotation.inline5_( p, arg, unnest,
                     lexicalNesting, paramIndex, current, nesting ) );
-            else if ( QuasiQuote.isUnQuote( current )
-                || QuasiQuote.isQuasiQuote( current )
-                || QuasiQuote.isPair_( current ) )
-                list.push( QuasiQuote.inline5_( p, arg, unnest,
+            else if ( QuasiQuotation.isUnQuote( current )
+                || QuasiQuotation.isQuasiQuote( current )
+                || QuasiQuotation.isPair_( current ) )
+                list.push( QuasiQuotation.inline5_( p, arg, unnest,
                     lexicalNesting, paramIndex, current, nesting ) );
             else
                 list.push( current );
@@ -8058,7 +8094,7 @@ QuasiQuotation.inline5_ = function (
 
 QuasiQuotation.prototype.inline3 = function ( p, arg, paramIndex ) {
     return new QuasiQuotation( QuasiQuotation.inline3_( p, arg,
-        paramIndex, this.target, 1 ) );
+        paramIndex, this.target_, 1 ) );
 };
 
 QuasiQuotation.inline3_ = function (
@@ -8094,23 +8130,23 @@ QuasiQuotation.inline3_ = function (
     var last = ArcObject.NIL;
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuote.isUnQuote( expr )
-            || QuasiQuote.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation.isUnQuote( expr )
+            || QuasiQuotation.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
-            last = QuasiQuote.inline3_( p, arg, paramIndex,
+            last = QuasiQuotation.inline3_( p, arg, paramIndex,
                 expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuote.isUnQuoteSplicing( current ) )
-                list.push( QuasiQuote.inline3_( p, arg, paramIndex,
-                    current, nesting ) );
-            else if ( QuasiQuote.isUnQuote( current )
-                || QuasiQuote.isQuasiQuote( current )
-                || QuasiQuote.isPair_( current ) )
-                list.push( QuasiQuote.inline3_( p, arg, paramIndex,
-                    current, nesting ) );
+            if ( QuasiQuotation.isUnQuoteSplicing( current ) )
+                list.push( QuasiQuotation.inline3_( p, arg,
+                    paramIndex, current, nesting ) );
+            else if ( QuasiQuotation.isUnQuote( current )
+                || QuasiQuotation.isQuasiQuote( current )
+                || QuasiQuotation.isPair_( current ) )
+                list.push( QuasiQuotation.inline3_( p, arg,
+                    paramIndex, current, nesting ) );
             else
                 list.push( current );
         }
@@ -8123,7 +8159,7 @@ QuasiQuotation.inline3_ = function (
 
 QuasiQuotation.prototype.nest = function ( threshold ) {
     return new QuasiQuotation( QuasiQuotation.nest_(
-        threshold, this.target, 1 ) );
+        threshold, this.target_, 1 ) );
 };
 
 QuasiQuotation.nest_ = function ( threshold, expr, nesting ) {
@@ -8157,19 +8193,19 @@ QuasiQuotation.nest_ = function ( threshold, expr, nesting ) {
     var last = ArcObject.NIL;
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuote.isUnQuote( expr )
-            || QuasiQuote.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation.isUnQuote( expr )
+            || QuasiQuotation.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
-            last = QuasiQuote.nest_( threshold, expr, nesting );
+            last = QuasiQuotation.nest_( threshold, expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuote.isUnQuoteSplicing( current )
-                || QuasiQuote.isUnQuote( current )
-                || QuasiQuote.isQuasiQuote( current )
-                || QuasiQuote.isPair_( current ) )
-                list.push( QuasiQuote.nest_( threshold,
+            if ( QuasiQuotation.isUnQuoteSplicing( current )
+                || QuasiQuotation.isUnQuote( current )
+                || QuasiQuotation.isQuasiQuote( current )
+                || QuasiQuotation.isPair_( current ) )
+                list.push( QuasiQuotation.nest_( threshold,
                     current, nesting ) );
             else
                 list.push( current );
@@ -8185,7 +8221,7 @@ QuasiQuotation.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
     return new QuasiQuotation( QuasiQuotation.replaceBoundSymbols_(
-        lexicalBindings, this.target, 1 ) );
+        lexicalBindings, this.target_, 1 ) );
 };
 
 QuasiQuotation.replaceBoundSymbols_ = function (
@@ -8223,20 +8259,20 @@ QuasiQuotation.replaceBoundSymbols_ = function (
     var last = ArcObject.NIL;
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuote.isUnQuote( expr )
-            || QuasiQuote.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation.isUnQuote( expr )
+            || QuasiQuotation.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
-            last = QuasiQuote.replaceBoundSymbols_( lexicalBindings,
-                expr, nesting );
+            last = QuasiQuotation.replaceBoundSymbols_(
+                lexicalBindings, expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuote.isUnQuoteSplicing( current )
-                || QuasiQuote.isUnQuote( current )
-                || QuasiQuote.isQuasiQuote( current )
-                || QuasiQuote.isPair_( current ) )
-                list.push( QuasiQuote.replaceBoundSymbols_(
+            if ( QuasiQuotation.isUnQuoteSplicing( current )
+                || QuasiQuotation.isUnQuote( current )
+                || QuasiQuotation.isQuasiQuote( current )
+                || QuasiQuotation.isPair_( current ) )
+                list.push( QuasiQuotation.replaceBoundSymbols_(
                     lexicalBindings, current, nesting ) );
             else
                 list.push( current );
@@ -8277,9 +8313,6 @@ function UnquoteSplicing() {
 // ===================================================================
 // from vm/interpreter/visitor/Visitor.java
 // ===================================================================
-// Needed early: ArcObject
-// Needed late: Symbol Literal QuasiQuoteCompiler Listify AppendAll
-// Append AppendDot Nil Pair InterpretedFunction
 
 function Visitor() {
 }
@@ -8823,7 +8856,12 @@ var AssignmentBuilder = {};
 AssignmentBuilder.build = function ( vm, body, lexicalBindings ) {
     var assignment = new Assignment();
     assignment.prepare( body.len() );
-    vm.pushA( assignment );
+    
+    var i = new Literal( assignment );
+    // ASYNC PORT TODO: Come up with a better owner for this.
+    i.belongsTo( ArcString.make( "AssignmentBuilder.build" ) );
+    vm.pushFrame( i );
+    
     vm.pushFrame( new AssignmentBuilder.BuildAssignment1(
         assignment, body, lexicalBindings ) );
 };
@@ -8857,8 +8895,8 @@ AssignmentBuilder.BuildAssignment1.prototype.operate = function (
     }
     
     vm.pushFrame( new AssignmentBuilder.BuildAssignment2(
-        this.assignment_, this.body_.cdr(), lexicalBindings ) );
-    Compiler.compile( vm, this.body_.car(), lexicalBindings );
+        this.assignment_, this.body_.cdr(), this.lexicalBindings_ ) );
+    Compiler.compile( vm, this.body_.car(), this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
@@ -9005,8 +9043,9 @@ Compiler.compilePair = function ( vm, expression, lexicalBindings ) {
         if ( Symbol.is( "quote", fun ) ) {
             vm.pushA( new Quotation( expression.cdr().car() ) );
         } else if ( fun === QuasiQuoteCompiler.QUASIQUOTE ) {
-            vm.pushA( new QuasiQuotation( QuasiQuoteCompiler.compile(
-                vm, expression.cdr().car(), lexicalBindings, 1 ) ) );
+            vm.pushFrame( new Compiler.WrapQuasiQuotation() );
+            QuasiQuoteCompiler.compile(
+                vm, expression.cdr().car(), lexicalBindings, 1 );
         } else if ( Symbol.is( "fn", fun ) ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var cdr = expression.cdr();
@@ -9043,7 +9082,7 @@ Compiler.compilePair = function ( vm, expression, lexicalBindings ) {
                 Compiler.decomplement_( fun.cdr().car(), cdr ),
                 lexicalBindings );
         } else if ( Evaluation.isSpecialSyntax( fun ) ) {
-            Compiler.compile( fm,
+            Compiler.compile( vm,
                 new Pair(
                     Evaluation.ssExpand( fun ), expression.cdr() ),
                 lexicalBindings );
@@ -9067,6 +9106,21 @@ Compiler.ThenCompile.prototype.className = "Compiler.ThenCompile";
 
 Compiler.ThenCompile.prototype.operate = function ( vm ) {
     Compiler.compile( vm, vm.popA(), this.lexicalBindings_ );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+Compiler.WrapQuasiQuotation = function () {
+    Instruction.call( this );
+    // ASYNC PORT TODO: Come up with a better owner for this.
+    this.belongsTo( ArcString.make( "Compiler.compilePair" ) );
+};
+
+Compiler.WrapQuasiQuotation.prototype = new Instruction();
+Compiler.WrapQuasiQuotation.prototype.className =
+    "Compiler.WrapQuasiQuotation";
+
+Compiler.WrapQuasiQuotation.prototype.operate = function ( vm ) {
+    vm.pushA( new QuasiQuotation( vm.popA() ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
@@ -9125,7 +9179,7 @@ Compiler.ThenCompile.prototype.operate = function ( vm ) {
 //                Compiler.decomplement_( fun.cdr().car(), cdr ),
 //                lexicalBindings );
 //        } else if ( Evaluation.isSpecialSyntax( fun ) ) {
-//            return Compiler.compile( fm,
+//            return Compiler.compile( vm,
 //                new Pair(
 //                    Evaluation.ssExpand( fun ), expression.cdr() ),
 //                lexicalBindings );
@@ -9182,7 +9236,7 @@ Compiler.getMacro_ = function ( maybeMacCall ) {
     if ( !first.bound() )
         return null;
     
-    return Tagged.ifTagged( sym.value(), "mac" );
+    return Tagged.ifTagged( first.value(), "mac" );
 };
 
 
@@ -9241,7 +9295,7 @@ FunctionBodyBuilder.Intermediate.prototype.operate = function ( vm ) {
         throw new TypeError();
     vm.pushFrame( new FunctionBodyBuilder.Finish( parameterList,
         this.myParams_, body, complexParams, vm.getAp() ) );
-    PairExpander.expand( vm, body, lexicalBindings );
+    PairExpander.expand( vm, body, this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
@@ -9252,7 +9306,7 @@ FunctionBodyBuilder.Finish = function (
     this.parameterList_ = parameterList;
     this.myParams_ = myParams;
     this.body_ = body;
-    this.complexParams_ = complexParams_;
+    this.complexParams_ = complexParams;
     this.ap_ = ap;
     // ASYNC PORT TODO: Come up with a better owner for this.
     this.belongsTo( ArcString.make( "FunctionBodyBuilder.build" ) );
@@ -9340,7 +9394,7 @@ FunctionBodyBuilder.buildFunctionBody = function (
         var result =
             new Cons( parameterList, lexicalBindings, expandedBody );
         // PORT NOTE: This was a cast in Java.
-        if ( !(body instanceof ArcObject) )
+        if ( !(result instanceof ArcObject) )
             throw new TypeError();
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
@@ -9374,7 +9428,7 @@ FunctionBodyBuilder.buildStackFunctionBody = function (
         var result =
             Cons.of3( parameterList, lexicalBindings, expandedBody );
         // PORT NOTE: This was a cast in Java.
-        if ( !(body instanceof ArcObject) )
+        if ( !(result instanceof ArcObject) )
             throw new TypeError();
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
@@ -9401,7 +9455,7 @@ FunctionBodyBuilder.convertToStackParams = function ( ifn ) {
         // PORT TODO: Use .of1 instead of the one-arg constructor.
         var result = Cons.of1( ifn );
         // PORT NOTE: This was a cast in Java.
-        if ( !(body instanceof ArcObject) )
+        if ( !(result instanceof ArcObject) )
             throw new TypeError();
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
@@ -9451,13 +9505,6 @@ FunctionBodyBuilder.sig = function ( parameterList, optionable ) {
     } else {
         return "_A";
     }
-    
-    if ( complexParams instanceof Nil )
-        return new SimpleArgs(
-            parameterList, lexicalBindings, expandedBody );
-    else
-        return new ComplexArgs(
-            parameterList, lexicalBindings, expandedBody );
 };
 
 FunctionBodyBuilder.visit = function (
@@ -9517,18 +9564,18 @@ FunctionParameterListBuilder.buildParams_ = function (
     var result = [];
     
     vm.pushFrame( new FunctionParameterListBuilder.ReturnParams(
-        result, parameters, complexParams ) );
+        result, complexParams ) );
     vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
         result, complexParams, parameters, lexicalBindings ) );
+    vm.pushA( parameters );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 FunctionParameterListBuilder.ReturnParams = function (
-    result, parameters, complexParams ) {
+    result, complexParams ) {
     
     Instruction.call( this );
     this.result_ = result;
-    this.parameters_ = parameters;
     this.complexParams_ = complexParams;
     // ASYNC PORT TODO: Come up with a better owner for this.
     this.belongsTo( ArcString.make(
@@ -9545,11 +9592,11 @@ FunctionParameterListBuilder.ReturnParams.prototype.operate =
     
     if ( this.result_.length === 0 )
         vm.pushA( FunctionParameterListBuilder.returnParams_(
-            this.complexParams_.value, this.parameters_ ) );
+            this.complexParams_.value, vm.popA() ) );
     else
         vm.pushA( FunctionParameterListBuilder.returnParams_(
             this.complexParams_.value,
-            Pair.buildFrom2( result, this.parameters_ ) ) );
+            Pair.buildFrom2( this.result_, vm.popA() ) ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
@@ -9574,37 +9621,45 @@ FunctionParameterListBuilder.BuildParams1.prototype.className =
 FunctionParameterListBuilder.BuildParams1.prototype.operate =
     function ( vm ) {
     
-    if ( this.body_.isNotPair() )
+    if ( this.parameters_.isNotPair() ) {
+        var i = new Literal( this.parameters_ );
+        i.belongsTo( this );
+        vm.pushFrame( i );
         return;
+    }
     
     var first = this.parameters_.car();
+    var newParameters = this.parameters_.cdr();
     if ( !(first instanceof Pair) ) {
         this.result_.push( first );
-        vm.pushFrame( this );
+        vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
+            this.result_, this.complexParams_, newParameters,
+            this.lexicalBindings_ ) );
     } else if ( first instanceof Nil ) {
         this.result_.push( FunctionParameterListBuilder.NIL_ARG );
-        vm.pushFrame( this );
+        vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
+            this.result_, this.complexParams_, newParameters,
+            this.lexicalBindings_ ) );
     } else {
         this.complexParams_.value = ArcObject.T;
         if ( ComplexArgs.optional( first ) ) {
             var optionalParamName = first.cdr().car();
             vm.pushFrame(
                 new FunctionParameterListBuilder.BuildParams2a(
-                    this.result_, this.complexParams_,
-                    this.parameters_, this.lexicalBindings_,
-                    optionalParamName ) );
+                    this.result_, this.complexParams_, newParameters,
+                    this.lexicalBindings_, optionalParamName ) );
             Compiler.compile(
-                vm, first.cdr().cdr().car(), lexicalBindings );
+                vm, first.cdr().cdr().car(), this.lexicalBindings_ );
         } else {
             vm.pushFrame(
                 new FunctionParameterListBuilder.BuildParams2b(
-                    this.result_, this.complexParams_,
-                    this.parameters_, this.lexicalBindings_ ) );
+                    this.result_, this.complexParams_, newParameters,
+                    this.lexicalBindings_ ) );
             FunctionParameterListBuilder.buildParams_(
-                vm, first, lexicalBindings );
+                vm, first, this.lexicalBindings_ );
 //            result.push(
 //                FunctionParameterListBuilder.buildParams_(
-//                    vm, first, lexicalBindings ).cdr() );
+//                    vm, first, this.lexicalBindings_ ).cdr() );
 //            }
         }
     }
@@ -9742,15 +9797,17 @@ FunctionParameterListBuilder.index = function (
                 i[ 0 ]++;
             } else {
                 FunctionParameterListBuilder.index(
-                    parameterList.cdr(), map, i, false );
+                    first, map, i, true );
             }
+            FunctionParameterListBuilder.index(
+                parameterList.cdr(), map, i, false );
         }
     } else {
         // PORT TODO: The Java version just assumes it'll be a symbol,
         // and it doesn't call name(), so in fact this check may be a
         // change in functionality. See if it is and what to do about
         // it.
-        if ( !(first instanceof Symbol) )
+        if ( !(parameterList instanceof Symbol) )
             throw new TypeError();
         map[ parameterList.name() ] = i[ 0 ];
         i[ 0 ]++;
@@ -9929,8 +9986,8 @@ IfBuilder.BuildIf1.prototype.operate = function ( vm ) {
     }
     
     vm.pushFrame( new IfBuilder.BuildIf2(
-        this.clause_, this.body_.cdr(), lexicalBindings ) );
-    Compiler.compile( vm, this.body_.car(), lexicalBindings );
+        this.clause_, this.body_.cdr(), this.lexicalBindings_ ) );
+    Compiler.compile( vm, this.body_.car(), this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
@@ -10115,7 +10172,7 @@ PairExpander.ExpandPair.prototype.className =
 PairExpander.ExpandPair.prototype.operate = function ( vm ) {
     if ( this.body_ instanceof Nil
         || !(this.body_ instanceof Pair) ) {
-        vm.pushFrame( new PairExpander.FinishPair( result ) );
+        vm.pushFrame( new PairExpander.FinishPair( this.result_ ) );
         Compiler.compile( vm, this.body_, this.lexicalBindings_ );
         return;
     }
@@ -10125,7 +10182,7 @@ PairExpander.ExpandPair.prototype.operate = function ( vm ) {
     
     var next = this.body_.car();
     vm.pushFrame( new PairExpander.ReducePush( this.result_ ) );
-    Compiler.compile( vm, next, lexicalBindings );
+    Compiler.compile( vm, next, this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
@@ -10230,6 +10287,7 @@ QuasiQuoteCompiler.compile = function (
 // ASYNC PORT NOTE: This didn't exist in Java.
 QuasiQuoteCompiler.CompileQuasiQuote = function (
     result, expression, lexicalBindings, nesting ) {
+    
     Instruction.call( this );
     this.result_ = result;
     this.expression_ = expression;
@@ -10259,7 +10317,7 @@ QuasiQuoteCompiler.CompileQuasiQuote.prototype.operate = function (
         this.result_, this.expression_.cdr(), this.lexicalBindings_,
         this.nesting_ ) );
     if ( next.isNotPair() ) {
-        result.push( next );
+        this.result_.push( next );
     } else {
         vm.pushFrame( new QuasiQuoteCompiler.Push( this.result_ ) );
         QuasiQuoteCompiler.compile(
@@ -10714,7 +10772,7 @@ Evaluation.UnknownSytax.prototype.className =
     "Evaluation.UnknownSytax";
 
 Evaluation.isListListQuoted = function ( symbol ) {
-    return /.|!/.test( symbol );
+    return /[.!]/.test( symbol );
 };
 
 Evaluation.isComposeComplement = function ( symbol ) {
@@ -10804,7 +10862,7 @@ InterpretedFunction.prototype.assigned = function ( name ) {
     
     var v = new FunctionOwnershipVisitor( this );
     for ( var i = 0, len = this.body.length; i < len; i++ )
-        body[ i ].visit( v );
+        this.body[ i ].visit( v );
 };
 
 InterpretedFunction.prototype.assignedName = function () {
@@ -10917,7 +10975,7 @@ InterpretedFunction.prototype.buildInstructions = function ( i ) {
     else
         for ( var b = 0; b < this.body.length; b++ ) {
             var expr = this.body[ b ];
-            var last = b === body.length - 1;
+            var last = b === this.body.length - 1;
             expr.addInstructions( i );
             if ( !last )
                 i.push( new PopArg( "intermediate-fn-expression" ) );
@@ -11421,7 +11479,7 @@ ComplexArgs.AddToLc.prototype.operate = function ( vm ) {
     this.lc_.add( vm.popA() );
 };
 
-/// ASYNC PORT NOTE: This was the synchronous Java version.
+//// ASYNC PORT NOTE: This was the synchronous Java version.
 //ComplexArgs.complex_ = function ( vm, lc, parameters, args ) {
 //    while ( !parameters.isNotPair() ) {
 //        var nextParameter = parameters.car();
@@ -11476,7 +11534,8 @@ ComplexArgs.evalOptional_ = function ( vm, lc, optional ) {
 ComplexArgs.optional = function ( nextParameter ) {
     if ( !(nextParameter instanceof Pair) )
         return false;
-    return p.car() === ComplexArgs.o_;
+    
+    return nextParameter.car() === ComplexArgs.o_;
 };
 
 ComplexArgs.optionalParam_ = function ( nextParameter ) {
@@ -11523,12 +11582,11 @@ StackFunctionSupport.of = function (
 StackFunctionSupport.prototype.initStackFunctionSupport = function (
     parameterList, lexicalBindings, body ) {
     
-    this.init( parameterList, lexicalBindings, body );
+    return this.init( parameterList, lexicalBindings, body );
 };
 
 StackFunctionSupport.prototype.canInline = function ( param, arg ) {
-    return StackFunctionSupport.inlineableArg_( param, arg ) &&
-        !this.assigns( 0 );
+    return this.inlineableArg_( param, arg ) && !this.assigns( 0 );
 };
 
 StackFunctionSupport.prototype.inlineableArg_ = function (
@@ -11554,7 +11612,7 @@ StackFunctionSupport.prototype.curry = function (
     var paramIndex = this.lexicalBindings[ param.name() ];
     var p = new StackSymbol( param, paramIndex );
     var newParams = FunctionParameterListBuilder.curryStack(
-        parameterList, p, arg, paramIndex );
+        this.parameterList_, p, arg, paramIndex );
     var lexicalBindings = {};
     FunctionParameterListBuilder.index(
         newParams, lexicalBindings, [ 0 ], false );
@@ -11562,7 +11620,7 @@ StackFunctionSupport.prototype.curry = function (
     var newBody = [];
     for ( var i = 0; i < this.body.length; i++ )
         newBody.push(
-            body[ i ].inline3( p, arg, paramIndex ).reduce() );
+            this.body[ i ].inline3( p, arg, paramIndex ).reduce() );
     var nb = Pair.buildFrom1( newBody );
     var complexParams =
         FunctionParameterListBuilder.isComplex( newParams );
@@ -11605,7 +11663,7 @@ Bind.prototype = new InterpretedFunction();
 Bind.prototype.className = "Bind";
 
 Bind.prototype.invokeN0 = function ( vm, lc ) {
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind.prototype.invoke3 = function ( vm, lc, args ) {
@@ -11645,7 +11703,7 @@ Bind_A.prototype.invokeN1 = function ( vm, lc, arg ) {
         len++;
     lc = new LexicalClosure( len, lc );
     lc.add( arg );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_A.prototype.invoke3 = function ( vm, lc, args ) {
@@ -11693,7 +11751,7 @@ Bind_A_A.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
     lc = new LexicalClosure( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_A_A.prototype.invoke3 = function ( vm, lc, args ) {
@@ -11733,7 +11791,7 @@ Bind_A_A_A.prototype.invokeN3 = function (
     lc.add( arg1 );
     lc.add( arg2 );
     lc.add( arg3 );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
@@ -11776,7 +11834,7 @@ Bind_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
     lc.add( args.car() );
     lc.add( args.cdr().car() );
     lc.add( args.cdr().cdr() );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 
@@ -11828,7 +11886,7 @@ Bind_A_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
         lc = new LexicalClosure( len, lc );
         lc.add( arg );
         lc.add( this.optExpr_.interpret( lc ) );
-        vm.pushInvocation2( lc, this.instructions );
+        vm.pushInvocation2( lc, this.instructions_ );
     }
 };
 
@@ -11839,7 +11897,7 @@ Bind_A_Obound.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
     lc = new LexicalClosure( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_A_Obound.prototype.invoke3 = function ( vm, lc, args ) {
@@ -11900,7 +11958,7 @@ Bind_A_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
         lc = new LexicalClosure( len, lc );
         lc.add( arg );
         lc.add( this.optExpr_ );
-        vm.pushInvocation2( lc, this.instructions );
+        vm.pushInvocation2( lc, this.instructions_ );
     }
 };
 
@@ -11911,7 +11969,7 @@ Bind_A_Oliteral.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
     lc = new LexicalClosure( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
@@ -11956,7 +12014,7 @@ Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
         len++;
     lc = new LexicalClosure( len, lc );
     lc.add( arg );
-    vm.pushFrame( new BindAndRun( lc, this.instructions, this ) );
+    vm.pushFrame( new BindAndRun( lc, this.instructions_, this ) );
     vm.pushInvocation2( lc, this.optInstructions_ );
 };
 
@@ -11969,7 +12027,7 @@ Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
 //    lc.add( arg );
 //    vm.pushInvocation2( lc, this.optInstructions_ );
 //    lc.add( vm.thread() );
-//    vm.pushInvocation2( lc, this.instructions );
+//    vm.pushInvocation2( lc, this.instructions_ );
 //};
 
 Bind_A_Oother.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
@@ -11979,7 +12037,7 @@ Bind_A_Oother.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
     lc = new LexicalClosure( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_A_Oother.prototype.invoke3 = function ( vm, lc, args ) {
@@ -12022,7 +12080,7 @@ Bind_A_R.prototype.invoke3 = function ( vm, lc, args ) {
     lc = new LexicalClosure( len, lc );
     lc.add( args.car() );
     lc.add( args.cdr() );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 
@@ -12066,7 +12124,7 @@ Bind_D_A_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
         throw new TypeError();
     lc.add( destructured.car() );
     
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_D_A_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
@@ -12116,7 +12174,7 @@ Bind_D_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
         throw new TypeError();
     lc.add( destructured.car() );
     
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_D_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
@@ -12157,7 +12215,7 @@ Bind_Obound.prototype.invokeN0 = function ( vm, lc ) {
         len++;
     lc = new LexicalClosure( len, lc );
     lc.add( this.optionalExpression_.interpret( lc ) );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
@@ -12166,7 +12224,7 @@ Bind_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
         len++;
     lc = new LexicalClosure( len, lc );
     lc.add( arg );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_Obound.prototype.invoke3 = function ( vm, lc, args ) {
@@ -12227,7 +12285,7 @@ Bind_Oliteral.prototype.invokeN0 = function ( vm, lc ) {
             len++;
         lc = new LexicalClosure( len, lc );
         lc.add( this.optExpr_ );
-        vm.pushInvocation2( lc, this.instructions );
+        vm.pushInvocation2( lc, this.instructions_ );
     }
 };
 
@@ -12237,7 +12295,7 @@ Bind_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
         len++;
     lc = new LexicalClosure( len, lc );
     lc.add( arg );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
@@ -12285,7 +12343,7 @@ Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
     for ( var k in this.lexicalBindings )
         len++;
     lc = new LexicalClosure( len, lc );
-    vm.pushFrame( new BindAndRun( lc, this.instructions, this ) );
+    vm.pushFrame( new BindAndRun( lc, this.instructions_, this ) );
     vm.pushInvocation2( lc, this.optInstructions_ );
 };
 
@@ -12297,7 +12355,7 @@ Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
 //    lc = new LexicalClosure( len, lc );
 //    vm.pushInvocation2( lc, this.optInstructions_ );
 //    lc.add( vm.thread() );
-//    vm.pushInvocation2( lc, this.instructions );
+//    vm.pushInvocation2( lc, this.instructions_ );
 //};
 
 Bind_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
@@ -12306,7 +12364,7 @@ Bind_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
         len++;
     lc = new LexicalClosure( len, lc );
     lc.add( arg );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_Oother.prototype.invoke3 = function ( vm, lc, args ) {
@@ -12348,7 +12406,7 @@ Bind_R.prototype.invoke3 = function ( vm, lc, args ) {
         len++;
     lc = new LexicalClosure( len, lc );
     lc.add( args );
-    vm.pushInvocation2( lc, this.instructions );
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 
@@ -12384,11 +12442,11 @@ Stack_A.of3 = function ( parameterList, lexicalBindings, body ) {
 };
 
 Stack_A.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushInvocation3( null, this.instructions, [ arg ] );
+    vm.pushInvocation3( null, this.instructions_, [ arg ] );
 };
 
 Stack_A.prototype.invokeN1 = function ( vm, lc, arg ) {
-    vm.pushInvocation3( lc, this.instructions, [ arg ] );
+    vm.pushInvocation3( lc, this.instructions_, [ arg ] );
 };
 
 Stack_A.prototype.invoke = function ( vm, args ) {
@@ -12434,11 +12492,11 @@ Stack_A_A.of3 = function ( parameterList, lexicalBindings, body ) {
 };
 
 Stack_A_A.prototype.invokef2 = function ( vm, arg1, arg2 ) {
-    vm.pushInvocation3( null, this.instructions, [ arg1, arg2 ] );
+    vm.pushInvocation3( null, this.instructions_, [ arg1, arg2 ] );
 };
 
 Stack_A_A.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
-    vm.pushInvocation3( lc, this.instructions, [ arg, arg2 ] );
+    vm.pushInvocation3( lc, this.instructions_, [ arg, arg2 ] );
 };
 
 Stack_A_A.prototype.invoke = function ( vm, args ) {
@@ -12485,13 +12543,13 @@ Stack_A_A_A.of3 = function ( parameterList, lexicalBindings, body ) {
 
 Stack_A_A_A.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
     vm.pushInvocation3(
-        null, this.instructions, [ arg1, arg2, arg3 ] );
+        null, this.instructions_, [ arg1, arg2, arg3 ] );
 };
 
 Stack_A_A_A.prototype.invokeN3 = function (
     vm, lc, arg1, arg2, arg3 ) {
     
-    vm.pushInvocation3( lc, this.instructions, [ arg, arg2, arg3 ] );
+    vm.pushInvocation3( lc, this.instructions_, [ arg, arg2, arg3 ] );
 };
 
 Stack_A_A_A.prototype.invoke = function ( vm, args ) {
@@ -12544,14 +12602,14 @@ Stack_A_A_A_A.prototype.invokef4 = function (
     vm, arg1, arg2, arg3, arg4 ) {
     
     vm.pushInvocation3(
-        null, this.instructions, [ arg1, arg2, arg3, arg4 ] );
+        null, this.instructions_, [ arg1, arg2, arg3, arg4 ] );
 };
 
 Stack_A_A_A_A.prototype.invokeN4 = function (
     vm, lc, arg1, arg2, arg3, arg4 ) {
     
     vm.pushInvocation3(
-        lc, this.instructions, [ arg, arg2, arg3, arg4 ] );
+        lc, this.instructions_, [ arg, arg2, arg3, arg4 ] );
 };
 
 Stack_A_A_A_A.prototype.invoke = function ( vm, args ) {
@@ -12599,7 +12657,7 @@ Stack_A_A_R.of3 = function ( parameterList, lexicalBindings, body ) {
 };
 
 Stack_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
-    vm.pushInvocation3( lc, this.instructions,
+    vm.pushInvocation3( lc, this.instructions_,
         [ args.car(), args.cdr().car(), args.cdr().cdr() ] );
 };
 
@@ -12636,7 +12694,7 @@ Stack_A_R.of3 = function ( parameterList, lexicalBindings, body ) {
 };
 
 Stack_A_R.prototype.invoke3 = function ( vm, lc, args ) {
-    vm.pushInvocation3( lc, this.instructions,
+    vm.pushInvocation3( lc, this.instructions_,
         [ args.car(), args.cdr() ] );
 };
 
@@ -12673,7 +12731,7 @@ Stack_R.of3 = function ( parameterList, lexicalBindings, body ) {
 };
 
 Stack_R.prototype.invoke3 = function ( vm, lc, args ) {
-    vm.pushInvocation3( lc, this.instructions, [ args ] );
+    vm.pushInvocation3( lc, this.instructions_, [ args ] );
 };
 
 
@@ -12712,7 +12770,7 @@ Stack_D_A_A_A_A_d.of3 = function (
 };
 
 Stack_D_A_A_A_A_d.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushInvocation3( null, this.instructions, [
+    vm.pushInvocation3( null, this.instructions_, [
         arg.car(),
         arg.cdr().car(),
         arg.cdr().cdr().car(),
@@ -12721,7 +12779,7 @@ Stack_D_A_A_A_A_d.prototype.invokef1 = function ( vm, arg ) {
 };
 
 Stack_D_A_A_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
-    vm.pushInvocation3( lc, this.instructions, [
+    vm.pushInvocation3( lc, this.instructions_, [
         arg.car(),
         arg.cdr().car(),
         arg.cdr().cdr().car(),
@@ -12774,12 +12832,12 @@ Stack_D_A_A_d.of3 = function (
 };
 
 Stack_D_A_A_d.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushInvocation3( null, this.instructions,
+    vm.pushInvocation3( null, this.instructions_,
         [ arg.car(), arg.cdr().car() ] );
 };
 
 Stack_D_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
-    vm.pushInvocation3( lc, this.instructions,
+    vm.pushInvocation3( lc, this.instructions_,
         [ arg.car(), arg.cdr().car() ] );
 };
 
@@ -12854,11 +12912,11 @@ Stack_A_Oliteral.prototype.invokef1 = function ( vm, arg ) {
         this.curried.invokef1( vm, arg );
     else
         vm.pushInvocation3(
-            null, this.instructions, [ arg, this.optExpr_ ] );
+            null, this.instructions_, [ arg, this.optExpr_ ] );
 };
 
 Stack_A_Oliteral.prototype.invokef2 = function ( vm, arg1, arg2 ) {
-    vm.pushInvocation3( null, this.instructions, [ arg1, arg2 ] );
+    vm.pushInvocation3( null, this.instructions_, [ arg1, arg2 ] );
 };
 
 Stack_A_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
@@ -12866,13 +12924,13 @@ Stack_A_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
         this.curried.invokeN1( vm, lc, arg );
     else
         vm.pushInvocation3(
-            lc, this.instructions, [ arg, this.optExpr_ ] );
+            lc, this.instructions_, [ arg, this.optExpr_ ] );
 };
 
 Stack_A_Oliteral.prototype.invokeN2 = function (
     vm, lc, arg1, arg2 ) {
     
-    vm.pushInvocation3( lc, this.instructions, [ arg1, arg2 ] );
+    vm.pushInvocation3( lc, this.instructions_, [ arg1, arg2 ] );
 };
 
 Stack_A_Oliteral.prototype.invoke = function ( vm, args ) {
@@ -12957,23 +13015,23 @@ Stack_Oliteral.prototype.invokef0 = function ( vm ) {
         this.curried.invokef1( vm );
     else
         vm.pushInvocation3(
-            null, this.instructions, [ this.optExpr_ ] );
+            null, this.instructions_, [ this.optExpr_ ] );
 };
 
 Stack_Oliteral.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushInvocation3( null, this.instructions, [ arg ] );
+    vm.pushInvocation3( null, this.instructions_, [ arg ] );
 };
 
 Stack_Oliteral.prototype.invokeN0 = function ( vm, lc ) {
     if ( this.curried !== null )
         this.curried.invokeN1( vm, lc );
     else
-        vm.pushInvocation3( lc, this.instructions,
+        vm.pushInvocation3( lc, this.instructions_,
             [ this.optExpr_ ] );
 };
 
 Stack_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
-    vm.pushInvocation3( lc, this.instructions, [ arg ] );
+    vm.pushInvocation3( lc, this.instructions_, [ arg ] );
 };
 
 Stack_Oliteral.prototype.invoke = function ( vm, args ) {
@@ -13270,9 +13328,9 @@ Apply.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
 
 Apply.prototype.invoke = function ( vm, args ) {
     // PORT NOTE: This local variable didn't exist in Java.
-    var car = expression.car();
+    var car = args.car();
     // PORT NOTE: This local variable didn't exist in Java.
-    var cdr = expression.cdr();
+    var cdr = args.cdr();
     // PORT NOTE: This was a cast in Java.
     if ( !(cdr instanceof Pair) )
         throw new TypeError();
@@ -13445,7 +13503,7 @@ SSExpand.readValueObject_ = function ( symbol ) {
 SSExpand.expandExpression_ = function ( symbol ) {
     // PORT NOTE: The original version uses java.util.StringTokenizer.
     var tokens = symbol.replace( /#/g, "#h" ).replace( /%/g, "#p" ).
-        replace( /([.!])/g, "%$1%" ).split( /%*/ );
+        replace( /([.!])/g, "%$1%" ).split( /%+/ );
     var list = [];
     var wasSep = false;
     for ( var i = 0, len = tokens.length; i < len; i++ ) {
@@ -16766,7 +16824,7 @@ ReadB.prototype = new Builtin();
 ReadB.prototype.className = "ReadB";
 
 ReadB.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushFrame( new ReadbB.Go(
+    vm.pushFrame( new ReadB.Go(
         IO.chooseInputPort( arg, this ), this ) );
 };
 
@@ -16774,7 +16832,7 @@ ReadB.prototype.invokef1 = function ( vm, arg ) {
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 ReadB.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new ReadbB.Go(
+    vm.pushFrame( new ReadB.Go(
         IO.chooseInputPort( args.car(), this ), this ) );
 };
 
@@ -16824,7 +16882,7 @@ ReadC.prototype = new Builtin();
 ReadC.prototype.className = "ReadC";
 
 ReadC.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushFrame( new ReadbB.Go(
+    vm.pushFrame( new ReadC.Go(
         IO.chooseInputPort( arg, this ), this ) );
 };
 
@@ -16832,7 +16890,7 @@ ReadC.prototype.invokef1 = function ( vm, arg ) {
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 ReadC.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new ReadbB.Go(
+    vm.pushFrame( new ReadC.Go(
         IO.chooseInputPort( args.car(), this ), this ) );
 };
 
@@ -16885,7 +16943,7 @@ Sread.prototype.className = "Sread";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 Sread.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new ReadbB.Go(
+    vm.pushFrame( new Sread.Go(
         Input.cast( args.car(), this ), args.cdr().car() ) );
 };
 
@@ -17092,9 +17150,25 @@ Console.mkVisitor_ = function ( owner ) {
 Console.compileAndEvalAsync_ = function (
     vm, expression, then, opt_sync ) {
     
-    vm.pushFrame( new Console.AndEval() );
-    Compiler.compile( vm, expression, [] );
+    vm.pushFrame( new Console.CompileAndEval( expression ) );
     return vm.threadAsync( then, opt_sync );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+Console.CompileAndEval = function ( expression ) {
+    Instruction.call( this );
+    this.expression_ = expression;
+    // ASYNC PORT TODO: Come up with a better owner for this.
+    this.belongsTo(
+        ArcString.make( "Console.compileAndEvalAsync_" ) );
+};
+
+Console.CompileAndEval.prototype = new Instruction();
+Console.CompileAndEval.prototype.className = "Console.CompileAndEval";
+
+Console.CompileAndEval.prototype.operate = function ( vm ) {
+    vm.pushFrame( new Console.AndEval() );
+    Compiler.compile( vm, this.expression_, [] );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.

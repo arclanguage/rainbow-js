@@ -294,16 +294,21 @@ root.onload = function () {
 </script>
 </head>
 <body>
-<p>This page loads rainbow.js (all 537 KB!) and exposes the REPL
+<p>This page loads rainbow.js (all 539 KB!) and exposes the REPL
   below. So far, it seems that literal expressions like <code>2</code>
   and <code>#xFF</code> work, and so do quoted expressions like
-  <code>'(1 2 3)</code>. Pretty much everything else is bound to cause
-  some kind of error.</p>
-<p>Don't even try using utilities defined in arc.arc. We don't load it
-  yet!</p>
+  <code>'(1 2 3)</code>, so it's possible to test the reader and
+  writer at the very least. Also, <i>certain</i> function calls and
+  certain <code>(assign ...)</code> and <code>(fn ...)</code> forms
+  seem to work. Aside from that, beware of errors at every turn!</p>
+<p>And don't even try using utilities defined in arc.arc; we don't
+  load it yet!</p>
 <div id="repl"></div>
 <p>If you get yourself stuck inside an unclosed quote or paren, and
   you don't want to bother fixing it, try entering <code>#</code> on a
-  line all by itself. This happens to always cause a syntax error.</p>
+  line all by itself. This happens to always cause a syntax error
+  (which is actually a porting bug, caused by my misunderstanding of
+  Rainbow's parser source).</p>
+<!-- TODO: Take care of that misunderstanding. -->
 </body>
 </html>
