@@ -88,7 +88,7 @@
 //   vm/instructions/AppendAll.java
 //   vm/instructions/AppendDot.java
 //   vm/instructions/Catch.java
-//   vm/instructions/Close.java
+//   vm/instructions/Close.java (as Close_Instruction)
 //   vm/instructions/Finally.java (no code needed)
 //   vm/instructions/FinallyInvoke.java
 //   vm/instructions/FinishList.java
@@ -290,7 +290,7 @@
 // types/StringInputPort.java
 // types/StringOutputPort.java
 // functions/IO.java
-// functions/io/Close.java
+// functions/io/Close.java (as Close_Builtin)
 // functions/io/Disp.java
 // functions/io/FlushOut.java
 // functions/io/ForceClose.java
@@ -395,9 +395,12 @@ function printStackTrace( e, opt_stream ) {
 //    e.printStackTrace( opt_stream );
     opt_stream.writeString(
         "" + e + "\n" + (e.stack || e) + "\n" );
-    while ( e instanceof ArcError && (e = e.getCause()) )
+    while ( e instanceof ArcError && (e = e.getCause()) ) {
+        if ( e instanceof ArcException )
+            e = e.getOriginal();
         opt_stream.writeString(
             "Caused by: " + e + "\n" + (e.stack || e) + "\n" );
+    }
 }
 
 var classes = {};
@@ -647,12 +650,14 @@ ArcObject.prototype.invokeAndWait = function ( vm, args ) {
         args = args.cdr();
         len++;
     }
-    vm.pushA( this );
     vm.pushFrame(
         new ArcObject.ConvertError( orig, vm.getAp(), this ) );
     var i = new Invoke_N.Other( len );
     i.belongsTo( this );
     vm.pushFrame( i );
+    var i2 = new Literal( this );
+    i2.belongsTo( this );
+    vm.pushFrame( i2 );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
@@ -856,6 +861,9 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                 readChar( thenReadWhite );
         } );
     }
+    // TODO: I misinterpreted Java Rainbow's parser source and made it
+    // so that # by itself in a string is a syntax error. Figure out
+    // what the real conditions are, and fix this.
     function finishInterpolatedString( parts, then ) {
         function partsPlus( part ) {
             var lenm1 = parts.length - 1;
@@ -2159,7 +2167,7 @@ ArcCharacter.prototype.value = function () {
 };
 
 ArcCharacter.prototype.disp = function () {
-    return "" + this.value_;
+    return String.fromCharCode( this.value_ );
 };
 
 ArcCharacter.prototype.hashCode = function () {
@@ -3485,7 +3493,7 @@ Hash.prototype.toString = function () {
 Hash.prototype.toList = function () {
     var pairs = [];
     for ( var k = this.firstEntry_; k !== null; k = k.next ) {
-        var o = it.key;
+        var o = k.key;
         var keyValue =
             new Pair( o, new Pair( this.value( o ), ArcObject.NIL ) );
         pairs.push( keyValue );
@@ -4330,19 +4338,19 @@ Catch.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: rainbow.functions.Closure
 
-function Close( ifn ) {
+function Close_Instruction( ifn ) {
     Instruction.call( this );
     this.ifn_ = ifn;
 }
 
-Close.prototype = new Instruction();
-Close.prototype.className = "Close";
+Close_Instruction.prototype = new Instruction();
+Close_Instruction.prototype.className = "Close_Instruction";
 
-Close.prototype.operate = function ( vm ) {
+Close_Instruction.prototype.operate = function ( vm ) {
     vm.pushA( new Closure( this.ifn_, vm.lc() ) );
 };
 
-Close.prototype.toString = function () {
+Close_Instruction.prototype.toString = function () {
     return "(close " + this.ifn_ + ")";
 };
 
@@ -5523,12 +5531,13 @@ If_bound_bound_literal.Or.prototype.toString = function () {
 // from vm/instructions/cond/optimise/If_bound_bound_other.java
 // ===================================================================
 // Needed early: Instruction
-// Needed late: Nil BoundSymbol Cond
+// Needed late: Cond Nil BoundSymbol
 
 function If_bound_bound_other( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
     this.thenExpr_ = thenExpr;
+    this.elseInstructions_ = Cond.instructionsFor( elseExpr );
     this.elseExpr_ = elseExpr;
 }
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -5574,7 +5583,7 @@ If_bound_bound_other.prototype.toString = function () {
 If_bound_bound_other.Or = function ( a, elseExpr ) {
     Instruction.call( this );
     this.a_ = a;
-    this.elseinstructions_ = Cond.instructionsFor( elseExpr );
+    this.elseInstructions_ = Cond.instructionsFor( elseExpr );
     this.elseExpr_ = elseExpr;
 };
 
@@ -6614,7 +6623,7 @@ BoundSymbol.prototype.isSameBoundSymbol = function ( other ) {
 };
 
 BoundSymbol.prototype.nest = function ( threshold ) {
-    if ( threshold <= nesting )
+    if ( threshold <= this.nesting )
         return BoundSymbol.make(
             this.name, this.nesting + 1, this.index );
     else
@@ -6958,7 +6967,7 @@ Assignment.prototype.assigns = function ( nesting ) {
 };
 
 Assignment.prototype.hasClosures = function () {
-    return assignment.hasClosures();
+    return this.assignment.hasClosures();
 };
 
 Assignment.prototype.inline5 = function (
@@ -7315,7 +7324,7 @@ IfThen.loadHandler = function ( classname ) {
     // ClassNotFoundExceptions and NoSuchMethodExceptions.
     var C = classes[ classname ];
     if ( C === void 0 ) {
-        handlers[ classname ] = null;
+        IfThen.handlers[ classname ] = null;
         return;
     }
     var m = C.addInstructions;
@@ -7324,19 +7333,19 @@ IfThen.loadHandler = function ( classname ) {
             "couldn't find handler method " +
             "'addInstructions(List,ArcObject,ArcObject,ArcObject) " +
             "on " + classname );
-    handlers[ classname ] = m;
+    IfThen.handlers[ classname ] = m;
 };
 
 IfThen.prototype.defaultAddInstructions = function ( i, sig ) {
     this.ifExpression.addInstructions( i );
-    i.push( new Cond( this.thenExpression, next, sig ) );
+    i.push( new Cond( this.thenExpression, this.next, sig ) );
 };
 
 IfThen.prototype.reduce = function () {
     // PORT NOTE: This local variable didn't exist in Java.
     var newNext = this.next.reduce();
     // PORT NOTE: This was a cast in Java.
-    if ( !(newNext instanceof IfThen) )
+    if ( !newNext.implementsConditional )
         throw new TypeError();
     this.next = newNext;
     if ( this.ifExpression instanceof Nil ) {
@@ -7396,7 +7405,7 @@ IfThen.prototype.hasClosures = function () {
     if ( this.thenExpression instanceof InterpretedFunction )
         if ( this.thenExpression.requiresClosure() )
             return true;
-    return this.ifExpression.hasClosuers() ||
+    return this.ifExpression.hasClosures() ||
         this.thenExpression.hasClosures() ||
         this.next.hasClosures();
 };
@@ -7647,7 +7656,7 @@ Invocation.prototype.sig_ = function () {
     var p = this.parts;
     while ( !(p instanceof Nil) ) {
         s += "_";
-        s += this.sig( p.car() );
+        s += Invocation.sig( p.car() );
         p = p.cdr();
         // PORT NOTE: This was a cast in Java.
         if ( !(p instanceof Pair) )
@@ -7656,7 +7665,7 @@ Invocation.prototype.sig_ = function () {
     return s;
 };
 
-Invocation.prototype.sig = function ( o ) {
+Invocation.sig = function ( o ) {
     if ( o instanceof BoundSymbol )
         return "bound";
     else if ( o instanceof Symbol )
@@ -8439,7 +8448,7 @@ FunctionOwnershipVisitor.prototype.acceptInterpretedFunction =
     function ( o ) {
     
     o.belongsTo( this.owners_.car() );
-    this.owners_ = new Pair( o, owners );
+    this.owners_ = new Pair( o, this.owners_ );
 };
 
 FunctionOwnershipVisitor.prototype.endInterpretedFunction = function (
@@ -8511,7 +8520,7 @@ function ReferenceCounter( target ) {
 ReferenceCounter.prototype = new Visitor();
 
 ReferenceCounter.prototype.count = function () {
-    return this.referrers_.size();
+    return this.referrers_.length;
 };
 
 ReferenceCounter.prototype.acceptInterpretedFunction = function (
@@ -9399,7 +9408,7 @@ FunctionBodyBuilder.buildFunctionBody = function (
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
         throw new ArcError(
-            "Couldn't instantiate " + Cons + ": " + e, e );
+            "Couldn't instantiate " + cname + ": " + e, e );
     }
 };
 
@@ -9433,7 +9442,7 @@ FunctionBodyBuilder.buildStackFunctionBody = function (
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
         throw new ArcError(
-            "Couldn't instantiate " + Cons + ": " + e, e );
+            "Couldn't instantiate " + cname + ": " + e, e );
     }
 };
 
@@ -9460,7 +9469,7 @@ FunctionBodyBuilder.convertToStackParams = function ( ifn ) {
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
         throw new ArcError(
-            "Couldn't instantiate " + Cons + ": " + e, e );
+            "Couldn't instantiate " + cname + ": " + e, e );
     }
 };
 
@@ -9938,19 +9947,20 @@ IfBuilder.build = function ( vm, body, lexicalBindings ) {
             break;
         default:
             clause.append( new IfThen() );
-            body = body.cdr();
+            body = body.cdr().cdr();
             break;
         }
     
     body = original;
-    vm.pushFrame( new IfBuilder.Reduce() );
+    vm.pushFrame( new IfBuilder.Reduce( clause ) );
     vm.pushFrame(
         new IfBuilder.BuildIf1( clause, body, lexicalBindings ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
-IfBuilder.Reduce = function () {
+IfBuilder.Reduce = function ( clause ) {
     Instruction.call( this );
+    this.clause_ = clause;
     // ASYNC PORT TODO: Come up with a better owner for this.
     this.belongsTo( ArcString.make( "IfBuilder.build" ) );
 };
@@ -9959,7 +9969,7 @@ IfBuilder.Reduce.prototype = new Instruction();
 IfBuilder.Reduce.prototype.className = "IfBuilder.Reduce";
 
 IfBuilder.Reduce.prototype.operate = function ( vm ) {
-    vm.pushA( vm.popA().reduce() );
+    vm.pushA( this.clause_.reduce() );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
@@ -10809,8 +10819,8 @@ Evaluation.isCompose_ = function ( symbol ) {
 // Needed early: ArcObject Visitor
 // Needed late: FunctionOwnershipVisitor Nil ArcString Pair
 // FunctionBodyBuilder Literal PopArg BoundSymbol Quotation Symbol
-// ReferenceCounter ArcError Close MeasureLexicalReach LiteralObject
-// Builtin FunctionParameterListBuilder IfClause
+// ReferenceCounter ArcError Close_Instruction MeasureLexicalReach
+// LiteralObject Builtin FunctionParameterListBuilder IfClause
 
 // PORT TODO: Change all original uses of the constructor to uses of
 // InterpretedFunction.of().
@@ -11106,7 +11116,7 @@ InterpretedFunction.prototype.instructions = function () {
 
 InterpretedFunction.prototype.addInstructions = function ( i ) {
     if ( this.requiresClosure() )
-        i.push( new Close( this ) );
+        i.push( new Close_Instruction( this ) );
     else
         i.push( new Literal( this ) );
 };
@@ -11154,7 +11164,7 @@ InterpretedFunction.prototype.toString = function () {
             return "[]";
         } else {
             var s = this.body[ 0 ].toString();
-            return "[" + s.substring( s, s.length - 1 ) + "]";
+            return "[" + s.substring( 1, s.length - 1 ) + "]";
         }
     }
     return Pair.buildFrom1( [ Symbol.mkSym( "fn" ),
@@ -11182,7 +11192,7 @@ InterpretedFunction.prototype.nth = function ( index ) {
 };
 
 InterpretedFunction.prototype.last = function () {
-    return this.body[ body.length - 1 ];
+    return this.body[ this.body.length - 1 ];
 };
 
 InterpretedFunction.prototype.length = function () {
@@ -11599,7 +11609,7 @@ StackFunctionSupport.prototype.inlineableArg_ = function (
         || arg instanceof Symbol
         || (this.body.length === 1
             && this.body[ 0 ] instanceof StackSymbol
-            && p.isSameStackSymbol( body[ 0 ] )));
+            && p.isSameStackSymbol( this.body[ 0 ] )));
 };
 
 StackFunctionSupport.prototype.nests = function () {
@@ -15029,7 +15039,7 @@ MapTable.prototype.invokef2 = function ( vm, f, hash ) {
     vm.pushFrame( i );
 };
 
-MapTable.prototype.invokePair = function ( args ) {
+MapTable.prototype.invoke = function ( vm, args ) {
     Builtin.checkExactArgsCount( args, 2, this.className );
     this.invokef2( vm, args.car(), args.cdr().car() );
 };
@@ -15052,7 +15062,7 @@ Sref.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
     vm.pushA( arg1.sref( arg2, arg3 ) );
 };
 
-Sref.prototype.invokePair = function ( args ) {
+Sref.prototype.invoke = function ( vm, args ) {
     Builtin.checkExactArgsCount( args, 3, this.className );
     this.invokef3(
         vm, args.car(), args.cdr().car(), args.cdr().cdr().car() );
@@ -16045,7 +16055,7 @@ Environment.init = function () {
     new ReadB();
     new ReadC();
     new FlushOut();
-    new Close();
+    new Close_Builtin();
     new ForceClose();
     
 //    new OpenSocket();
@@ -16490,15 +16500,15 @@ IO.closeAll = function ( args ) {
 // Needed early: Builtin
 // Needed late: IO
 
-function Close() {
+function Close_Builtin() {
     Builtin.call( this );
     this.init( "close" );
 }
 
-Close.prototype = new Builtin();
-Close.prototype.className = "Close";
+Close_Builtin.prototype = new Builtin();
+Close_Builtin.prototype.className = "Close_Builtin";
 
-Close.prototype.invokePair = function ( args ) {
+Close_Builtin.prototype.invokePair = function ( args ) {
     return IO.closeAll( args );
 };
 
@@ -17084,30 +17094,41 @@ Console.interpretAllAsync_ = function (
 Console.replAsync_ = function ( vm, then, opt_sync ) {
     System_out_print( "arc> " );
     var achievedSync = true;
-    if ( !ArcParser.readObjectAsync( System_in, function (
-            e, expression ) {
-            
-            if ( e ) {
-                if ( !(e instanceof ParseException) )
-                    return void then( e );
-                printStackTrace( e );
-                if ( !Console.replAsync_( vm, then, opt_sync ) )
+    var done = false;
+    while ( !done ) {
+        if ( !ArcParser.readObjectAsync( System_in, function (
+                e, expression ) {
+                
+                if ( e ) {
+                    if ( !(e instanceof ParseException) )
+                        return void then( e );
+                    printStackTrace( e );
+                    if ( !achievedSync )
+                        Console.replAsync_( vm, then, opt_sync );
+                    return;
+                }
+                if ( expression === null ) {
+                    done = true;
+                    if ( !achievedSync )
+                        then();
+                    return;
+                }
+                if ( !Console.interpretAsync_( vm, expression,
+                        function ( e ) {
+                        
+                        if ( e ) return void then( e );
+                        if ( !achievedSync )
+                            Console.replAsync_( vm, then, opt_sync );
+                    }, opt_sync ) )
                     achievedSync = false;
-                return;
-            }
-            if ( expression === null )
-                return void then();
-            if ( !Console.interpretAsync_( vm, expression, function (
-                    e ) {
-                    
-                    if ( e ) return void then( e );
-                    if ( !Console.replAsync_( vm, then, opt_sync ) )
-                        achievedSync = false;
-                }, opt_sync ) )
-                achievedSync = false;
-        }, opt_sync ) )
-        achievedSync = false;
-    return achievedSync;
+            }, opt_sync ) )
+            achievedSync = false;
+            
+        if ( !achievedSync )
+            return false;
+    }
+    then();
+    return true;
 };
 
 Console.interpretAsync_ = function (
@@ -17198,11 +17219,11 @@ Console.AndEval.prototype.operate = function ( vm ) {
 // Needed early: Instruction
 
 // ASYNC PORT NOTE: This didn't exist in Java.
-function BindAndRun( lc, instructions, parent ) {
+function BindAndRun( lc, instructions, owner ) {
     Instruction.call( this );
     this.lc_ = lc;
     this.instructions_ = instructions;
-    this.belongsTo( parent.owner() );
+    this.belongsTo( owner );
 };
 
 BindAndRun.prototype = new Instruction();

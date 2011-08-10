@@ -65,6 +65,7 @@ arc> (call (fn ((a b c d e f)) ((fn a a) f e d c b a)) '(1 2 3 4 5 6))
 /*
 
 arc> (fn ((a b c d e f)) ((fn a a) f e d c b a))
+arc> (if)
 
 */
 

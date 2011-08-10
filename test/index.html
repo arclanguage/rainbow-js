@@ -239,13 +239,11 @@ root.onload = function () {
         root.consoleIn.o.writeString( command );
     }
     
-    function readAllConsoleInAvailable( then ) {
+    function readAllAvailable( stream, then ) {
         var chars = [];
         var error = null;
         while ( true ) {
-            if ( !root.consoleIn.i.readCharCodeAsync( function (
-                    e, c ) {
-                    
+            if ( !stream.readCharCodeAsync( function ( e, c ) {
                     if ( e )
                         error = e;
                     else
@@ -257,10 +255,12 @@ root.onload = function () {
                 return void then( error );
         }
     }
+    
     function processConsoleIn( e, c ) {
-        if ( e || c === null ) return;
-        readAllConsoleInAvailable( function ( e, string ) {
-            if ( e ) return;
+        if ( e ) throw e;
+        if ( c === null ) return;
+        readAllAvailable( root.consoleIn.i, function ( e, string ) {
+            if ( e ) throw e;
             scrollbackText.data += string;
             scrollback.scrollTop = scrollback.scrollHeight;
             root.rainbowStdin.o.writeString( string );
@@ -270,20 +270,32 @@ root.onload = function () {
     root.consoleIn.i.peekCharCodeAsync( processConsoleIn );
     
     function processStdout( e, c ) {
-        if ( e || c === null ) return;
-        scrollbackText.data += root.String.fromCharCode( c );
-        scrollback.scrollTop = scrollback.scrollHeight;
-        root.rainbowStdout.i.readCharCodeAsync( processStdout );
+        if ( e ) throw e;
+        if ( c === null ) return;
+        readAllAvailable( root.rainbowStdout.i, function (
+            e, string ) {
+            
+            if ( e ) throw e;
+            scrollbackText.data += string;
+            scrollback.scrollTop = scrollback.scrollHeight;
+            root.rainbowStdout.i.peekCharCodeAsync( processStdout );
+        } );
     }
-    root.rainbowStdout.i.readCharCodeAsync( processStdout );
+    root.rainbowStdout.i.peekCharCodeAsync( processStdout );
     
     function processStderr( e, c ) {
-        if ( e || c === null ) return;
-        scrollbackText.data += root.String.fromCharCode( c );
-        scrollback.scrollTop = scrollback.scrollHeight;
-        root.rainbowStderr.i.readCharCodeAsync( processStderr );
+        if ( e ) throw e;
+        if ( c === null ) return;
+        readAllAvailable( root.rainbowStderr.i, function (
+            e, string ) {
+            
+            if ( e ) throw e;
+            scrollbackText.data += string;
+            scrollback.scrollTop = scrollback.scrollHeight;
+            root.rainbowStderr.i.peekCharCodeAsync( processStderr );
+        } );
     }
-    root.rainbowStderr.i.readCharCodeAsync( processStderr );
+    root.rainbowStderr.i.peekCharCodeAsync( processStderr );
     
     root.Console.mainAsync( {}, function () {} );
 };
@@ -294,21 +306,14 @@ root.onload = function () {
 </script>
 </head>
 <body>
-<p>This page loads rainbow.js (all 539 KB!) and exposes the REPL
-  below. So far, it seems that literal expressions like <code>2</code>
-  and <code>#xFF</code> work, and so do quoted expressions like
-  <code>'(1 2 3)</code>, so it's possible to test the reader and
-  writer at the very least. Also, <i>certain</i> function calls and
-  certain <code>(assign ...)</code> and <code>(fn ...)</code> forms
-  seem to work. Aside from that, beware of errors at every turn!</p>
-<p>And don't even try using utilities defined in arc.arc; we don't
-  load it yet!</p>
+<p>This page loads rainbow.js (all 540 KB!) and exposes the REPL
+  below. We don't load arc.arc yet, because it doesn't all work. If
+  you paste from
+  <a href="https://github.com/conanite/rainbow/blob/92e07a98fd86f8e1985b32a7d2c265810eb76809/src/arc/arc.arc">Rainbow's
+  arc.arc source</a>, you'll probably find that it breaks when
+  defining <code>some</code>.</p>
+<p>If your results vary, it might be because I've only really been
+  testing this on Chrome.</p>
 <div id="repl"></div>
-<p>If you get yourself stuck inside an unclosed quote or paren, and
-  you don't want to bother fixing it, try entering <code>#</code> on a
-  line all by itself. This happens to always cause a syntax error
-  (which is actually a porting bug, caused by my misunderstanding of
-  Rainbow's parser source).</p>
-<!-- TODO: Take care of that misunderstanding. -->
 </body>
 </html>
