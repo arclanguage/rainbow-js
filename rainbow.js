@@ -217,6 +217,7 @@
 //   functions/eval/Eval.java
 //   functions/eval/SSExpand.java
 //   functions/eval/SSyntax.java
+// functions/java/JavaDebug.java
 // functions/lists/*
 //   functions/lists/Car.java
 //   functions/lists/Cdr.java
@@ -333,14 +334,12 @@
 //   functions/fs/MvFile.java
 //   functions/fs/OutFile.java
 //   functions/fs/RmFile.java
-// functions/java/*
-//   functions/java/JavaClass.java
-//   functions/java/JavaDebug.java
-//   functions/java/JavaImplement.java
-//   functions/java/JavaInvoke.java
-//   functions/java/JavaNew.java
-//   functions/java/JavaStaticField.java
-//   functions/java/JavaStaticInvoke.java
+// functions/java/JavaClass.java
+// functions/java/JavaImplement.java
+// functions/java/JavaInvoke.java
+// functions/java/JavaNew.java
+// functions/java/JavaStaticField.java
+// functions/java/JavaStaticInvoke.java
 // functions/network/*
 //   functions/network/ClientIp.java
 //   functions/network/Connect.java
@@ -476,7 +475,7 @@ LexicalClosure.prototype.at = function ( index ) {
 };
 
 LexicalClosure.prototype.set = function ( index, o ) {
-    return this.bindings_[ index ] = 0;
+    return this.bindings_[ index ] = o;
 };
 
 LexicalClosure.prototype.finished = function () {
@@ -11683,6 +11682,7 @@ Bind.prototype.invoke3 = function ( vm, lc, args ) {
         if ( !(notNil instanceof ArcObject.NotNil) ) throw notNil;
         throw new ArcError( "expected 0 args, got " + args );
     }
+    vm.pushInvocation2( lc, this.instructions_ );
 };
 
 
@@ -11852,28 +11852,29 @@ Bind_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/Bind_A_Obound.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: Pair Symbol LexicalClosure Nil
+// Needed late: BoundSymbol Symbol LexicalClosure Nil
 
 function Bind_A_Obound( parameterList, lexicalBindings, body ) {
     InterpretedFunction.call( this );
     this.init( parameterList, lexicalBindings, body );
     // PORT NOTE: This local variable didn't exist in Java.
-    var optExpr = nextParameter.cdr();
+    var optExpr = parameterList.cdr().car().cdr().cdr().car();
     // PORT NOTE: This was a cast in Java.
-    if ( !(optExpr instanceof Pair) )
+    if ( !(optExpr instanceof BoundSymbol) )
         throw new TypeError();
     this.optExpr_ = optExpr;
     var optParam = parameterList.cdr().car().cdr().car();
     // PORT NOTE: This was a cast in Java.
-    if ( !(optExpr instanceof Symbol) )
+    if ( !(optParam instanceof Symbol) )
         throw new TypeError();
-    if ( this.canInline( optParam, optExpr ) )
+    if ( this.canInline( optParam, this.optExpr_ ) )
         try {
             // PORT NOTE: This local variable didn't exist in Java.
-            var curried = this.curry( optParam, optExpr, false );
+            var curried =
+                this.curry( optParam, this.optExpr_, false );
             // PORT NOTE: This was a cast in Java.
             // PORT TODO: See if this can ever throw an error.
-            if ( !(optExpr instanceof InterpretedFunction) )
+            if ( !(curried instanceof InterpretedFunction) )
                 throw new TypeError();
             this.curried = curried;
         } catch ( e ) { if ( !(e instanceof Error) ) throw e;
@@ -11939,10 +11940,11 @@ function Bind_A_Oliteral(
     // PORT NOTE: This was a cast in Java.
     if ( !(optParam instanceof Symbol) )
         throw new TypeError();
-    if ( this.canInline( optParam, optExpr ) )
+    if ( this.canInline( optParam, this.optExpr_ ) )
         try {
             // PORT NOTE: This local variable didn't exist in Java.
-            var curried = this.curry( optParam, optExpr, false );
+            var curried =
+                this.curry( optParam, this.optExpr_, false );
             // PORT NOTE: This was a cast in Java.
             // PORT TODO: See if this can ever throw an error.
             if ( !(curried instanceof InterpretedFunction) )
@@ -12270,9 +12272,9 @@ function Bind_Oliteral(
     // PORT NOTE: This was a cast in Java.
     if ( !(optParam instanceof Symbol) )
         throw new TypeError();
-    if ( this.canInline( optParam, optExpr ) ) {
+    if ( this.canInline( optParam, this.optExpr_ ) ) {
         // PORT NOTE: This local variable didn't exist in Java.
-        var curried = this.curry( optParam, optExpr, false );
+        var curried = this.curry( optParam, this.optExpr_, false );
         // PORT NOTE: This was a cast in Java.
         // PORT TODO: See if this can ever throw an error.
         if ( !(curried instanceof InterpretedFunction) )
@@ -12506,7 +12508,7 @@ Stack_A_A.prototype.invokef2 = function ( vm, arg1, arg2 ) {
 };
 
 Stack_A_A.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
-    vm.pushInvocation3( lc, this.instructions_, [ arg, arg2 ] );
+    vm.pushInvocation3( lc, this.instructions_, [ arg1, arg2 ] );
 };
 
 Stack_A_A.prototype.invoke = function ( vm, args ) {
@@ -12559,7 +12561,8 @@ Stack_A_A_A.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
 Stack_A_A_A.prototype.invokeN3 = function (
     vm, lc, arg1, arg2, arg3 ) {
     
-    vm.pushInvocation3( lc, this.instructions_, [ arg, arg2, arg3 ] );
+    vm.pushInvocation3(
+        lc, this.instructions_, [ arg1, arg2, arg3 ] );
 };
 
 Stack_A_A_A.prototype.invoke = function ( vm, args ) {
@@ -12619,7 +12622,7 @@ Stack_A_A_A_A.prototype.invokeN4 = function (
     vm, lc, arg1, arg2, arg3, arg4 ) {
     
     vm.pushInvocation3(
-        lc, this.instructions_, [ arg, arg2, arg3, arg4 ] );
+        lc, this.instructions_, [ arg1, arg2, arg3, arg4 ] );
 };
 
 Stack_A_A_A_A.prototype.invoke = function ( vm, args ) {
@@ -12883,8 +12886,9 @@ Stack_A_Oliteral.prototype.className = "Stack_A_Oliteral";
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
 Stack_A_Oliteral.of1 = function ( original ) {
-    var result = Stack_A_Oliteral.of3( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+    var result = new Stack_A_Oliteral().initStackFunctionSupport(
+        original.parameterList(), original.lexicalBindings,
+        StackFunctionSupport.convertBody(
             original.lexicalBindings, original.body ) );
     result.optExpr_ =
         result.parameterList_.cdr().car().cdr().cdr().car();
@@ -12892,14 +12896,15 @@ Stack_A_Oliteral.of1 = function ( original ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(optParam instanceof Symbol) )
         throw new TypeError();
-    if ( this.canInline( optParam, result.optExpr_ ) ) {
+    if ( result.canInline( optParam, result.optExpr_ ) ) {
         // PORT NOTE: This local variable didn't exist in Java.
-        var curried = this.curry( optParam, optExpr, false );
+        var curried =
+            result.curry( optParam, result.optExpr_, false );
         // PORT NOTE: This was a cast in Java.
         // PORT TODO: See if this can ever throw an error.
         if ( !(curried instanceof InterpretedFunction) )
             throw new TypeError();
-        this.curried = curried;
+        result.curried = curried;
     }
     return result;
 };
@@ -12988,8 +12993,9 @@ Stack_Oliteral.prototype.className = "Stack_Oliteral";
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
 Stack_Oliteral.of1 = function ( original ) {
-    var result = Stack_Oliteral.of3( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+    var result = new Stack_Oliteral().initStackFunctionSupport(
+        original.parameterList(), original.lexicalBindings,
+        StackFunctionSupport.convertBody(
             original.lexicalBindings, original.body ) );
     result.optExpr_ =
         result.parameterList_.car().cdr().cdr().car();
@@ -12997,14 +13003,15 @@ Stack_Oliteral.of1 = function ( original ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(optParam instanceof Symbol) )
         throw new TypeError();
-    if ( this.canInline( optParam, result.optExpr_ ) ) {
+    if ( result.canInline( optParam, result.optExpr_ ) ) {
         // PORT NOTE: This local variable didn't exist in Java.
-        var curried = this.curry( optParam, optExpr, false );
+        var curried =
+            result.curry( optParam, result.optExpr_, false );
         // PORT NOTE: This was a cast in Java.
         // PORT TODO: See if this can ever throw an error.
         if ( !(curried instanceof InterpretedFunction) )
             throw new TypeError();
-        this.curried = curried;
+        result.curried = curried;
     }
     return result;
 };
@@ -13585,6 +13592,24 @@ SSyntax.isSpecial = function ( symbol ) {
     return (Evaluation.isComposeComplement( symbol.name() )
         || Evaluation.isAndf( symbol.name() )
         || Evaluation.isListListQuoted( symbol.name() ));
+};
+
+
+// ===================================================================
+// from functions/java/JavaDebug.java
+// ===================================================================
+// Needed early: Builtin
+
+function JavaDebug() {
+    Builtin.call( this );
+    this.init( "java-debug" );
+}
+
+JavaDebug.prototype = new Builtin();
+JavaDebug.prototype.className = "JavaDebug";
+
+JavaDebug.prototype.invokePair = function ( args ) {
+    return args.car();
 };
 
 
@@ -15987,7 +16012,7 @@ Environment.init = function () {
 //    new JavaInvoke();
 //    new JavaStaticInvoke();
 //    new JavaStaticField();
-//    new JavaDebug();
+    new JavaDebug();
 //    new JavaImplement();
     
     // threading

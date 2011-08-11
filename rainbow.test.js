@@ -65,15 +65,27 @@ arc> (call (fn ((a b c d e f)) ((fn a a) f e d c b a)) '(1 2 3 4 5 6))
 /*
 
 arc> (fn ((a b c d e f)) ((fn a a) f e d c b a))
+arc> (fn a ((fn a)))
 arc> (if)
 
 */
 
-// TODO:
+// TODO: Fix the following.
 
 /*
 
-arc> (fn a ((fn a)))
+// This one might be confusing since it involves at least two other
+// errors. First of all, it's supposed to result in an error since
+// the argument list is the wrong size and 1 can't be destructured as
+// a pair. Secondly, it falls into the same
+// lambda-in-functional-position-in-another-lambda corner case as
+// (fn a ((fn a))) above, so there's an error in Java Rainbow. If we
+// replace (fn a a) with 'list, we get the correct error, but if we
+// leave it this way, we instead get an apparently infinite loop.
+// Maybe an error occurs during the process of stringifying the
+// function to generate the error message.
+arc> ((fn ((a b c d e f)) ((fn a a) f e d c b a)) 1 2 3 4 5 6)
+
 arc> (call (fn ((a b c d e f)) ((fn a a) f e d c b a)) 1 2 3 4 5 6)
 
 */

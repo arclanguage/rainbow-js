@@ -306,14 +306,45 @@ root.onload = function () {
 </script>
 </head>
 <body>
-<p>This page loads rainbow.js (all 540 KB!) and exposes the REPL
-  below. We don't load arc.arc yet, because it doesn't all work. If
-  you paste from
-  <a href="https://github.com/conanite/rainbow/blob/92e07a98fd86f8e1985b32a7d2c265810eb76809/src/arc/arc.arc">Rainbow's
-  arc.arc source</a>, you'll probably find that it breaks when
-  defining <code>some</code>.</p>
-<p>If your results vary, it might be because I've only really been
-  testing this on Chrome.</p>
+<p>This page loads rainbow.js (all 541 KB!) and exposes the REPL
+  below. We don't load arc.arc automatically yet, but it does load
+  without errors--which says little about whether the arc.arc
+  utilities will actually behave as intended when they're called.</p>
+<p>Actually, if you you paste from <a href=
+  "https://github.com/conanite/rainbow/blob/92e07a98fd86f8e1985b32a7d2c265810eb76809/src/arc/arc.arc"
+  >Java Rainbow's arc.arc source</a> yourself, you'll probably find
+  that Rainbow.js encounters a stack overflow error. At this point
+  it's necessary to enter it in more bite-size pieces. Right now you
+  can accomplish this by pasting all of arc.arc into the input box,
+  then entering the following code into a <i>JavaScript</i> console
+  (not the Arc console!) to have it entered one line at a time:</p>
+<pre>
+var arcArc = document.getElementsByTagName( "textarea" )[ 0 ].
+    value.split( "\n" );
+function readRest() {
+    if ( arcArc.length === 0 ) return;
+    consoleIn.o.writeString( arcArc.shift() + "\n" );
+    setTimeout( readRest, 0 );
+}
+readRest();
+</pre>
+<p>I've tested this in Chrome and Firefox so far.</p>
 <div id="repl"></div>
+<p>P.S.: Curious about what this stack overflow issue is? Well, I've
+  set things up so that Rainbow.js takes its input asynchronously only
+  when it's impossible to get the input right away. (It can get the
+  input right away when it's been buffered, for instance.) This makes
+  it possible to evaluate noninteractive Arc code from JavaScript
+  synchronously, which is particularly important for a JavaScript
+  toString() method. The problem is that this synchronous behavior is
+  still based on calling CPS callbacks--namely, the same callbacks
+  that are used for asynchronous results. All the callbacks within
+  callbacks end up accumulating on the stack, and at some point it's
+  too much.</p>
+<p>Since this is now the main issue in the way of getting Rainbow.js
+  to load arc.arc, it's next on my plate.</p>
+<!-- TODO: Address that issue. In the most bottlenecked parts of the
+  code, resort to switch statements or duplicated response-handling
+  code. -->
 </body>
 </html>
