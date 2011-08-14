@@ -14408,7 +14408,7 @@ Maths.Anon_rationalOps_.prototype.divide = function ( args ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(cdr2 instanceof Pair) )
         throw new TypeError();
-    return first.times( this.multiply( cdr ).invert() );
+    return first.times( this.multiply( cdr2 ).invert() );
 };
 
 Maths.rationalOps_ = new Maths.Anon_rationalOps_();
