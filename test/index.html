@@ -26,6 +26,10 @@ for Arc.
 <meta name="viewport" content=
    "initial-scale = 1.0, maximum-scale = 1.0, width = device-width" />
 <style type="text/css">
+html { font-family: sans-serif; }
+
+body > pre { margin-left: 2em; }
+
 #repl .scrollback {
     display: block;
     width: 95%;
@@ -199,7 +203,24 @@ root.System_err = root.rainbowStderr.o;
 
 var root = window;
 
-// TODO: Turn this into a REPL rather than just an RPL.
+function handle( el, eventName, handler ) {
+    if ( el.addEventListener )
+        el.addEventListener( eventName, handler, !"capture" );
+    else  // IE
+        el.attachEvent( "on" + eventName, handler );
+}
+
+function keyCode( event ) {
+    return event.which ||
+        event.keyCode;  // IE
+}
+
+function preventDefault( event ) {
+    if ( event.preventDefault )
+        event.preventDefault();
+    else
+        event.returnValue = false;  // IE
+}
 
 root.onload = function () {
     
@@ -215,22 +236,22 @@ root.onload = function () {
     
     var prompt = root.document.createElement( "textarea" );
     prompt.className = "prompt";
-    prompt.addEventListener( "keydown", function ( event ) {
-        if ( event.which === ENTER_KEY )
-            event.preventDefault();
-    }, !"capture" );
-    prompt.addEventListener( "keyup", function ( event ) {
-        if ( event.which === ENTER_KEY )
+    handle( prompt, "keydown", function ( event ) {
+        if ( keyCode( event ) === ENTER_KEY )
+            preventDefault( event );
+    } );
+    handle( prompt, "keyup", function ( event ) {
+        if ( keyCode( event ) === ENTER_KEY )
             doEval();
-    }, !"capture" );
+    } );
     repl.appendChild( prompt );
     
     var evalButton = root.document.createElement( "button" );
     evalButton.className = "eval";
     evalButton.appendChild( root.document.createTextNode( "Eval" ) );
-    evalButton.addEventListener( "click", function ( event ) {
+    handle( evalButton, "click", function ( event ) {
         doEval();
-    }, !"capture" );
+    } );
     repl.appendChild( evalButton );
     
     function doEval() {
@@ -306,15 +327,37 @@ root.onload = function () {
 </script>
 </head>
 <body>
-<p>This page loads rainbow.js (all 541 KB!) and exposes the REPL
+<p>This page loads rainbow.js (all 547 KB!) and exposes the REPL
   below. We don't load arc.arc automatically yet, but you can load it
   yourself by just copying <a href=
   "https://github.com/conanite/rainbow/blob/92e07a98fd86f8e1985b32a7d2c265810eb76809/src/arc/arc.arc"
   >Java Rainbow's arc.arc source</a> and pasting it all into the
-  REPL. It loads without errors, but that says little about whether
-  the utilities will actually behave as intended when they're
-  called.</p>
-<p>I've tested this in Chrome and Firefox so far.</p>
+  REPL. Although arc.arc will load, the utilities may not actually
+  work when they're called. For instance, Rainbow.js doesn't implement
+  file operations at all, so even though arc.arc defines
+  <code>load</code>, it won't do us much good!</p>
+<p>I've tested this in Chrome, Opera, Firefox, and IE. To
+  compare them a bit, I pasted arc.arc surrounded by the following
+  code...</p>
+<pre>
+(assign starttime (msec))
+
+...
+
+(- (msec) starttime)
+</pre>
+<p>...and got these results:</p>
+<ul>
+  <li>Chrome 13.0.782.112 m: <b>8614 ms</b></li>
+  <li>Opera 11.50: <b>15059 ms</b></li>
+  <li>Firefox 5.0: <b>17463 ms</b></li>
+  <li>Internet Explorer 8.0.6001.18702: <b>106719 ms</b> (but this
+    includes the time it took for me to dismiss four "Stop running
+    this script?" dialogs)</li>
+</ul>
+<p>I was running all four browsers at the same time, so it was a
+  pretty casual test. But hey, at least I wasn't <i>testing</i> them
+  all at the same time. ^_^</p>
 <div id="repl"></div>
 </body>
 </html>

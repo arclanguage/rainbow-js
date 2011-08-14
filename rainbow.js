@@ -3047,7 +3047,7 @@ Rational.prototype.plus = function ( other ) {
 };
 
 Rational.prototype.negate = function () {
-    return Rational.make2( -this.numerator_, this.denominator );
+    return Rational.make2( -this.numerator_, this.denominator_ );
 };
 
 Rational.prototype.invert = function () {
@@ -11854,7 +11854,7 @@ Bind_A.prototype.invokeN1 = function ( vm, lc, arg ) {
 
 Bind_A.prototype.invoke3 = function ( vm, lc, args ) {
     if ( args instanceof Nil )
-        invokeN0( vm, lc );
+        this.invokeN0( vm, lc );
     try {
         args.cdr().mustBeNil();
     } catch ( notNil ) {
@@ -14364,7 +14364,7 @@ Maths.Anon_rationalOps_.prototype = new Maths.MathsOps();
 
 Maths.Anon_rationalOps_.prototype.sum = function ( args ) {
     if ( args instanceof Nil ) {
-        return Complex.ZERO;
+        return Rational.ZERO;
     } else {
         var r = args.car();
         // PORT NOTE: This was a cast in Java.
@@ -14621,7 +14621,7 @@ Sqrt.prototype.invoke = function ( vm, args ) {
 // from functions/maths/Subtract.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: ArcError ArcNumber Add Pair
+// Needed late: ArcError ArcNumber Pair Nil Add
 
 function Subtract() {
     Builtin.call( this );
@@ -14661,7 +14661,7 @@ Subtract.prototype.invokePair = function ( args ) {
     var first = car.negate();
     var rest = args.cdr();
     // PORT NOTE: This was a cast in Java.
-    if ( !(car instanceof Pair) )
+    if ( !(rest instanceof Pair) )
         throw new TypeError();
     
     if ( rest instanceof Nil )

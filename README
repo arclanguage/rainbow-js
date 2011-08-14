@@ -2,8 +2,11 @@
                               ==========
 
 This is a port of Conan Dalton's Rainbow, a Java implementation of
-Arc, to JavaScript. It's almost completely untested at the moment, so
-don't expect to use it for much! Of course, bug fixes are welcome. ^_^
+Arc, to JavaScript. It hasn't been used for any real applications yet,
+but it's at the stage where it seems to be working under the test
+cases it's been given. If you write an application that uses it,
+you're likely to stumble across a few simple-to-fix bugs here and
+there. Bug reports and bug fixes are both welcome. ^_^
 
 As a JavaScript program, this is *really freaking big*. It's over
 10000 lines of code. It also happens to break
@@ -12,9 +15,14 @@ leaving it unminified at over half a megabyte. But don't worry,
 building this codebase involved a lot of copying and pasting, copying
 and pasting. ^_-
 
-For any other JavaScript project, I'd have used a bunch of
-higher-order abstractions or even a macro system (and I've already
-made those things, as you can see at
+Now that you know how big it is, if you're willing to load it all in
+your browser, you can play around with the REPL here:
+
+  http://rocketnia.github.com/rainbow-js/test/
+
+For any other JavaScript project, I'd have combatted the size of the
+program using a bunch of higher-order functions or even a macro system
+(and I've already made those things, as you can see at
 https://github.com/rocketnia/lathe). However, the main goal of this
 particular project is to have the code be as similar to the original
 code as reasonably possible, so that any given bug fix or enhancement
@@ -24,9 +32,9 @@ more faithful to Rainbow than to Arc.
 
 A secondary goal of this project is to be performant. Rainbow is the
 fastest faithful Arc implementation, as far as I'm concerned, so it's
-worth maintaining that where possible. As such, I didn't resort to
-higher-order functions like Array.prototype.forEach just for the sake
-of convenience.
+worth maintaining that where possible. As such, even if I had the
+option to use some higher-order function like Array.prototype.forEach,
+I went with a more direct style.
 
 A *tertiary* goal of this project is to be compatible with lots of
 browsers, and also with ECMAScript 5's strict mode and the Closure
