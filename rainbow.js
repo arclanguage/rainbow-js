@@ -2406,7 +2406,7 @@ ArcCharacter.named_ = [
 // from types/ArcString.java
 // ===================================================================
 // Needed early: LiteralObject Symbol
-// Needed late: Builtin Rational ArcError ArcCharacter Typing Coercion
+// Needed late: Builtin Rational ArcError ArcCharacter Typing
 
 function ArcString( value ) {
     LiteralObject.call( this );
@@ -2542,14 +2542,14 @@ ArcString.prototype.add = function ( other ) {
         if ( !(otherType instanceof Symbol) )
             throw new TypeError();
         // PORT NOTE: This local variable didn't exist in Java.
-        var coercion = Typing.STRING.getCoercion( otherTpe );
+        var coercion = Typing.STRING.getCoercion( otherType );
         // PORT NOTE: This was a cast in Java.
         // PORT TODO: See if this is guaranteed to be a Coercion
         // already.
-        if ( !(coercion instanceof Coercion) )
+        if ( !(coercion instanceof Typing.Coercion) )
             throw new TypeError();
         // PORT NOTE: This local variable didn't exist in Java.
-        var asString = coercion.coerce( other );
+        var asString = coercion.coerce1( other );
         // PORT NOTE: This was a cast in Java.
         if ( !(asString instanceof ArcString) )
             throw new TypeError();
@@ -2668,6 +2668,45 @@ ArcNumber.prototype.round = void 0;
 ArcNumber.prototype.roundJava = function () {
     throw new ArcError(
         "round[closest] not implemented for " +
+        this.className + "(" + this + ")" );
+};
+
+ArcNumber.prototype.literal = function () {
+    return true;
+};
+
+ArcNumber.prototype.compareTo = function ( right ) {
+    // PORT NOTE: This was a cast in Java.
+    if ( !(right instanceof ArcNumber) )
+        throw new TypeError();
+    var comparison = right.toDouble() - this.toDouble();
+    return comparison < 0 ? 1 : comparison === 0 ? 0 : -1;
+};
+
+ArcNumber.prototype.type = function () {
+    return this.isInteger() ? ArcNumber.INT_TYPE : ArcNumber.NUM_TYPE;
+};
+
+ArcNumber.prototype.isSame = function ( other ) {
+    return this.equals( other );
+};
+
+ArcNumber.cast = function ( argument, caller ) {
+    try {
+        // PORT NOTE: This was a cast in Java.
+        if ( !(argument instanceof ArcNumber) )
+            throw new TypeError();
+        return argument;
+    } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
+        throw new ArcError(
+            "Wrong argument type: " + caller + " expected a " +
+            "number, got " + argument );
+    }
+};
+
+ArcNumber.prototype.mod = function ( other ) {
+    throw new ArcError(
+        "mod: not implemented for " +
         this.className + "(" + this + ")" );
 };
 
@@ -3658,11 +3697,13 @@ Hash.prototype.sref = function ( value, key ) {
         }
         if ( entry === null ) {
             var prev = this.lastEntry_;
-            entry =
+            this.lastEntry_ =
                 { key: key, value: value, prev: prev, next: null };
             if ( prev === null )
-                this.firstEntry_ = this.lastEntry_ = entry;
-            list.push( entry );
+                this.firstEntry_ = this.lastEntry_;
+            else
+                prev.next = this.lastEntry_;
+            list.push( this.lastEntry_ );
             this.len_++;
         } else {
             entry.value = value;
@@ -6083,7 +6124,7 @@ If_stack_literal_free.prototype = new Instruction();
 If_stack_literal_free.prototype.className = "If_stack_literal_free";
 
 If_stack_literal_free.prototype.operate = function ( vm ) {
-    if ( ifExpr.get( vm ) instanceof Nil )
+    if ( this.ifExpr_.get( vm ) instanceof Nil )
         vm.pushA( this.elseExpr_.value() );
     else
         vm.pushA( this.thenExpr_ );
@@ -11941,7 +11982,7 @@ Bind_A_A_A.prototype.invokeN3 = function (
 };
 
 Bind_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
-    this.requireNil( args.cdr.cdr.cdr(), args );
+    this.requireNil( args.cdr().cdr().cdr(), args );
     this.invokeN3( vm, lc,
         args.car(), args.cdr().car(), args.cdr().cdr().car() );
 };
@@ -12260,13 +12301,13 @@ Bind_D_A_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
         throw new TypeError();
     lc.add( destructured.car() );
     
-    destructured = arg;
+    destructured = destructured.cdr();
     // PORT NOTE: This was a cast in Java.
     if ( !(destructured instanceof Pair) )
         throw new TypeError();
     lc.add( destructured.car() );
     
-    destructured = arg;
+    destructured = destructured.cdr();
     // PORT NOTE: This was a cast in Java.
     if ( !(destructured instanceof Pair) )
         throw new TypeError();
@@ -12316,7 +12357,7 @@ Bind_D_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
         throw new TypeError();
     lc.add( destructured.car() );
     
-    destructured = arg;
+    destructured = destructured.cdr();
     // PORT NOTE: This was a cast in Java.
     if ( !(destructured instanceof Pair) )
         throw new TypeError();
@@ -15304,7 +15345,7 @@ AtomicInvoke.ReleaseLock.prototype.className =
 
 AtomicInvoke.ReleaseLock.prototype.operate = function ( vm ) {
     AtomicInvoke.entryCount_--;
-    if ( entryCount === 0 )
+    if ( AtomicInvoke.entryCount_ === 0 )
         AtomicInvoke.owner_ = null;
 };
 
@@ -15634,7 +15675,7 @@ function Coerce() {
 Coerce.prototype = new Builtin();
 Coerce.prototype.className = "Coerce";
 
-Coerce.prototype.invokef1 = function ( vm, arg, toType ) {
+Coerce.prototype.invokef2 = function ( vm, arg, toType ) {
     var fromType = arg.type();
     if ( fromType === toType ) {
         vm.pushA( arg );
@@ -16958,7 +16999,7 @@ CallWStdIn.prototype.invoke = function ( vm, args ) {
 // from functions/io/CallWStdOut.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: SetThreadLocal IO Input ArcObject
+// Needed late: SetThreadLocal IO Output ArcObject
 
 function CallWStdOut() {
     Builtin.call( this );
@@ -16972,7 +17013,7 @@ CallWStdOut.prototype.invoke = function ( vm, args ) {
     var i = new SetThreadLocal( IO.stdOut_, IO.stdOut() );
     i.belongsTo( this );
     vm.pushFrame( i );
-    IO.stdOut_.value = Input.cast( args.car(), this );
+    IO.stdOut_.value = Output.cast( args.car(), this );
     args.cdr().car().invoke( vm, ArcObject.NIL );
 };
 
