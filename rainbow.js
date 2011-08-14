@@ -808,57 +808,87 @@ ArcParser.readFirstObjectFromString = function ( s ) {
 };
 
 ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
-    var allSync = true;
     function peekChar( then ) {
-        if ( !input.peekCharCodeAsync( function ( e, charCode ) {
-                if ( e ) return void then( e );
-                then( null, charCode === null ?
-                    null : String.fromCharCode( charCode ) );
-            }, opt_sync ) )
-            allSync = false;
+        return input.peekCharCodeAsync( function (
+            e, charCode ) {
+            
+            if ( e ) return void then( e );
+            then( null, charCode === null ?
+                null : String.fromCharCode( charCode ) );
+        }, opt_sync );
     }
     function readChar( then ) {
-        if ( !input.readCharCodeAsync( function ( e, charCode ) {
-                if ( e ) return void then( e );
-                then( null, charCode === null ?
-                    null : String.fromCharCode( charCode ) );
-            } ) )
-            allSync = false;
+        return input.readCharCodeAsync( function (
+            e, charCode ) {
+            
+            if ( e ) return void then( e );
+            then( null, charCode === null ?
+                null : String.fromCharCode( charCode ) );
+        } );
     }
     function finishComment( then ) {
-        readChar( function ( e, c ) {
-            if ( e ) return void then( e );
-            if ( c === null || c === "\n" )
-                then( null );
-            else if ( c === "\r" )
-                peekChar( function ( e, c2 ) {
+        var thisSync = true;
+        var done = false;
+        while ( thisSync && !done ) {
+            done = true;
+            if ( !readChar( function ( e, c ) {
                     if ( e ) return void then( e );
-                    if ( c2 === "\n" )
-                        readChar( function ( e, c2 ) {
-                            if ( e ) return void then( e );
-                            then( null );
-                        } );
-                    else
+                    if ( c === null || c === "\n" ) {
                         then( null );
-                } );
-            else
-                finishComment( then );
-        } );
+                    } else if ( c === "\r" ) {
+                        if ( !peekChar( function ( e, c2 ) {
+                                if ( e ) return void then( e );
+                                if ( c2 === "\n" ) {
+                                    if ( !readChar( function (
+                                            e, c2 ) {
+                                            
+                                            if ( e )
+                                                return void then( e );
+                                            then( null );
+                                        } ) )
+                                        thisSync = false;
+                                } else {
+                                    then( null );
+                                }
+                            } ) )
+                            thisSync = false;
+                    } else {
+                        done = false;
+                        if ( !thisSync )
+                            finishComment( then );
+                    }
+                } ) )
+                thisSync = false;
+        }
+        return thisSync;
     }
     function readWhite( then ) {
-        peekChar( function ( e, c ) {
-            if ( e ) return void then( e );
-            function thenReadWhite( e, opt_c ) {
-                if ( e ) return void then( e );
-                readWhite( then );
-            }
-            if ( c === ";" )
-                finishComment( thenReadWhite );
-            else if ( c === null || /[^ \t\r\n]/.test( c ) )
-                then( null );
-            else
-                readChar( thenReadWhite );
-        } );
+        var thisSync = true;
+        var done = false;
+        while ( thisSync && !done ) {
+            done = true;
+            if ( !peekChar( function ( e, c ) {
+                    if ( e ) return void then( e );
+                    function thenReadWhite( e, opt_c ) {
+                        if ( e ) return void then( e );
+                        done = false;
+                        if ( !thisSync )
+                            readWhite( then );
+                    }
+                    if ( c === ";" ) {
+                        if ( !finishComment( thenReadWhite ) )
+                            thisSync = false;
+                    } else if ( c === null
+                        || /[^ \t\r\n]/.test( c ) ) {
+                        then( null );
+                    } else {
+                        if ( !readChar( thenReadWhite ) )
+                            thisSync = false;
+                    }
+                } ) )
+                thisSync = false;
+        }
+        return thisSync;
     }
     // TODO: I misinterpreted Java Rainbow's parser source and made it
     // so that # by itself in a string is a syntax error. Figure out
@@ -875,335 +905,441 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                     parts.concat( [ ArcString.make( part ) ] ) :
                     parts.concat( [ part ] );
         }
+        var thisSync = true;
+        var done = false;
         function y( c ) {
-            finishInterpolatedString( partsPlus( c ), then );
+            parts = partsPlus( c );
+            done = false;
+            if ( !thisSync )
+                finishInterpolatedString( parts, then );
         }
-        readChar( function ( e, c ) {
-            if ( e ) return void then( e );
-            if ( c === null )
-                then( new ParseException() );
-            else if ( c === "\"" )
-                then( null, parts );
-            else if ( c === "\\" )
-                readChar( function ( e, c2 ) {
-                    if ( e ) return void then( e );
-                    if ( c2 === "\"" )
-                        y( "\"" );
-                    else if ( c2 === "\\" )
-                        y( "\\" );
-                    else if ( c2 === "n" )
-                        y( "\n" );
-                    else if ( c2 === "r" )
-                        y( "\r" );
-                    else if ( c2 === "t" )
-                        y( "\t" );
-                    else if ( c2 === "#" )
-                        readChar( function ( e, c3 ) {
-                            if ( e ) return void then( e );
-                            if ( c2 === "(" )
-                                y( "#(" );
-                            else
-                                then( new ParseException() );
-                        } );
-                    else
-                        then( new ParseException() );
-                } );
-            else if ( c === "#" )
-                readChar( function ( e, c2 ) {
-                    if ( e ) return void then( e );
-                    if ( c2 === "\"" )
-                        then( null, partsPlus( "#" ) );
-                    else if ( c2 === "(" )
-                        readObject( function ( e, o ) {
-                            if ( e ) return void then( e );
-                            readWhite( function ( e ) {
-                                if ( e ) return void then( e );
-                                readChar( function ( e, c3 ) {
-                                    if ( e ) return void then( e );
+        function err( opt_error ) {
+            if ( opt_error === void 0 )
+                opt_error = new ParseException();
+            then( opt_error );
+        }
+        function finishInterpolation() {
+            if ( !readObject( function ( e, o ) {
+                    if ( e ) return err( e );
+                    if ( !readWhite( function ( e ) {
+                            if ( e ) return err( e );
+                            if ( !readChar( function ( e, c3 ) {
+                                    if ( e ) return err( e );
                                     if ( c3 === ")" )
                                         y( o );
                                     else
-                                        then( new ParseException() );
-                                } );
-                            } );
-                        } );
-                    else
-                        then( new ParseException() );
-                } );
-            else
-                y( c );
-        } );
+                                        err();
+                                } ) )
+                                thisSync = false;
+                        } ) )
+                        thisSync = false;
+                } ) )
+                thisSync = false;
+        }
+        while ( thisSync && !done ) {
+            done = true;
+            if ( !readChar( function ( e, c ) {
+                    if ( e ) return err( e );
+                    if ( c === null ) {
+                        err();
+                    } else if ( c === "\"" ) {
+                        then( null, parts );
+                    } else if ( c === "\\" ) {
+                        if ( !readChar( function ( e, c2 ) {
+                                if ( e ) return err( e );
+                                if ( c2 === "\"" ) {
+                                    y( "\"" );
+                                } else if ( c2 === "\\" ) {
+                                    y( "\\" );
+                                } else if ( c2 === "n" ) {
+                                    y( "\n" );
+                                } else if ( c2 === "r" ) {
+                                    y( "\r" );
+                                } else if ( c2 === "t" ) {
+                                    y( "\t" );
+                                } else if ( c2 === "#" ) {
+                                    if ( !readChar( function (
+                                            e, c3 ) {
+                                            
+                                            if ( e ) return err( e );
+                                            if ( c2 === "(" )
+                                                y( "#(" );
+                                            else
+                                                err();
+                                        } ) )
+                                        thisSync = false;
+                                } else {
+                                    err();
+                                }
+                            } ) )
+                            thisSync = false;
+                    } else if ( c === "#" ) {
+                        if ( !readChar( function ( e, c2 ) {
+                                if ( e ) return err( e );
+                                if ( c2 === "\"" )
+                                    then( null, partsPlus( "#" ) );
+                                else if ( c2 === "(" )
+                                    finishInterpolation();
+                                else
+                                    err();
+                            } ) )
+                            thisSync = false;
+                    } else {
+                        y( c );
+                    }
+                } ) )
+                thisSync = false;
+        }
+        return thisSync;
     }
     function finishNamedCharacter( soFar, then ) {
-        peekChar( function ( e, c ) {
-            if ( e ) return void then( e );
-            if ( c === null || /[^01-9a-zA-Z]/.test( c ) ) {
-                function code( code ) {
-                    then(
-                        null, ArcCharacter.makeFromCharCode( code ) );
-                }
-                if ( soFar === "newline" )
-                    code( "\n".charCodeAt( 0 ) );
-                else if ( soFar === "tab" )
-                    code( "\t".charCodeAt( 0 ) );
-                else if ( soFar === "space" )
-                    code( " ".charCodeAt( 0 ) );
-                else if ( soFar === "return" )
-                    code( "\r".charCodeAt( 0 ) );
-                else if ( soFar === "null" )
-                    code( "\0".charCodeAt( 0 ) );
-                else if ( /^[01-9][01-9]+$/.test( soFar ) )
-                    code( parseInt( soFar, 10 ) );
-                else if ( /^u[0-9a-f]+$/i.test( soFar ) )
-                    code( parseInt( soFar.substring( 1 ), 16 ) );
-                else if ( soFar.length === 1 )
-                    code( soFar.charCodeAt( 0 ) );
-                else
-                    then( new ParseException() );
-            } else {
-                readChar( function ( e, c ) {
+        var thisSync = true;
+        var done = false;
+        function code( code ) {
+            then( null, ArcCharacter.makeFromCharCode( code ) );
+        }
+        while ( thisSync && !done ) {
+            done = true;
+            if ( !peekChar( function ( e, c ) {
                     if ( e ) return void then( e );
-                    finishNamedCharacter( soFar + c, then );
-                } );
-            }
-        } );
-    }
-    function finishHexInteger( soFar, then ) {
-        peekChar( function ( e, c ) {
-            if ( e ) return void then( e );
-            if ( c === null || /[^01-9a-fA-F]/.test( c ) ) {
-                if ( soFar === "" )
-                    return void then( new ParseException() );
-                then( null, Rational.make1( parseInt( soFar, 16 ) ) );
-            } else {
-                readChar( function ( e, c ) {
-                    if ( e ) return void then( e );
-                    finishHexInteger( soFar + c, then );
-                } );
-            }
-        } );
-    }
-    function finishPipedSymbol( soFar, then ) {
-        peekChar( function ( e, c ) {
-            if ( e ) return void then( e );
-            if ( c === null )
-                then( new ParseException() );
-            else if ( c === "|" )
-                then( null, Symbol.make( soFar ) );
-            else
-                readChar( function ( e, c ) {
-                    if ( e ) return void then( e );
-                    finishPipedSymbol( soFar + c, then );
-                } );
-        } );
-    }
-    function finishList( soFar, end, then ) {
-        readWhite( function ( e ) {
-            if ( e ) return void then( e );
-            peekChar( function ( e, c ) {
-                if ( e ) return void then( e );
-                if ( c === null )
-                    then( new ParseException() );
-                else if ( c === end )
-                    readChar( function ( e, c ) {
-                        if ( e ) return void then( e );
-                        then( null, soFar );
-                    } );
-                else
-                    readObject( function ( e, o ) {
-                        if ( e ) return void then( e );
-                        finishList(
-                            soFar.concat( [ o ] ), end, then );
-                    } );
-            } );
-        } );
-    }
-    function finishAtom( soFar, then ) {
-        peekChar( function ( e, c ) {
-            if ( e ) return void then( e );
-            var code = c !== null && c.charCodeAt( 0 );
-            if ( c !== null &&
-                (/^[-+$%&*\/<=>?^_~.!:01-9a-zA-Z]+$/.test( c )
-                    || (0x0080 <= code && code < 0x10000)) ) {
-                readChar( function ( e, c ) {
-                    if ( e ) return void then( e );
-                    finishAtom( soFar + c, then );
-                } );
-            } else if ( c === "\\" ) {
-                readChar( function ( e, c ) {
-                    if ( e ) return void then( e );
-                    readChar( function ( e, c2 ) {
-                        if ( e ) return void then( e );
-                        if ( c2 === "|" )
-                            finishAtom( sofar + "\\|", then );
+                    if ( c === null || /[^01-9a-zA-Z]/.test( c ) ) {
+                        if ( soFar === "newline" )
+                            code( "\n".charCodeAt( 0 ) );
+                        else if ( soFar === "tab" )
+                            code( "\t".charCodeAt( 0 ) );
+                        else if ( soFar === "space" )
+                            code( " ".charCodeAt( 0 ) );
+                        else if ( soFar === "return" )
+                            code( "\r".charCodeAt( 0 ) );
+                        else if ( soFar === "null" )
+                            code( "\0".charCodeAt( 0 ) );
+                        else if ( /^[01-9][01-9]+$/.test( soFar ) )
+                            code( parseInt( soFar, 10 ) );
+                        else if ( /^u[0-9a-f]+$/i.test( soFar ) )
+                            code( parseInt(
+                                soFar.substring( 1 ), 16 ) );
+                        else if ( soFar.length === 1 )
+                            code( soFar.charCodeAt( 0 ) );
                         else
                             then( new ParseException() );
-                    } );
-                } );
-            } else {
-                var matches;
-                if ( /^-?[01-9]+\/[01-9]+$/.test( soFar ) )
-                    then( null, Rational.parse( soFar ) );
-                else if ( /^-?[01-9]+$/.test( soFar ) )
-                    then( null,
-                        Rational.make1( parseInt( soFar, 10 ) ) );
-                else if ( /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?$/.
-                    test( soFar ) )
-                    then( null, Real.parse( soFar ) );
-                else if ( soFar === "+inf.0" )
-                    then( null, Real.positiveInfinity() );
-                else if ( soFar === "-inf.0" )
-                    then( null, Real.negativeInfinity() );
-                else if ( soFar === "+nan.0" )
-                    then( null, Real.nan() );
-                else if ( soFar === "+i" )
-                    then( null, new Complex( 0, 1 ) );
-                else if ( soFar === "-i" )
-                    then( null, new Complex( 0, -1 ) );
-                else if ( matches =
-                    /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
-                        exec( soFar ) )
-                    then( null, new Complex(
-                        Real.parse( matches[ 1 ] ).value(),
-                        Real.parse(
-                            matches[ 2 ] + (matches[ 3 ] || "1") ).
-                            value() ) );
-                else
-                    then( null, Symbol.make( soFar ) );
-            }
-        } );
+                    } else {
+                        if ( !readChar( function ( e, c ) {
+                                if ( e ) return void then( e );
+                                done = false;
+                                soFar += c;
+                                if ( !thisSync )
+                                    finishNamedCharacter(
+                                        soFar, then );
+                            } ) )
+                            thisSync = false;
+                    }
+                } ) )
+                thisSync = false;
+        }
+        return thisSync;
+    }
+    function finishHexInteger( soFar, then ) {
+        var thisSync = true;
+        var done = false;
+        while ( thisSync && !done ) {
+            done = true;
+            if ( !peekChar( function ( e, c ) {
+                    if ( e ) return void then( e );
+                    if ( c === null || /[^01-9a-fA-F]/.test( c ) ) {
+                        if ( soFar === "" )
+                            return void then( new ParseException() );
+                        then( null, Rational.make1(
+                            parseInt( soFar, 16 ) ) );
+                    } else {
+                        if ( !readChar( function ( e, c ) {
+                                if ( e ) return void then( e );
+                                done = false;
+                                soFar += c;
+                                if ( !thisSync )
+                                    finishHexInteger( soFar, then );
+                            } ) )
+                            thisSync = false;
+                    }
+                } ) )
+                thisSync = false;
+        }
+        return thisSync;
+    }
+    function finishPipedSymbol( soFar, then ) {
+        var thisSync = true;
+        var done = false;
+        while ( thisSync && !done ) {
+            done = true;
+            if ( !peekChar( function ( e, c ) {
+                    if ( e ) return void then( e );
+                    if ( c === null ) {
+                        then( new ParseException() );
+                    } else if ( c === "|" ) {
+                        then( null, Symbol.make( soFar ) );
+                    } else {
+                        if ( !readChar( function ( e, c ) {
+                                if ( e ) return void then( e );
+                                done = false;
+                                soFar += c;
+                                if ( !thisSync )
+                                    finishPipedSymbol( soFar, then );
+                            } ) )
+                            thisSync = false;
+                    }
+                } ) )
+                thisSync = false;
+        }
+        return thisSync;
+    }
+    function finishList( soFar, end, then ) {
+        var thisSync = true;
+        var done = false;
+        while ( thisSync && !done ) {
+            done = true;
+            if ( !readWhite( function ( e ) {
+                    if ( e ) return void then( e );
+                    if ( !peekChar( function ( e, c ) {
+                            if ( e ) return void then( e );
+                            if ( c === null ) {
+                                then( new ParseException() );
+                            } else if ( c === end ) {
+                                if ( !readChar( function ( e, c ) {
+                                        if ( e )
+                                            return void then( e );
+                                        then( null, soFar );
+                                    } ) )
+                                    thisSync = false;
+                            } else {
+                                if ( !readObject( function ( e, o ) {
+                                        if ( e )
+                                            return void then( e );
+                                        done = false;
+                                        soFar = soFar.concat( [ o ] );
+                                        if ( !thisSync )
+                                            finishList(
+                                                soFar, end, then );
+                                    } ) )
+                                    thisSync = false;
+                            }
+                        } ) )
+                        thisSync = false;
+                } ) )
+                thisSync = false;
+        }
+        return thisSync;
+    }
+    function finishAtom( soFar, then ) {
+        var thisSync = true;
+        var done = false;
+        while ( thisSync && !done ) {
+            done = true;
+            if ( !peekChar( function ( e, c ) {
+                    if ( e ) return void then( e );
+                    var code = c !== null && c.charCodeAt( 0 );
+                    if ( c !== null &&
+                        (/^[-+$%&*\/<=>?^_~.!:01-9a-zA-Z]+$/.test( c )
+                            || (0x0080 <= code && code < 0x10000)) ) {
+                        if ( !readChar( function ( e, c ) {
+                                if ( e ) return void then( e );
+                                done = false;
+                                soFar += c;
+                                if ( !thisSync )
+                                    finishAtom( soFar, then );
+                            } ) )
+                            thisSync = false;
+                    } else if ( c === "\\" ) {
+                        if ( !readChar( function ( e, c ) {
+                                if ( e ) return void then( e );
+                                if ( !readChar( function ( e, c2 ) {
+                                        if ( e )
+                                            return void then( e );
+                                        if ( c2 === "|" ) {
+                                            done = false;
+                                            soFar += "\\|";
+                                            if ( !thisSync )
+                                                finishAtom(
+                                                    soFar, then );
+                                        } else {
+                                            then(
+                                                new ParseException()
+                                            );
+                                        }
+                                    } ) )
+                                    thisSync = false;
+                            } ) )
+                            thisSync = false;
+                    } else {
+                        var matches;
+                        if ( /^-?[01-9]+\/[01-9]+$/.test( soFar ) )
+                            then( null, Rational.parse( soFar ) );
+                        else if ( /^-?[01-9]+$/.test( soFar ) )
+                            then( null, Rational.make1(
+                                parseInt( soFar, 10 ) ) );
+                        else if (
+                            /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?$/.
+                                test( soFar ) )
+                            then( null, Real.parse( soFar ) );
+                        else if ( soFar === "+inf.0" )
+                            then( null, Real.positiveInfinity() );
+                        else if ( soFar === "-inf.0" )
+                            then( null, Real.negativeInfinity() );
+                        else if ( soFar === "+nan.0" )
+                            then( null, Real.nan() );
+                        else if ( soFar === "+i" )
+                            then( null, new Complex( 0, 1 ) );
+                        else if ( soFar === "-i" )
+                            then( null, new Complex( 0, -1 ) );
+                        else if ( matches =
+                            /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
+                                exec( soFar ) )
+                            then( null, new Complex(
+                                Real.parse( matches[ 1 ] ).value(),
+                                Real.parse( matches[ 2 ] +
+                                    (matches[ 3 ] || "1") ).value()
+                            ) );
+                        else
+                            then( null, Symbol.make( soFar ) );
+                    }
+                } ) )
+                thisSync = false;
+        }
+        return thisSync;
     }
     function readObject( then ) {
-        readWhite( function ( e ) {
-            if ( e ) return void then( e );
-            readChar( function ( e, c ) {
-                if ( e ) return void then( e );
-                if ( c === null )
-                    then( null, null );
-                else if ( c === "\"" )
-                    finishInterpolatedString( [], function (
-                        e, parts ) {
-                        
-                        if ( e ) return void then( e );
-                        if ( parts.length === 0 )
-                            then( null, ArcString.make( "" ) );
-                        else if ( parts.length === 1 )
-                            then( null, parts[ 0 ] );
-                        else
-                            then( null, Pair.buildFrom1(
-                                [ Symbol.make( "string" ) ].
-                                    concat( parts ) ) );
-                    } );
-                else if ( c === "|" )
-                    finishPipedSymbol( "", function ( e, name ) {
-                        if ( e ) return void then( e );
-                        then( null, Symbol.make( name ) );
-                    } );
-                else if ( c === "#" )
-                    readChar( function ( e, c2 ) {
-                        if ( e ) return void then( e );
-                        if ( c2 !== null && /x/i.test( c2 ) )
-                            finishHexInteger( "", then );
-                        else if ( c2 === "\\" )
-                            readChar( function ( e, c ) {
+        var thisSync = true;
+        function doString() {
+            if ( !finishInterpolatedString( [], function (
+                    e, parts ) {
+                    
+                    if ( e ) return void then( e );
+                    if ( parts.length === 0 )
+                        then( null, ArcString.make( "" ) );
+                    else if ( parts.length === 1 )
+                        then( null, parts[ 0 ] );
+                    else
+                        then( null, Pair.buildFrom1(
+                            [ Symbol.make( "string" ) ].concat(
+                                parts ) ) );
+                } ) )
+                thisSync = false;
+        }
+        function doSymbol() {
+            if ( !finishPipedSymbol( "", function ( e, name ) {
+                    if ( e ) return void then( e );
+                    then( null, Symbol.make( name ) );
+                } ) )
+                thisSync = false;
+        }
+        function doHash() {
+            if ( !readChar( function ( e, c2 ) {
+                    if ( e ) return void then( e );
+                    if ( c2 !== null && /x/i.test( c2 ) ) {
+                        if ( !finishHexInteger( "", then ) )
+                            thisSync = false;
+                    } else if ( c2 === "\\" ) {
+                        if ( !readChar( function ( e, c ) {
                                 if ( e ) return void then( e );
                                 if ( /[^a-zA-Z]/.test( e ) )
                                     return void then( null,
                                         ArcCharacter.makeFromCharCode(
                                             e.charCodeAt( 0 ) ) );
-                                finishNamedCharacter( c, then );
-                            } );
-                        else
-                            then( new ParseException() );
-                    } );
-                else if ( c === "'" )
-                    readObject( function ( e, o ) {
-                        if ( e ) return void then( e );
-                        if ( o === null )
-                            then( new ParseException() );
-                        else
-                            then( null, Pair.buildFrom1(
-                                [ Symbol.mkSym( "quote" ), o ] ) );
-                    } );
-                else if ( c === "," )
-                    peekChar( function ( e, c2 ) {
-                        if ( e ) return void then( e );
-                        if ( c2 === null )
-                            then( new ParseException() );
-                        else if ( c2 === "@" )
-                            readChar( function ( e, c2 ) {
-                                if ( e ) return void then( e );
-                                readObject( function ( e, o ) {
-                                    if ( e ) return void then( e );
-                                    if ( o === null )
-                                        then( new ParseException() );
-                                    else
-                                        then( null, Pair.buildFrom1( [
-                                            Symbol.mkSym(
-                                                "unquote-splicing" ),
-                                            o ] ) );
-                                } );
-                            } );
-                        else
-                            readObject( function ( e, o ) {
-                                if ( e ) return void then( e );
-                                if ( o === null )
-                                    then( new ParseException() );
-                                else
-                                    then( null, Pair.buildFrom1( [
-                                        Symbol.mkSym( "unquote" ),
-                                        o ] ) );
-                            } );
-                    } );
-                else if ( c === "`" )
-                    readObject( function ( e, o ) {
-                        if ( e ) return void then( e );
-                        if ( o === null )
-                            then( new ParseException() );
-                        else
-                            then( null, Pair.buildFrom1(
-                                [ Symbol.mkSym( "quasiquote" ), o ]
-                            ) );
-                    } );
-                else if ( c === ",@" )
-                    readObject( function ( e, o ) {
-                        if ( e ) return void then( e );
+                                if (
+                                    !finishNamedCharacter( c, then ) )
+                                    thisSync = false;
+                            } ) )
+                            thisSync = false;
+                    } else {
+                        then( new ParseException() );
+                    }
+                } ) )
+                thisSync = false;
+        }
+        function doQuote( quoteName ) {
+            if ( !readObject( function ( e, o ) {
+                    if ( e ) return void then( e );
+                    if ( o === null )
+                        then( new ParseException() );
+                    else
                         then( null, Pair.buildFrom1(
-                            [ Symbol.mkSym( "quote" ), o ] ) );
-                    } );
-                else if ( c === "'" )
-                    readObject( function ( e, o ) {
+                            [ Symbol.mkSym( quoteName ), o ] ) );
+                } ) )
+                thisSync = false;
+        }
+        function doComma() {
+            if ( !peekChar( function ( e, c2 ) {
+                    if ( e ) return void then( e );
+                    if ( c2 === null ) {
+                        then( new ParseException() );
+                    } else if ( c2 === "@" ) {
+                        if ( !readChar( function ( e, c2 ) {
+                                if ( e ) return void then( e );
+                                doQuote( "unquote-splicing" );
+                            } ) )
+                            thisSync = false;
+                    } else {
+                        doQuote( "unquote" );
+                    }
+                } ) )
+                thisSync = false;
+        }
+        function doParen() {
+            if ( !finishList( [], ")", function ( e, list ) {
+                    if ( e ) return void then( e );
+                    if ( list.length === 0 ) {
+                        then( null, ArcObject.EMPTY_LIST );
+                    } else {
+                        try { var result = Pair.parse( list ); }
+                        catch ( e ) { return void then( e ); };
+                        then( null, result );
+                    }
+                } ) )
+                thisSync = false;
+        }
+        function doBracket() {
+            if ( !finishList( [], "]", function ( e, list ) {
+                    if ( e ) return void then( e );
+                    then( null, Pair.buildFrom1( [
+                        Symbol.mkSym( "fn" ),
+                        Pair.buildFrom1( [ Symbol.mkSym( "_" ) ] ),
+                        Pair.buildFrom1( list ) ] ) );
+                } ) )
+                thisSync = false;
+        }
+        function doAtom( c ) {
+            if ( !finishAtom( c, then ) )
+                thisSync = false;
+        }
+        if ( !readWhite( function ( e ) {
+                if ( e ) return void then( e );
+                if ( !readChar( function ( e, c ) {
                         if ( e ) return void then( e );
-                        then( null, Pair.buildFrom1(
-                            [ Symbol.mkSym( "quote" ), o ] ) );
-                    } );
-                else if ( c === "(" )
-                    finishList( [], ")", function ( e, list ) {
-                        if ( e ) return void then( e );
-                        if ( list.length === 0 ) {
-                            then( null, ArcObject.EMPTY_LIST );
-                        } else {
-                            try { var result = Pair.parse( list ); }
-                            catch ( e ) { return void then( e ); };
-                            then( null, result );
-                        }
-                    } );
-                else if ( c === "[" )
-                    finishList( [], "]", function ( e, list ) {
-                        if ( e ) return void then( e );
-                        then( null, Pair.buildFrom1( [
-                            Symbol.mkSym( "fn" ),
-                            Pair.buildFrom1(
-                                [ Symbol.mkSym( "_" ) ] ),
-                            Pair.buildFrom1( list ) ] ) );
-                    } );
-                else
-                    finishAtom( c, then );
-            } );
-        } );
+                        if ( c === null )
+                            then( null, null );
+                        else if ( c === "\"" )
+                            doString();
+                        else if ( c === "|" )
+                            doSymbol();
+                        else if ( c === "#" )
+                            doHash();
+                        else if ( c === "'" )
+                            doQuote( "quote" );
+                        else if ( c === "," )
+                            doComma();
+                        else if ( c === "`" )
+                            doQuote( "quasiquote" );
+                        else if ( c === "(" )
+                            doParen();
+                        else if ( c === "[" )
+                            doBracket();
+                        else
+                            doAtom( c );
+                    } ) )
+                    thisSync = false;
+            } ) )
+            thisSync = false;
+        return thisSync;
     }
-    readObject( then );
-    return allSync;
+    return readObject( then );
 };
 
 
