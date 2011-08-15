@@ -58,6 +58,15 @@ arc> ((fn ((a b c d e f)) ((fn a a) f e d c b a)) '(1 2 3 4 5 6))
 arc> (call (fn ((a b c d e f)) ((fn a a) f e d c b a)) '(1 2 3 4 5 6))
 (6 5 4 3 2 1)
 
+
+This was particularly troublesome. It's based on 'unique-id from
+srv.arc. The problem turned out to be a mistake in translating Java's
+Object.clone() to JavaScript. We just constructed every clone using
+"new InterpretedFunction()" rather than its own constructor, and this
+gave the clones the wrong methods.
+
+arc> (fn ((o opt 8)) (fn (res val) ((fn (var) res) val)))
+
 */
 
 // These produce errors in both Rainbow.js and the Java version:
