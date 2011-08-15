@@ -890,9 +890,6 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
         }
         return thisSync;
     }
-    // TODO: I misinterpreted Java Rainbow's parser source and made it
-    // so that # by itself in a string is a syntax error. Figure out
-    // what the real conditions are, and fix this.
     function finishInterpolatedString( parts, then ) {
         function partsPlus( part ) {
             var lenm1 = parts.length - 1;
@@ -962,7 +959,7 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                                             e, c3 ) {
                                             
                                             if ( e ) return err( e );
-                                            if ( c2 === "(" )
+                                            if ( c3 === "(" )
                                                 y( "#(" );
                                             else
                                                 err();
@@ -974,14 +971,15 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                             } ) )
                             thisSync = false;
                     } else if ( c === "#" ) {
-                        if ( !readChar( function ( e, c2 ) {
+                        if ( !peekChar( function ( e, c2 ) {
                                 if ( e ) return err( e );
-                                if ( c2 === "\"" )
-                                    then( null, partsPlus( "#" ) );
-                                else if ( c2 === "(" )
-                                    finishInterpolation();
-                                else
-                                    err();
+                                if ( c2 !== "(" )
+                                    return void y( "#" );
+                                if ( !readChar( function ( e, c2 ) {
+                                        if ( e ) return err( e );
+                                        finishInterpolation();
+                                    } ) )
+                                    thisSync = false;
                             } ) )
                             thisSync = false;
                     } else {
@@ -1070,21 +1068,17 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
         var done = false;
         while ( thisSync && !done ) {
             done = true;
-            if ( !peekChar( function ( e, c ) {
+            if ( !readChar( function ( e, c ) {
                     if ( e ) return void then( e );
                     if ( c === null ) {
                         then( new ParseException() );
                     } else if ( c === "|" ) {
                         then( null, Symbol.make( soFar ) );
                     } else {
-                        if ( !readChar( function ( e, c ) {
-                                if ( e ) return void then( e );
-                                done = false;
-                                soFar += c;
-                                if ( !thisSync )
-                                    finishPipedSymbol( soFar, then );
-                            } ) )
-                            thisSync = false;
+                        done = false;
+                        soFar += c;
+                        if ( !thisSync )
+                            finishPipedSymbol( soFar, then );
                     }
                 } ) )
                 thisSync = false;
@@ -9577,7 +9571,7 @@ FunctionBodyBuilder.buildFunctionBody = function (
     try {
         // PORT NOTE: This local variable didn't exist in Java.
         var result =
-            new Cons( parameterList, lexicalBindings, expandedBody );
+            Cons.of( parameterList, lexicalBindings, expandedBody );
         // PORT NOTE: This was a cast in Java.
         if ( !(result instanceof ArcObject) )
             throw new TypeError();
@@ -10060,18 +10054,17 @@ FunctionParameterListBuilder.curryStackParam_ = function (
     param, arg, paramIndex, c ) {
     
     var curriedParam = null;
-    if ( c instanceof Symbol && !c.isSame( param.name ) ) {
+    if ( c instanceof Symbol && !c.isSame( param.name ) )
         curriedParam = c;
-    } else if ( ComplexArgs.optional( c )
-        && !c.cdr().car().isSame( param.name ) ) {
+    else if ( ComplexArgs.optional( c )
+        && !c.cdr().car().isSame( param.name ) )
         curriedParam = Pair.buildFrom1( [
             FunctionParameterListBuilder.O,
             c.cdr().car(),
             c.cdr().cdr().car().inline3( param, arg, paramIndex )
         ] );
-    } else if ( !ComplexArgs.optional( c ) && c instanceof Pair ) {
+    else if ( !ComplexArgs.optional( c ) && c instanceof Pair )
         curriedParam = c;
-    }
     return curriedParam;
 };
 
@@ -10079,19 +10072,18 @@ FunctionParameterListBuilder.curryBoundParam_ = function (
     param, arg, paramIndex, c ) {
     
     var curriedParam = null;
-    if ( c instanceof Symbol && !c.isSame( param.name ) ) {
+    if ( c instanceof Symbol && !c.isSame( param.name ) )
         curriedParam = c;
-    } else if ( ComplexArgs.optional( c )
-        && !c.cdr().car().isSame( param.name ) ) {
+    else if ( ComplexArgs.optional( c )
+        && !c.cdr().car().isSame( param.name ) )
         curriedParam = Pair.buildFrom1( [
             FunctionParameterListBuilder.O,
             c.cdr().car(),
             c.cdr().cdr().car().inline5(
                 param, arg, false, 0, paramIndex )
         ] );
-    } else if ( !ComplexArgs.optional( c ) && c instanceof Pair ) {
+    else if ( !ComplexArgs.optional( c ) && c instanceof Pair )
         curriedParam = c;
-    }
     return curriedParam;
 };
 
@@ -11005,6 +10997,7 @@ function InterpretedFunction() {
 }
 
 InterpretedFunction.prototype = new ArcObject();
+InterpretedFunction.prototype.Cons_ = InterpretedFunction;
 InterpretedFunction.prototype.className = "InterpretedFunction";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -11401,6 +11394,10 @@ InterpretedFunction.prototype.curry = function (
     param, arg, requiresNesting ) {
     
     var paramIndex = this.lexicalBindings[ param.name() ];
+    // PORT NOTE: This was implicit unboxing in Java.
+    // PORT TODO: See if it's possible for this to throw an error.
+    if ( paramIndex === void 0 )
+        throw new ReferenceError();
     var p = BoundSymbol.make( param, 0, paramIndex );
     var newParams = FunctionParameterListBuilder.curryBound(
         this.parameterList_, p, arg, paramIndex );
@@ -11471,16 +11468,21 @@ InterpretedFunction.prototype.nest = function ( threshold ) {
 
 // PORT NOTE: In Java, this used Object.clone().
 InterpretedFunction.prototype.cloneThis_ = function () {
-    var result = new InterpretedFunction();
-    result.name = this.name;
-    result.parameterList_ = this.parameterList_;
-    result.lexicalBindings = this.lexicalBindings;
-    result.body = this.body;
-    result.instructions_ = this.instructions_;
-    result.lexicalOwner_ = this.lexicalOwner_;
-    result.curried = this.curried;
-    result.profileName_ = this.profileName_;
-    result.localProfileName_ = this.localProfileName_;
+    var result = new this.Cons_();
+    // PORT TODO: See if it would be more appropriate to do
+    // class-specific cloneThis_ methods.
+    for ( var k in this )
+        if ( this.hasOwnProperty( k ) )
+            result[ k ] = this[ k ];
+//    result.name = this.name;
+//    result.parameterList_ = this.parameterList_;
+//    result.lexicalBindings = this.lexicalBindings;
+//    result.body = this.body;
+//    result.instructions_ = this.instructions_;
+//    result.lexicalOwner_ = this.lexicalOwner_;
+//    result.curried = this.curried;
+//    result.profileName_ = this.profileName_;
+//    result.localProfileName_ = this.localProfileName_;
     return result;
 };
 
@@ -11512,6 +11514,7 @@ function SimpleArgs( parameterList, lexicalBindings, body ) {
 }
 
 SimpleArgs.prototype = new InterpretedFunction();
+SimpleArgs.prototype.Cons_ = SimpleArgs;
 SimpleArgs.prototype.className = "SimpleArgs";
 
 SimpleArgs.prototype.invoke3 = function ( vm, lc, args ) {
@@ -11549,6 +11552,7 @@ function ComplexArgs( parameterList, lexicalBindings, body ) {
 }
 
 ComplexArgs.prototype = new InterpretedFunction();
+ComplexArgs.prototype.Cons_ = ComplexArgs;
 ComplexArgs.prototype.className = "ComplexArgs";
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
@@ -11752,6 +11756,7 @@ function StackFunctionSupport() {
 }
 
 StackFunctionSupport.prototype = new InterpretedFunction();
+StackFunctionSupport.prototype.Cons_ = StackFunctionSupport;
 StackFunctionSupport.prototype.className = "StackFunctionSupport";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -11838,15 +11843,21 @@ StackFunctionSupport.convertItem = function (
 // Needed early: InterpretedFunction
 // Needed late: ArcObject ArcError
 
-function Bind( parameterList, lexicalBindings, body ) {
+function Bind() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind" ] = Bind;
 
 Bind.prototype = new InterpretedFunction();
+Bind.prototype.Cons_ = Bind;
 Bind.prototype.className = "Bind";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind.of = function ( parameterList, lexicalBindings, body ) {
+    return new Bind().init( parameterList, lexicalBindings, body );
+};
 
 Bind.prototype.invokeN0 = function ( vm, lc ) {
     vm.pushInvocation2( lc, this.instructions_ );
@@ -11869,15 +11880,21 @@ Bind.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: ArcError LexicalClosure Nil ArcObject
 
-function Bind_A( parameterList, lexicalBindings, body ) {
+function Bind_A() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_A" ] = Bind_A;
 
 Bind_A.prototype = new InterpretedFunction();
+Bind_A.prototype.Cons_ = Bind_A;
 Bind_A.prototype.className = "Bind_A";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_A.of = function ( parameterList, lexicalBindings, body ) {
+    return new Bind_A().init( parameterList, lexicalBindings, body );
+};
 
 Bind_A.prototype.invokeN0 = function ( vm, lc ) {
     throw new ArcError(
@@ -11913,15 +11930,22 @@ Bind_A.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: ArcError LexicalClosure ArcObject
 
-function Bind_A_A( parameterList, lexicalBindings, body ) {
+function Bind_A_A() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_A_A" ] = Bind_A_A;
 
 Bind_A_A.prototype = new InterpretedFunction();
+Bind_A_A.prototype.Cons_ = Bind_A_A;
 Bind_A_A.prototype.className = "Bind_A_A";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_A_A.of = function ( parameterList, lexicalBindings, body ) {
+    return new Bind_A_A().init(
+        parameterList, lexicalBindings, body );
+};
 
 Bind_A_A.prototype.invokeN0 = function ( vm, lc ) {
     throw new ArcError( "error: expected 2 args, got none" );
@@ -11958,15 +11982,22 @@ Bind_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure
 
-function Bind_A_A_A( parameterList, lexicalBindings, body ) {
+function Bind_A_A_A() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_A_A_A" ] = Bind_A_A_A;
 
 Bind_A_A_A.prototype = new InterpretedFunction();
+Bind_A_A_A.prototype.Cons_ = Bind_A_A_A;
 Bind_A_A_A.prototype.className = "Bind_A_A_A";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_A_A_A.of = function ( parameterList, lexicalBindings, body ) {
+    return new Bind_A_A_A().init(
+        parameterList, lexicalBindings, body );
+};
 
 Bind_A_A_A.prototype.invokeN3 = function (
     vm, lc, arg1, arg2, arg3 ) {
@@ -11994,15 +12025,22 @@ Bind_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure
 
-function Bind_A_A_R( parameterList, lexicalBindings, body ) {
+function Bind_A_A_R() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_A_A_R" ] = Bind_A_A_R;
 
 Bind_A_A_R.prototype = new InterpretedFunction();
+Bind_A_A_R.prototype.Cons_ = Bind_A_A_R;
 Bind_A_A_R.prototype.className = "Bind_A_A_R";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_A_A_R.of = function ( parameterList, lexicalBindings, body ) {
+    return new Bind_A_A_R().init(
+        parameterList, lexicalBindings, body );
+};
 
 Bind_A_A_R.prototype.invokeN0 = function ( vm, lc ) {
     throw new ArcError( "error: expected at least 2 arg, got none" );
@@ -12031,38 +12069,46 @@ Bind_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: BoundSymbol Symbol LexicalClosure Nil
 
-function Bind_A_Obound( parameterList, lexicalBindings, body ) {
+function Bind_A_Obound() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
-    // PORT NOTE: This local variable didn't exist in Java.
-    var optExpr = parameterList.cdr().car().cdr().cdr().car();
-    // PORT NOTE: This was a cast in Java.
-    if ( !(optExpr instanceof BoundSymbol) )
-        throw new TypeError();
-    this.optExpr_ = optExpr;
-    var optParam = parameterList.cdr().car().cdr().car();
-    // PORT NOTE: This was a cast in Java.
-    if ( !(optParam instanceof Symbol) )
-        throw new TypeError();
-    if ( this.canInline( optParam, this.optExpr_ ) )
-        try {
-            // PORT NOTE: This local variable didn't exist in Java.
-            var curried =
-                this.curry( optParam, this.optExpr_, false );
-            // PORT NOTE: This was a cast in Java.
-            // PORT TODO: See if this can ever throw an error.
-            if ( !(curried instanceof InterpretedFunction) )
-                throw new TypeError();
-            this.curried = curried;
-        } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-            printStackTrace( e );
-        }
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_A_Obound" ] = Bind_A_Obound;
 
 Bind_A_Obound.prototype = new InterpretedFunction();
+Bind_A_Obound.prototype.Cons_ = Bind_A_Obound;
 Bind_A_Obound.prototype.className = "Bind_A_Obound";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_A_Obound.of = function ( parameterList, lexicalBindings, body ) {
+    var result = new Bind_A_Obound().init(
+        parameterList, lexicalBindings, body );
+    // PORT NOTE: This local variable didn't exist in Java.
+    var optExpr = parameterList.cdr().car().cdr().cdr().car();
+    // PORT NOTE: This was a cast in Java.
+    if ( !(optExpr instanceof BoundSymbol) )
+        throw new TypeError();
+    result.optExpr_ = optExpr;
+    var optParam = parameterList.cdr().car().cdr().car();
+    // PORT NOTE: This was a cast in Java.
+    if ( !(optParam instanceof Symbol) )
+        throw new TypeError();
+    if ( result.canInline( optParam, result.optExpr_ ) )
+        try {
+            // PORT NOTE: This local variable didn't exist in Java.
+            var curried =
+                result.curry( optParam, result.optExpr_, false );
+            // PORT NOTE: This was a cast in Java.
+            // PORT TODO: See if this can ever throw an error.
+            if ( !(curried instanceof InterpretedFunction) )
+                throw new TypeError();
+            result.curried = curried;
+        } catch ( e ) { if ( !(e instanceof Error) ) throw e;
+            printStackTrace( e );
+        }
+    return result;
+};
 
 Bind_A_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
     if ( this.curried !== null ) {
@@ -12107,35 +12153,43 @@ Bind_A_Obound.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Symbol LexicalClosure Nil
 
-function Bind_A_Oliteral(
-    parameterList, lexicalBindings, expandedBody ) {
-    
+function Bind_A_Oliteral() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, expandedBody );
-    this.optExpr_ = parameterList.cdr().car().cdr().cdr().car();
-    var optParam = parameterList.cdr().car().cdr().car();
-    // PORT NOTE: This was a cast in Java.
-    if ( !(optParam instanceof Symbol) )
-        throw new TypeError();
-    if ( this.canInline( optParam, this.optExpr_ ) )
-        try {
-            // PORT NOTE: This local variable didn't exist in Java.
-            var curried =
-                this.curry( optParam, this.optExpr_, false );
-            // PORT NOTE: This was a cast in Java.
-            // PORT TODO: See if this can ever throw an error.
-            if ( !(curried instanceof InterpretedFunction) )
-                throw new TypeError();
-            this.curried = curried;
-        } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-            printStackTrace( e );
-        }
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_A_Oliteral" ] = Bind_A_Oliteral;
 
 Bind_A_Oliteral.prototype = new InterpretedFunction();
+Bind_A_Oliteral.prototype.Cons_ = Bind_A_Oliteral;
 Bind_A_Oliteral.prototype.className = "Bind_A_Oliteral";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_A_Oliteral.of = function (
+    parameterList, lexicalBindings, expandedBody ) {
+    
+    var result = new Bind_A_Oliteral().init(
+        parameterList, lexicalBindings, expandedBody );
+    result.optExpr_ = parameterList.cdr().car().cdr().cdr().car();
+    var optParam = parameterList.cdr().car().cdr().car();
+    // PORT NOTE: This was a cast in Java.
+    if ( !(optParam instanceof Symbol) )
+        throw new TypeError();
+    if ( result.canInline( optParam, result.optExpr_ ) )
+        try {
+            // PORT NOTE: This local variable didn't exist in Java.
+            var curried =
+                result.curry( optParam, result.optExpr_, false );
+            // PORT NOTE: This was a cast in Java.
+            // PORT TODO: See if this can ever throw an error.
+            if ( !(curried instanceof InterpretedFunction) )
+                throw new TypeError();
+            result.curried = curried;
+        } catch ( e ) { if ( !(e instanceof Error) ) throw e;
+            printStackTrace( e );
+        }
+    return result;
+};
 
 Bind_A_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
     if ( this.curried !== null ) {
@@ -12180,21 +12234,29 @@ Bind_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Symbol LexicalClosure BindAndRun Nil
 
-function Bind_A_Oother(
-    parameterList, lexicalBindings, expandedBody ) {
-    
+function Bind_A_Oother() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, expandedBody );
-    var optExpr = parameterList.cdr().car().cdr().cdr().car();
-    var i = [];
-    optExpr.addInstructions( i );
-    this.optInstructions_ = Pair.buildFrom1( i );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_A_Oother" ] = Bind_A_Oother;
 
 Bind_A_Oother.prototype = new InterpretedFunction();
+Bind_A_Oother.prototype.Cons_ = Bind_A_Oother;
 Bind_A_Oother.prototype.className = "Bind_A_Oother";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_A_Oother.of = function (
+    parameterList, lexicalBindings, expandedBody ) {
+    
+    var result = new Bind_A_Oother().init(
+        parameterList, lexicalBindings, expandedBody );
+    var optExpr = parameterList.cdr().car().cdr().cdr().car();
+    var i = [];
+    optExpr.addInstructions( i );
+    result.optInstructions_ = Pair.buildFrom1( i );
+    return result;
+};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
@@ -12248,15 +12310,22 @@ Bind_A_Oother.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: ArcError LexicalClosure
 
-function Bind_A_R( parameterList, lexicalBindings, body ) {
+function Bind_A_R() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_A_R" ] = Bind_A_R;
 
 Bind_A_R.prototype = new InterpretedFunction();
+Bind_A_R.prototype.Cons_ = Bind_A_R;
 Bind_A_R.prototype.className = "Bind_A_R";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_A_R.of = function ( parameterList, lexicalBindings, body ) {
+    return new Bind_A_R().init(
+        parameterList, lexicalBindings, body );
+};
 
 Bind_A_R.prototype.invokeN0 = function ( vm, lc ) {
     throw new ArcError( "error: expected at least 1 arg, got none" );
@@ -12279,15 +12348,24 @@ Bind_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure Pair ArcError
 
-function Bind_D_A_A_A_d( parameterList, lexicalBindings, body ) {
+function Bind_D_A_A_A_d() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_D_A_A_A_d" ] = Bind_D_A_A_A_d;
 
 Bind_D_A_A_A_d.prototype = new InterpretedFunction();
+Bind_D_A_A_A_d.prototype.Cons_ = Bind_D_A_A_A_d;
 Bind_D_A_A_A_d.prototype.className = "Bind_D_A_A_A_d";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_D_A_A_A_d.of = function (
+    parameterList, lexicalBindings, body ) {
+    
+    return new Bind_D_A_A_A_d().init(
+        parameterList, lexicalBindings, body );
+};
 
 Bind_D_A_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
@@ -12335,15 +12413,22 @@ Bind_D_A_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure Pair ArcError
 
-function Bind_D_A_A_d( parameterList, lexicalBindings, body ) {
+function Bind_D_A_A_d() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_D_A_A_d" ] = Bind_D_A_A_d;
 
 Bind_D_A_A_d.prototype = new InterpretedFunction();
+Bind_D_A_A_d.prototype.Cons_ = Bind_D_A_A_d;
 Bind_D_A_A_d.prototype.className = "Bind_D_A_A_d";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_D_A_A_d.of = function ( parameterList, lexicalBindings, body ) {
+    return new Bind_D_A_A_d().init(
+        parameterList, lexicalBindings, body );
+};
 
 Bind_D_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
@@ -12378,9 +12463,21 @@ Bind_D_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Pair Symbol LexicalClosure Nil
 
-function Bind_Obound( parameterList, lexicalBindings, body ) {
+function Bind_Obound() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
+}
+classes[ "rainbow.function.interpreted.optimise." +
+    "Bind_Obound" ] = Bind_Obound;
+
+Bind_Obound.prototype = new InterpretedFunction();
+Bind_Obound.prototype.Cons_ = Bind_Obound;
+Bind_Obound.prototype.className = "Bind_Obound";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_Obound.of = function ( parameterList, lexicalBindings, body ) {
+    var result = new Bind_Obound().init(
+        parameterList, lexicalBindings, body );
     var opt = parameterList.car();
     // PORT NOTE: This was a cast in Java.
     if ( !(opt instanceof Pair) )
@@ -12390,13 +12487,9 @@ function Bind_Obound( parameterList, lexicalBindings, body ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(optionalExpression instanceof BoundSymbol) )
         throw new TypeError();
-    this.optionalExpression_ = optionalExpression;
-}
-classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_Obound" ] = Bind_Obound;
-
-Bind_Obound.prototype = new InterpretedFunction();
-Bind_Obound.prototype.className = "Bind_Obound";
+    result.optionalExpression_ = optionalExpression;
+    return result;
+};
 
 Bind_Obound.prototype.invokeN0 = function ( vm, lc ) {
     var len = 0;
@@ -12439,31 +12532,40 @@ Bind_Obound.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Symbol LexicalClosure Nil
 
-function Bind_Oliteral(
-    parameterList, lexicalBindings, expandedBody ) {
-    
+function Bind_Oliteral() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, expandedBody );
-    this.optExpr_ = parameterList.car().cdr().cdr().car();
-    var optParam = parameterList.car().cdr().car();
-    // PORT NOTE: This was a cast in Java.
-    if ( !(optParam instanceof Symbol) )
-        throw new TypeError();
-    if ( this.canInline( optParam, this.optExpr_ ) ) {
-        // PORT NOTE: This local variable didn't exist in Java.
-        var curried = this.curry( optParam, this.optExpr_, false );
-        // PORT NOTE: This was a cast in Java.
-        // PORT TODO: See if this can ever throw an error.
-        if ( !(curried instanceof InterpretedFunction) )
-            throw new TypeError();
-        this.curried = curried;
-    }
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_Oliteral" ] = Bind_Oliteral;
 
 Bind_Oliteral.prototype = new InterpretedFunction();
+Bind_Oliteral.prototype.Cons_ = Bind_Oliteral;
 Bind_Oliteral.prototype.className = "Bind_Oliteral";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_Oliteral.of = function (
+    parameterList, lexicalBindings, expandedBody ) {
+    
+    var result = new Bind_Oliteral().init(
+        parameterList, lexicalBindings, expandedBody );
+    result.optExpr_ = parameterList.car().cdr().cdr().car();
+    var optParam = parameterList.car().cdr().car();
+    // PORT NOTE: This was a cast in Java.
+    if ( !(optParam instanceof Symbol) )
+        throw new TypeError();
+    if ( result.canInline( optParam, result.optExpr_ ) ) {
+        // PORT NOTE: This local variable didn't exist in Java.
+        var curried =
+            result.curry( optParam, result.optExpr_, false );
+        // PORT NOTE: This was a cast in Java.
+        // PORT TODO: See if this can ever throw an error.
+        if ( !(curried instanceof InterpretedFunction) )
+            throw new TypeError();
+        result.curried = curried;
+    }
+    return result;
+};
 
 Bind_Oliteral.prototype.invokeN0 = function ( vm, lc ) {
     if ( this.curried !== null ) {
@@ -12510,21 +12612,30 @@ Bind_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Symbol LexicalClosure Nil ArcError
 
-function Bind_Oother(
-    parameterList, lexicalBindings, expandedBody ) {
-    
+function Bind_Oother() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, expandedBody );
-    this.optExpr_ = parameterList.car().cdr().cdr().car();
-    var i = [];
-    this.optExpr_.addInstructions( i );
-    this.optInstructions_ = Pair.buildFrom1( i );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_Oother" ] = Bind_Oother;
 
 Bind_Oother.prototype = new InterpretedFunction();
+Bind_Oother.prototype.Cons_ = Bind_Oother;
 Bind_Oother.prototype.className = "Bind_Oother";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_Oother.of = function (
+    parameterList, lexicalBindings, expandedBody ) {
+    
+    var result = new Bind_Oother().init(
+        parameterList, lexicalBindings, expandedBody );
+    result.init( parameterList, lexicalBindings, expandedBody );
+    result.optExpr_ = parameterList.car().cdr().cdr().car();
+    var i = [];
+    result.optExpr_.addInstructions( i );
+    result.optInstructions_ = Pair.buildFrom1( i );
+    return result;
+};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
@@ -12579,15 +12690,21 @@ Bind_Oother.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure
 
-function Bind_R( parameterList, lexicalBindings, body ) {
+function Bind_R() {
     InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
 }
 classes[ "rainbow.function.interpreted.optimise." +
     "Bind_R" ] = Bind_R;
 
 Bind_R.prototype = new InterpretedFunction();
+Bind_R.prototype.Cons_ = Bind_R;
 Bind_R.prototype.className = "Bind_R";
+
+// PORT NOTE: This didn't exist in Java. (It was part of the
+// constructor.)
+Bind_R.of = function ( parameterList, lexicalBindings, body ) {
+    return new Bind_R().init( parameterList, lexicalBindings, body );
+};
 
 Bind_R.prototype.invoke3 = function ( vm, lc, args ) {
     var len = 0;
@@ -12613,6 +12730,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_A" ] = Stack_A;
 
 Stack_A.prototype = new StackFunctionSupport();
+Stack_A.prototype.Cons_ = Stack_A;
 Stack_A.prototype.className = "Stack_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -12663,6 +12781,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_A_A" ] = Stack_A_A;
 
 Stack_A_A.prototype = new StackFunctionSupport();
+Stack_A_A.prototype.Cons_ = Stack_A_A;
 Stack_A_A.prototype.className = "Stack_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -12713,6 +12832,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_A_A_A" ] = Stack_A_A_A;
 
 Stack_A_A_A.prototype = new StackFunctionSupport();
+Stack_A_A_A.prototype.Cons_ = Stack_A_A_A;
 Stack_A_A_A.prototype.className = "Stack_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -12769,6 +12889,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_A_A_A_A" ] = Stack_A_A_A_A;
 
 Stack_A_A_A_A.prototype = new StackFunctionSupport();
+Stack_A_A_A_A.prototype.Cons_ = Stack_A_A_A_A;
 Stack_A_A_A_A.prototype.className = "Stack_A_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -12829,6 +12950,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_A_A_R" ] = Stack_A_A_R;
 
 Stack_A_A_R.prototype = new StackFunctionSupport();
+Stack_A_A_R.prototype.Cons_ = Stack_A_A_R;
 Stack_A_A_R.prototype.className = "Stack_A_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -12866,6 +12988,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_A_R" ] = Stack_A_R;
 
 Stack_A_R.prototype = new StackFunctionSupport();
+Stack_A_R.prototype.Cons_ = Stack_A_R;
 Stack_A_R.prototype.className = "Stack_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -12903,6 +13026,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_R" ] = Stack_R;
 
 Stack_R.prototype = new StackFunctionSupport();
+Stack_R.prototype.Cons_ = Stack_R;
 Stack_R.prototype.className = "Stack_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -12940,6 +13064,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_D_A_A_A_A_d" ] = Stack_D_A_A_A_A_d;
 
 Stack_D_A_A_A_A_d.prototype = new StackFunctionSupport();
+Stack_D_A_A_A_A_d.prototype.Cons_ = Stack_D_A_A_A_A_d;
 Stack_D_A_A_A_A_d.prototype.className = "Stack_D_A_A_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -13002,6 +13127,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_D_A_A_d" ] = Stack_D_A_A_d;
 
 Stack_D_A_A_d.prototype = new StackFunctionSupport();
+Stack_D_A_A_d.prototype.Cons_ = Stack_D_A_A_d;
 Stack_D_A_A_d.prototype.className = "Stack_D_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -13058,6 +13184,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_A_Oliteral" ] = Stack_A_Oliteral;
 
 Stack_A_Oliteral.prototype = new StackFunctionSupport();
+Stack_A_Oliteral.prototype.Cons_ = Stack_A_Oliteral;
 Stack_A_Oliteral.prototype.className = "Stack_A_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
@@ -13165,6 +13292,7 @@ classes[ "rainbow.function.interpreted.optimise.stack." +
     "Stack_Oliteral" ] = Stack_Oliteral;
 
 Stack_Oliteral.prototype = new StackFunctionSupport();
+Stack_Oliteral.prototype.Cons_ = Stack_Oliteral;
 Stack_Oliteral.prototype.className = "Stack_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
