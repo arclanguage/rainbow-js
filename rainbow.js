@@ -311,6 +311,7 @@
 // functions/io/ReadC.java
 // functions/io/Sread.java
 // Console.java
+// functions/threads/NewThread.java (just a dummy)
 //
 //
 // Skipped so far:
@@ -353,7 +354,6 @@
 // functions/system/SystemFunctions.java
 // functions/system/TimeDate.java
 // functions/system/WhichOS.java
-// functions/threads/NewThread.java
 // functions/threads/Sleep.java
 //
 //
@@ -9746,7 +9746,6 @@ FunctionParameterListBuilder.buildParams_ = function (
         result, complexParams ) );
     vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
         result, complexParams, parameters, lexicalBindings ) );
-    vm.pushA( parameters );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
@@ -13707,7 +13706,7 @@ Eval.ReduceAndExecute.prototype = new Instruction();
 Eval.ReduceAndExecute.prototype.className = "Eval.ReduceAndExecute";
 
 Eval.ReduceAndExecute.prototype.operate = function ( vm ) {
-    var expression = vm.popA();
+    var expression = vm.popA().reduce();
     var i = [];
     expression.addInstructions( i );
     vm.pushInvocation2( null, Pair.buildFrom1( i ) );
@@ -16321,7 +16320,7 @@ Environment.init = function () {
 //    new JavaImplement();
     
     // threading
-//    new NewThread();
+    new NewThread();
     new KillThread();
     // TODO: break-thread just duplicates kill-thread, should do
     // something else
@@ -17540,6 +17539,30 @@ Console.AndEval.prototype.operate = function ( vm ) {
     var instructions = Pair.buildFrom1( i );
     instructions.visit( Console.mkVisitor_( expression ) );
     vm.pushInvocation2( null, instructions );
+};
+
+
+// ===================================================================
+// from functions/threads/NewThread.java
+// ===================================================================
+// Needed early: Builtin
+// Needed late: ArcError
+
+// PORT NOTE: This is just here so that src/arc/rainbow/profile.arc
+// can load.
+// PORT TODO: Figure out whether it's even appropriate to keep this in
+// here.
+
+function NewThread() {
+    Builtin.call( this );
+    this.init( "new-thread" );
+}
+
+NewThread.prototype = new Builtin();
+NewThread.prototype.className = "NewThread";
+
+NewThread.prototype.invokePair = function ( args ) {
+    throw new ArcError( "Rainbow.js doesn't support new-thread." );
 };
 
 
