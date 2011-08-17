@@ -63,9 +63,9 @@ function shaveBytesFromAroundString( string ) {
 // TODO: See what to do about concurrent reads. Right now we just
 // always favor the latest read and never respond to the previous
 // ones.
-function makeInputAndOutput() {
-    var buffer = "";
-    var ignoringFirstByte = false;
+function makeInputAndOutput( name ) {
+    var buffer = [];
+    var cursor = 0;
     var closed = false;
     var callback = null, callbackMethod = null;
     
@@ -80,17 +80,14 @@ function makeInputAndOutput() {
     var output = {};
     output.writeString = function ( string ) {
         if ( closed ) return;
-        buffer += string;
+        if ( string === "" )
+            return;
+        buffer.push( { type: "string", val: string } );
         useCallback();
     };
     output.writeByte = function ( theByte ) {
         if ( closed ) return;
-        buffer = ignoringFirstByte ?
-            shaveBytesFromAroundString( buffer ) +
-                String.fromCharCode( theByte << 8 ) :
-            shaveBytesFromAroundString(
-                "\0" + buffer + String.fromCharCode( theByte << 8 ) );
-        ignoringFirstByte = !ignoringFirstByte;
+        buffer.push( { type: "byte", val: theByte } );
         useCallback();
     };
     output.close = function () {
@@ -103,14 +100,24 @@ function makeInputAndOutput() {
     var readByteAsync = input.readByteAsync = function (
         then, opt_sync ) {
         
-        if ( buffer !== "" ) {
-            var code = buffer.charCodeAt( 0 );
-            var b = (ignoringFirstByte ? code : code >>> 8) & 0xFF;
-            if ( ignoringFirstByte )
-                buffer = buffer.substring( 1 );
-            ignoringFirstByte = !ignoringFirstByte;
-            then( null, b );
-            return true;
+        if ( buffer.length !== 0 ) {
+            var entry = buffer[ 0 ];
+            if ( entry.type === "byte" ) {
+                buffer.shift();
+                then( null, entry.val );
+                return true;
+            } else {
+                var string = entry.val;
+                var code = string.charCodeAt( cursor >>> 1 );
+                var b = (cursor & 1 ? code : code >>> 8) & 0xFF;
+                cursor++;
+                if ( string.length << 1 <= cursor ) {
+                    buffer.shift();
+                    cursor = 0;
+                }
+                then( null, b );
+                return true;
+            }
         } else if ( closed ) {
             then( null, null );
             return true;
@@ -124,37 +131,77 @@ function makeInputAndOutput() {
     function peekOrReadCharCodeAsync(
         then, reading, method, opt_sync ) {
         
-        if ( buffer !== "" ) {
-            var c;
-            if ( ignoringFirstByte ) {
-                if ( buffer.length === 1 ) {
-                    if ( closed ) {
-                        // TODO: Figure out what to really do in this
-                        // case. There's just one byte left in the
-                        // stream, but we're reading or peeking at a
-                        // character code....
-                        if ( reading ) {
-                            buffer = "";
-                            ignoringFirstByte = false;
-                        }
-                        then( null, null );
-                        return true;
-                    } else if ( opt_sync ) {
-                        return false;
-                    } else {
-                        callback = then, callbackMethod = method;
-                        return false;
-                    }
+        if ( buffer.length !== 0 ) {
+            
+            var firstEntry = buffer[ 0 ];
+            if ( buffer.length === 1 && (firstEntry.type === "byte"
+                || firstEntry.val.length << 1 === cursor + 1) ) {
+                if ( closed ) {
+                    // TODO: Figure out what to really do in this
+                    // case. There's just one byte left in the stream,
+                    // but we're reading or peeking at a character
+                    // code....
+                    if ( reading )
+                        buffer = [];
+                    then( null, null );
+                    return true;
+                } else if ( opt_sync ) {
+                    return false;
+                } else {
+                    callback = then, callbackMethod = method;
+                    return false;
                 }
-                
-                c = (buffer.charCodeAt( 0 ) << 8 & 0xFF00) |
-                    (buffer.charCodeAt( 1 ) >>> 8 & 0xFF);
-            } else {
-                c = buffer.charCodeAt( 0 );
             }
-            if ( reading )
-                buffer = buffer.substring( 1 );
-            then( null, c );
+            
+            var hi;
+            var lo;
+            var bufferIndex = 0;
+            var tempCursor = cursor;
+            var entry = firstEntry;
+            if ( entry.type === "byte" ) {
+                bufferIndex++;
+                hi = entry.val;
+            } else {
+                var string = entry.val;
+                var code = string.charCodeAt( tempCursor >>> 1 );
+                if ( tempCursor & 1 ) {
+                    if ( reading ) {
+                        cursor++;
+                        if ( string.length << 1 <= cursor ) {
+                            buffer.shift();
+                            cursor = 0;
+                        }
+                    }
+                    then( null, code );
+                    return true;
+                }
+                hi = (code >>> 8) & 0xFF;
+                tempCursor++;
+                if ( string.length << 1 <= tempCursor ) {
+                    bufferIndex++;
+                    tempCursor = 0;
+                }
+            }
+            entry = buffer[ bufferIndex ];
+            if ( entry.type === "byte" ) {
+                bufferIndex++;
+                lo = entry.val;
+            } else {
+                var string = entry.val;
+                var code = string.charCodeAt( tempCursor >>> 1 );
+                lo = (tempCursor & 1 ? code : code >>> 8) & 0xFF;
+                tempCursor++;
+                if ( string.length << 1 <= tempCursor ) {
+                    bufferIndex++;
+                    tempCursor = 0;
+                }
+            }
+            if ( reading ) {
+                if ( bufferIndex )
+                    buffer.shift();
+                cursor = tempCursor;
+            }
+            then( null, hi << 8 | lo );
             return true;
         } else if ( closed ) {
             then( null, null );
@@ -180,14 +227,73 @@ function makeInputAndOutput() {
     };
     input.close = function () {};
     
+    input.readStringAvailable = function () {
+        var len = buffer.length;
+        var bufferIndex = 0;
+        var hasLeftover = false;
+        var leftoverByte;
+        var parts = [];
+        var i = 0;
+        if ( cursor & 1 ) {
+            var string = buffer[ 0 ].val;
+            hasLeftover = true;
+            leftoverByte = string.charCodeAt( cursor >>> 1 ) & 0xFF;
+            cursor++;
+            for ( var j = cursor >>> 1, slen = string.length;
+                j < slen; j++ ) {
+                var code = string.charCodeAt( j );
+                parts.push( root.String.fromCharCode(
+                    leftoverByte << 8 | (code >>> 8 & 0xFF)
+                ) );
+                leftoverByte = code & 0xFF;
+            }
+            cursor = 0;
+            i++;
+        } else if ( cursor ) {
+            parts.push( buffer[ 0 ].val.substring( cursor >>> 1 ) );
+            cursor = 0;
+            i++;
+        }
+        for ( len = buffer.length; i < len; i++ ) {
+            var entry = buffer[ i ];
+            if ( entry.type === "byte" ) {
+                if ( hasLeftover ) {
+                    parts.push( root.String.fromCharCode(
+                        leftoverByte << 8 | entry.val ) );
+                    hasLeftover = false;
+                } else {
+                    leftoverByte = entry.val;
+                    hasLeftover = true;
+                }
+            } else {
+                var string = entry.val;
+                if ( hasLeftover ) {
+                    for ( var j = 0, slen = string.length;
+                        j < slen; j++ ) {
+                        var code = string.charCodeAt( j );
+                        parts.push( root.String.fromCharCode(
+                            leftoverByte << 8 | (code >>> 8 & 0xFF)
+                        ) );
+                        leftoverByte = code & 0xFF;
+                    }
+                } else {
+                    parts.push( string );
+                }
+            }
+        }
+        buffer = hasLeftover ?
+            [ { type: "byte", val: leftoverByte } ] : [];
+        return parts.join( "" );
+    };
+    
     return { i: input, o: output };
 }
 
-root.consoleIn = makeInputAndOutput();
+root.consoleIn = makeInputAndOutput( "consoleIn" );
 
-root.rainbowStdin = makeInputAndOutput();
-root.rainbowStdout = makeInputAndOutput();
-root.rainbowStderr = makeInputAndOutput();
+root.rainbowStdin = makeInputAndOutput( "rainbowStdin" );
+root.rainbowStdout = makeInputAndOutput( "rainbowStdout" );
+root.rainbowStderr = makeInputAndOutput( "rainbowStderr" );
 
 root.System_in = root.rainbowStdin.i;
 root.System_out = root.rainbowStdout.o;
@@ -230,8 +336,7 @@ root.onload = function () {
     
     var scrollback = root.document.createElement( "pre" );
     scrollback.className = "scrollback";
-    var scrollbackText = root.document.createTextNode( "" );
-    scrollback.appendChild( scrollbackText );
+    scrollback.appendChild( root.document.createTextNode( "" ) );
     repl.appendChild( scrollback );
     
     var prompt = root.document.createElement( "textarea" );
@@ -260,61 +365,63 @@ root.onload = function () {
         root.consoleIn.o.writeString( command );
     }
     
-    function readAllAvailable( stream, then ) {
+    function readStringAvailable( stream, then ) {
+        if ( stream.readStringAvailable !== void 0 )
+            return stream.readStringAvailable();
+        
         var chars = [];
-        var error = null;
-        while ( true ) {
+        var going = true;
+        while ( going ) {
             if ( !stream.readCharCodeAsync( function ( e, c ) {
-                    if ( e )
-                        error = e;
+                    if ( e ) throw e;
+                    if ( c !== null )
+                        going = false;
                     else
                         chars.push( root.String.fromCharCode( c ) );
                 }, !!"sync" ) )
-                return void then( null, chars.join( "" ) );
-            
-            if ( error )
-                return void then( error );
+                going = false;
+        }
+        return chars.join( "" );
+    }
+    
+    var goingToScroll = false;
+    function pr( string ) {
+        scrollback.appendChild(
+            root.document.createTextNode( string ) );
+        if ( !goingToScroll ) {
+            goingToScroll = true;
+            root.setTimeout( function () {
+                goingToScroll = false;
+                scrollback.scrollTop = scrollback.scrollHeight;
+            }, 0 );
         }
     }
     
     function processConsoleIn( e, c ) {
         if ( e ) throw e;
-        if ( c === null ) return;
-        readAllAvailable( root.consoleIn.i, function ( e, string ) {
-            if ( e ) throw e;
-            scrollbackText.data += string;
-            scrollback.scrollTop = scrollback.scrollHeight;
-            root.rainbowStdin.o.writeString( string );
-            root.consoleIn.i.peekCharCodeAsync( processConsoleIn );
-        } );
+        var string = readStringAvailable( root.consoleIn.i );
+        if ( string === "" ) return;
+        pr( string );
+        root.rainbowStdin.o.writeString( string );
+        root.consoleIn.i.peekCharCodeAsync( processConsoleIn );
     }
     root.consoleIn.i.peekCharCodeAsync( processConsoleIn );
     
     function processStdout( e, c ) {
         if ( e ) throw e;
-        if ( c === null ) return;
-        readAllAvailable( root.rainbowStdout.i, function (
-            e, string ) {
-            
-            if ( e ) throw e;
-            scrollbackText.data += string;
-            scrollback.scrollTop = scrollback.scrollHeight;
-            root.rainbowStdout.i.peekCharCodeAsync( processStdout );
-        } );
+        var string = readStringAvailable( root.rainbowStdout.i );
+        if ( string === "" ) return;
+        pr( string );
+        root.rainbowStdout.i.peekCharCodeAsync( processStdout );
     }
     root.rainbowStdout.i.peekCharCodeAsync( processStdout );
     
     function processStderr( e, c ) {
         if ( e ) throw e;
-        if ( c === null ) return;
-        readAllAvailable( root.rainbowStderr.i, function (
-            e, string ) {
-            
-            if ( e ) throw e;
-            scrollbackText.data += string;
-            scrollback.scrollTop = scrollback.scrollHeight;
-            root.rainbowStderr.i.peekCharCodeAsync( processStderr );
-        } );
+        var string = readStringAvailable( root.rainbowStderr.i );
+        if ( string === "" ) return;
+        pr( string );
+        root.rainbowStderr.i.peekCharCodeAsync( processStderr );
     }
     root.rainbowStderr.i.peekCharCodeAsync( processStderr );
     
