@@ -369,6 +369,9 @@
 // are just treated as JavaScript numbers.
 
 
+"use strict";
+
+
 // ===================================================================
 // Parts of the port that didn't come from any file
 // ===================================================================
@@ -411,6 +414,7 @@ var classes = {};
 
 // PORT NOTE: We've found and removed all uses of
 // new ArcError( Exception );
+/** @constructor */
 function ArcError( message, opt_e ) {
     Error.call( this, message );
     this.message = message;
@@ -438,6 +442,7 @@ ArcError.prototype.getCause = function () {
 // ===================================================================
 // Needed late: ArcError Pair
 
+/** @constructor */
 function LexicalClosure( length, parent ) {
     this.parent = parent;
     this.bindings_ = new Array( ~~length );
@@ -495,6 +500,7 @@ LexicalClosure.prototype.size = function () {
 // from parser/ParseException.java
 // ===================================================================
 
+/** @constructor */
 function ParseException() {
     Error.call( this );
 }
@@ -519,6 +525,7 @@ ParseException.prototype = new Error();
 
 
 // PORT NOTE: This was originally abstract.
+/** @constructor */
 function ArcObject() {
 }
 
@@ -737,6 +744,7 @@ ArcObject.prototype.multiply = function ( argObject ) {
 };
 
 // PORT NOTE: In Java, this extended Throwable.
+/** @constructor */
 ArcObject.NotNil = function () {
 };
 
@@ -769,7 +777,7 @@ ArcObject.prototype.disp = function () {
 
 // ASYNC PORT NOTE: This is a completely reworked design.
 
-ArcParser = {};
+var ArcParser = {};
 
 ArcParser.isNonSymAtom = function ( s ) {
     if ( /^-?[01-9]+\/[01-9]+$/.test( s )
@@ -1338,6 +1346,7 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
 
 
 // PORT NOTE: In Java, this was protected.
+/** @constructor */
 function Symbol( name, parseableName ) {
     ArcObject.call( this );
     this.name_ = name;
@@ -1483,6 +1492,7 @@ Symbol.DOT = Symbol.mkSym( "." );
 Symbol.BANG = Symbol.mkSym( "!" );
 
 
+/** @constructor */
 function Pair( car, cdr ) {
     ArcObject.call( this );
     if ( car === null )
@@ -1644,7 +1654,7 @@ Pair.buildFrom_ = function ( items, last, n ) {
 Pair.buildFrom2 = function ( items, last ) {
     if ( items === null || items.length === 0 )
         return last;
-    return this.buildFrom_( items, last, 0 );
+    return Pair.buildFrom_( items, last, 0 );
 };
 
 Pair.buildFrom1 = function ( items ) {
@@ -1741,7 +1751,7 @@ Pair.prototype.nth = function ( index ) {
         if ( !(result instanceof Pair) )
             throw new TypeError();
         return result;
-    } catch ( oob ) { if ( !(oob instanceof Pair.OOB_) ) throw e;
+    } catch ( oob ) { if ( !(oob instanceof Pair.OOB) ) throw e;
         throw new ArcError(
             "Error: index " + index + " too large for list " + this );
     }
@@ -1771,6 +1781,7 @@ Pair.prototype.profileName = function () {
 
 // PORT TODO: Figure out a way to do this inheritance and also get a
 // real stack trace.
+/** @constructor */
 Pair.OOB = function () {
     Error.call( this );
 };
@@ -1791,7 +1802,7 @@ Pair.prototype.copy = function () {
 
 Pair.prototype.unwrap = function () {
     var result = [];
-    return Pair.unwrapList_( result, this );
+    Pair.unwrapList_( result, this );
     return result;
 };
 
@@ -1801,7 +1812,7 @@ Pair.prototype.isSame = function ( other ) {
 };
 
 Pair.unwrapList_ = function ( result, list ) {
-    if ( this instanceof Nil )
+    if ( list instanceof Nil )
         return;
     result.push( list.car().unwrap() );
     // PORT NOTE: This local variable didn't exist in Java.
@@ -1908,6 +1919,7 @@ Pair.prototype.isProper = function () {
     return Pair.isProper( this );
 };
 
+/** @constructor */
 Pair.NotPair = function () {
 };
 
@@ -1921,6 +1933,7 @@ Pair.specials_ = {
 };
 
 
+/** @constructor */
 function Nil( rep ) {
     // PORT NOTE: This is for inheritance from Pair.
     this.car_ = this.cdr_ = null;
@@ -2042,6 +2055,7 @@ Nil.EMPTY_LIST = new Nil( "()" );
 
 
 // PORT NOTE: This was private in Java.
+/** @constructor */
 function Truth() {
     Symbol.call( this, this.name_, this.parseableName_ );
     if ( Truth.T !== void 0 ) throw new Error();
@@ -2102,6 +2116,7 @@ Truth.T = new Truth();
 
 
 // PORT NOTE: This was originally abstract.
+/** @constructor */
 function Instruction() {
     ArcObject.call( this );
     this.owner_ = null;
@@ -2155,6 +2170,7 @@ Instruction.prototype.owner = function () {
 
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 ArcObject.ConvertError = function ( orig, ap, owner ) {
     Instruction.call( this );
     this.orig_ = orig;
@@ -2198,6 +2214,7 @@ ArcObject.T = Truth.T;
 // Needed late: Literal
 
 // PORT NOTE: This was originally abstract.
+/** @constructor */
 function LiteralObject() {
     ArcObject.call( this );
 }
@@ -2224,6 +2241,7 @@ LiteralObject.prototype.profileName = function () {
 // Needed early: LiteralObject Symbol
 // Needed late: ArcError
 
+/** @constructor */
 function ArcCharacter( value ) {
     LiteralObject.call( this );
     this.value_ = value;
@@ -2328,6 +2346,7 @@ ArcCharacter.TYPE = Symbol.mkSym( "char" );
 ArcCharacter.chars_ = new Array( 65536 );
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 ArcCharacter.Anon_NULL_ = function () {
     ArcCharacter.call( this, 0 );
 };
@@ -2340,6 +2359,7 @@ ArcCharacter.Anon_NULL_.prototype.toString = function () {
 ArcCharacter.NULL = new ArcCharacter.Anon_NULL_();
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 ArcCharacter.Anon_named_1_ = function () {
     ArcCharacter.call( this, "\n".charCodeAt( 0 ) );
 };
@@ -2352,6 +2372,7 @@ ArcCharacter.Anon_named_1_.prototype.toString = function () {
 };
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 ArcCharacter.Anon_named_2_ = function () {
     ArcCharacter.call( this, "\t".charCodeAt( 0 ) );
 };
@@ -2364,6 +2385,7 @@ ArcCharacter.Anon_named_2_.prototype.toString = function () {
 };
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 ArcCharacter.Anon_named_3_ = function () {
     ArcCharacter.call( this, "\r".charCodeAt( 0 ) );
 };
@@ -2376,6 +2398,7 @@ ArcCharacter.Anon_named_3_.prototype.toString = function () {
 };
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 ArcCharacter.Anon_named_4_ = function () {
     ArcCharacter.call( this, " ".charCodeAt( 0 ) );
 };
@@ -2402,6 +2425,7 @@ ArcCharacter.named_ = [
 // Needed early: LiteralObject Symbol
 // Needed late: Builtin Rational ArcError ArcCharacter Typing
 
+/** @constructor */
 function ArcString( value ) {
     LiteralObject.call( this );
     this.value_ = value;
@@ -2576,6 +2600,7 @@ ArcString.TYPE = Symbol.mkSym( "string" );
 
 // PORT NOTE: We didn't port the zero-arg ArcException(), and there
 // are no uses of it.
+/** @constructor */
 function ArcException( e, operating, stackTrace ) {
     LiteralObject.call( this );
     this.operating_ = operating;
@@ -2637,6 +2662,7 @@ ArcException.NO_MESSAGE_ = ArcString.make( "no message" );
 // Needed late: ArcError
 
 // PORT NOTE: This was originally abstract.
+/** @constructor */
 function ArcNumber() {
     LiteralObject.call( this );
 }
@@ -2714,6 +2740,7 @@ ArcNumber.NUM_TYPE = Symbol.mkSym( "num" );
 // Needed early: LiteralObject Symbol
 // Needed late: ArcError
 
+/** @constructor */
 function ArcThreadLocal() {
     LiteralObject.call( this );
     this.value_ = null;
@@ -2758,6 +2785,7 @@ ArcThreadLocal.TYPE = Symbol.mkSym( "thread-local" );
 
 // PORT NOTE: We've gotten rid of all uses of Complex that passed
 // ArcNumbers instead of primitives.
+/** @constructor */
 function Complex( real, imaginary ) {
     ArcNumber.call( this );
     this.real_ = real;
@@ -2991,6 +3019,7 @@ Complex.ZERO = new Complex( 0, 0 );
 // be negative when the value as a whole is negative. This makes the
 // value impossible to write out and read back in. But don't fix it!
 // Get it fixed in the original.
+/** @constructor */
 function Rational( numerator, denominator ) {
     ArcNumber.call( this );
     if ( denominator === 0 && numerator !== 0 )
@@ -3136,7 +3165,7 @@ Rational.prototype.round = function () {
         // PORT TODO: Figure out what this case is even for.
         // PORT NOTE: In Java, this was just integer division.
         var r = this.numerator_ / this.denominator_;
-        return r < 0 ? Math.ceil( r ) : Math.floor( r );
+        r = r < 0 ? Math.ceil( r ) : Math.floor( r );
         return Rational.make1( r + (r % 2 === 1 ? 1 : 0) );
     } else {
         return Rational.make1(
@@ -3208,6 +3237,7 @@ Rational.TEN = Rational.make1( 10 );
 // Needed early: ArcNumber
 // Needed late: Real Complex ArcError
 
+/** @constructor */
 function Real( value ) {
     ArcNumber.call( this );
     this.value_ = value;
@@ -3358,6 +3388,7 @@ Real.prototype.add = function ( other ) {
 // Needed early: LiteralObject Symbol
 // Needed late: Hash Pair Nil
 
+/** @constructor */
 function Tagged( type, rep ) {
     LiteralObject.call( this );
     this.type_ = type;
@@ -3488,6 +3519,7 @@ Tagged.TAGGED_WRITE_FN_ = Symbol.mkSym( "tagged-writers" );
 // Needed early: LiteralObject Symbol
 // Needed late: ArcError Nil Pair
 
+/** @constructor */
 function JavaObject( object ) {
     LiteralObject.call( this );
     this.object_ = object;
@@ -3621,6 +3653,7 @@ JavaObject.prototype.close = function () {
 // PORT NOTE: Since JavaScript doesn't implement LinkedHashMap, we
 // implement something similar.
 
+/** @constructor */
 function Hash() {
     LiteralObject.call( this );
     this.name_ = ArcObject.NIL;
@@ -3773,6 +3806,7 @@ Hash.cast = function ( argument, caller ) {
 };
 
 // PORT NOTE: This was an interface in Java.
+/** @constructor */
 Hash.Naming = function () {
 };
 
@@ -3780,6 +3814,7 @@ Hash.Naming.prototype.name = void 0;
 Hash.Naming.prototype.unname = void 0;
 
 // PORT NOTE: This was an inner class in Java.
+/** @constructor */
 Hash.DoName = function ( this_Hash ) {
     Hash.Naming.call( this );
     this.this_Hash_ = this_Hash;
@@ -3796,6 +3831,7 @@ Hash.DoName.prototype.unname = function ( o, name ) {
 };
 
 // PORT NOTE: This was an inner class in Java.
+/** @constructor */
 Hash.DontName = function () {
     Hash.Naming.call( this );
 };
@@ -3815,6 +3851,7 @@ Hash.TYPE = Symbol.mkSym( "table" );
 // Needed late: VMInterceptor ArcError Nil Instruction Pair
 // ArcException
 
+/** @constructor */
 function VM() {
     ArcObject.call( this );
     
@@ -4346,6 +4383,7 @@ VM.threadCount_ = 0;
 // Needed early: ArcObject
 // Needed late: Pair
 
+/** @constructor */
 function ListBuilder() {
     ArcObject.call( this );
     this.list_ = [];
@@ -4386,6 +4424,7 @@ ListBuilder.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: ListBuilder
 
+/** @constructor */
 function Append() {
     Instruction.call( this );
 }
@@ -4413,6 +4452,7 @@ Append.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: ListBuilder Pair
 
+/** @constructor */
 function AppendAll() {
     Instruction.call( this );
 }
@@ -4443,6 +4483,7 @@ AppendAll.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: ListBuilder
 
+/** @constructor */
 function AppendDot() {
     Instruction.call( this );
 }
@@ -4470,6 +4511,7 @@ AppendDot.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: Pair
 
+/** @constructor */
 function Catch( onerr, ap ) {
     Instruction.call( this );
     this.onerr_ = onerr;
@@ -4508,6 +4550,7 @@ Catch.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: rainbow.functions.Closure
 
+/** @constructor */
 function Close_Instruction( ifn ) {
     Instruction.call( this );
     this.ifn_ = ifn;
@@ -4531,6 +4574,7 @@ Close_Instruction.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: rainbow.functions.Closure
 
+/** @constructor */
 function FinallyInvoke( after ) {
     Instruction.call( this );
     this.after_ = after;
@@ -4555,6 +4599,7 @@ FinallyInvoke.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: ListBuilder
 
+/** @constructor */
 function FinishList() {
     Instruction.call( this );
 }
@@ -4580,6 +4625,7 @@ FinishList.prototype.toString = function () {
 // ===================================================================
 // Needed early: Instruction
 
+/** @constructor */
 function FreeSym( sym ) {
     Instruction.call( this );
     this.sym_ = sym;
@@ -4608,6 +4654,7 @@ FreeSym.prototype.toStringWithLc = function ( lc ) {
 // Needed early: Instruction
 // Needed implicitly: rainbow.vm.interpreter.BoundSymbol
 
+/** @constructor */
 function LexSym( sym ) {
     Instruction.call( this );
     this.sym_ = sym;
@@ -4635,6 +4682,7 @@ LexSym.prototype.toStringWithLc = function ( lc ) {
 // ===================================================================
 // Needed early: Instruction
 
+/** @constructor */
 function Listify( size ) {
     Instruction.call( this );
     this.size_ = size;
@@ -4657,6 +4705,7 @@ Listify.prototype.toString = function () {
 // ===================================================================
 // Needed early: Instruction
 
+/** @constructor */
 function Literal( arg ) {
     Instruction.call( this );
     this.arg_ = arg;
@@ -4680,6 +4729,7 @@ Literal.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: ListBuilder
 
+/** @constructor */
 function NewList() {
     Instruction.call( this );
 }
@@ -4701,6 +4751,7 @@ NewList.prototype.toString = function () {
 // ===================================================================
 // Needed early: Instruction
 
+/** @constructor */
 function PopArg( name ) {
     Instruction.call( this );
     this.name_ = name;
@@ -4726,6 +4777,7 @@ PopArg.prototype.toString = function () {
 // PORT NOTE: Despite the general-sounding name, this is really just
 // used for setting the values of IO.stdIn_ and IO.stdOut_.
 
+/** @constructor */
 function SetThreadLocal( tl, value ) {
     Instruction.call( this );
     this.tl_ = tl;
@@ -4746,6 +4798,7 @@ SetThreadLocal.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Instruction
 
+/** @constructor */
 function StackSym( name, index ) {
     Instruction.call( this );
     this.sym_ = name;
@@ -4770,6 +4823,7 @@ StackSym.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: Pair Nil PopArg
 
+/** @constructor */
 function TableMapper( fn ) {
     Instruction.call( this );
     this.fn_ = fn;
@@ -4810,6 +4864,7 @@ TableMapper.prototype.toString = function () {
 // Assign_Lex_Stack Symbol Assign_Lex_Free Assign_Lex_Literal
 // Quotation Assign_Lex_Other
 
+/** @constructor */
 function Assign_Lex( name ) {
     Instruction.call( this );
     this.name = name;
@@ -4840,6 +4895,7 @@ Assign_Lex.addInstructions = function ( i, name, expr, last ) {
 // ===================================================================
 // Needed early: Assign_Lex
 
+/** @constructor */
 function Assign_Lex_Free( name, symbol ) {
     Assign_Lex.call( this, name );
     this.value = symbol;
@@ -4865,6 +4921,7 @@ Assign_Lex_Free.prototype.toString = function () {
     return "(assign-lex " + this.name + " " + this.value + ")";
 };
 
+/** @constructor */
 Assign_Lex_Free.Intermediate = function ( name, value ) {
     Assign_Lex_Free.call( this, name, value );
 };
@@ -4883,6 +4940,7 @@ Assign_Lex_Free.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Lex
 
+/** @constructor */
 function Assign_Lex_Lex( name, value ) {
     Assign_Lex.call( this, name );
     this.value = value;
@@ -4914,6 +4972,7 @@ Assign_Lex_Lex.prototype.toStringWithLc = function ( lc ) {
         this.value + "-->" + this.value.interpret( lc ) + ")";
 };
 
+/** @constructor */
 Assign_Lex_Lex.Intermediate = function ( name, value ) {
     Assign_Lex_Lex.call( this, name, value );
 };
@@ -4933,6 +4992,7 @@ Assign_Lex_Lex.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Lex
 
+/** @constructor */
 function Assign_Lex_Literal( name, expr ) {
     Assign_Lex.call( this, name );
     this.expr = expr;
@@ -4959,6 +5019,7 @@ Assign_Lex_Literal.prototype.toString = function () {
     return "(assign-lex " + this.name + " " + this.expr + ")";
 };
 
+/** @constructor */
 Assign_Lex_Literal.Intermediate = function ( name, value ) {
     Assign_Lex_Literal.call( this, name, value );
 };
@@ -4977,6 +5038,7 @@ Assign_Lex_Literal.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Lex
 
+/** @constructor */
 function Assign_Lex_Other( name ) {
     Assign_Lex.call( this, name );
 }
@@ -5005,6 +5067,7 @@ Assign_Lex_Other.addInstructions = function ( i, name, expr, last ) {
         i.push( new Assign_Lex_Other.Intermediate( name ) );
 };
 
+/** @constructor */
 Assign_Lex_Other.Intermediate = function ( name ) {
     Assign_Lex_Other.call( this, name );
 };
@@ -5023,6 +5086,7 @@ Assign_Lex_Other.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Lex
 
+/** @constructor */
 function Assign_Lex_Stack( name, value ) {
     Assign_Lex.call( this, name );
     this.value = value;
@@ -5054,6 +5118,7 @@ Assign_Lex_Stack.prototype.toStringWithLc = function ( lc ) {
         this.value + ")";
 };
 
+/** @constructor */
 Assign_Lex_Stack.Intermediate = function ( name, value ) {
     Assign_Lex_Stack.call( this, name, value );
 };
@@ -5075,6 +5140,7 @@ Assign_Lex_Stack.Intermediate.prototype.operate = function ( vm ) {
 // Assign_Free_Stack Symbol Assign_Free_Free Assign_Free_Literal
 // Quotation Assign_Free_Other
 
+/** @constructor */
 function Assign_Free( name ) {
     Instruction.call( this );
     this.name = name;
@@ -5105,6 +5171,7 @@ Assign_Free.addInstructions = function ( i, name, expr, last ) {
 // ===================================================================
 // Needed early: Assign_Free
 
+/** @constructor */
 function Assign_Free_Free( name, symbol ) {
     Assign_Free.call( this, name );
     this.value = symbol;
@@ -5130,6 +5197,7 @@ Assign_Free_Free.prototype.toString = function () {
     return "(assign-free-free " + this.name + " " + this.value + ")";
 };
 
+/** @constructor */
 Assign_Free_Free.Intermediate = function ( name, value ) {
     Assign_Free_Free.call( this, name, value );
 };
@@ -5148,6 +5216,7 @@ Assign_Free_Free.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Free
 
+/** @constructor */
 function Assign_Free_Lex( name, value ) {
     Assign_Free.call( this, name );
     this.value = value;
@@ -5173,6 +5242,7 @@ Assign_Free_Lex.prototype.toString = function () {
     return "(assign-free-lex " + this.name + " " + this.value + ")";
 };
 
+/** @constructor */
 Assign_Free_Lex.Intermediate = function ( name, value ) {
     Assign_Free_Lex.call( this, name, value );
 };
@@ -5191,6 +5261,7 @@ Assign_Free_Lex.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Free
 
+/** @constructor */
 function Assign_Free_Literal( name, expr ) {
     Assign_Free.call( this, name );
     this.expr = expr;
@@ -5218,6 +5289,7 @@ Assign_Free_Literal.prototype.toString = function () {
         this.expr + ")";
 };
 
+/** @constructor */
 Assign_Free_Literal.Intermediate = function ( name, expr ) {
     Assign_Free_Literal.call( this, name, expr );
 };
@@ -5237,6 +5309,7 @@ Assign_Free_Literal.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Free
 
+/** @constructor */
 function Assign_Free_Other( name ) {
     Assign_Free.call( this, name );
 }
@@ -5265,6 +5338,7 @@ Assign_Free_Other.addInstructions = function ( i, name, expr, last ) {
         i.push( new Assign_Free_Other.Intermediate( name ) );
 };
 
+/** @constructor */
 Assign_Free_Other.Intermediate = function ( name ) {
     Assign_Free_Other.call( this, name );
 };
@@ -5283,6 +5357,7 @@ Assign_Free_Other.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Free
 
+/** @constructor */
 function Assign_Free_Stack( name, value ) {
     Assign_Free.call( this, name );
     this.value = value;
@@ -5310,6 +5385,7 @@ Assign_Free_Stack.prototype.toString = function () {
     return "(assign-free-stack " + this.name + " " + this.value + ")";
 };
 
+/** @constructor */
 Assign_Free_Stack.Intermediate = function ( name, value ) {
     Assign_Free_Stack.call( this, name, value );
 };
@@ -5331,6 +5407,7 @@ Assign_Free_Stack.Intermediate.prototype.operate = function ( vm ) {
 // Assign_Stack_Stack Symbol Assign_Stack_Free Assign_Stack_Literal
 // Quotation Assign_Stack_Other
 
+/** @constructor */
 function Assign_Stack( name ) {
     Instruction.call( this );
     this.name = name;
@@ -5361,6 +5438,7 @@ Assign_Stack.addInstructions = function ( i, name, expr, last ) {
 // ===================================================================
 // Needed early: Assign_Stack
 
+/** @constructor */
 function Assign_Stack_Free( name, symbol ) {
     Assign_Stack.call( this, name );
     this.value = symbol;
@@ -5388,6 +5466,7 @@ Assign_Stack_Free.prototype.toString = function () {
     return "(assign-free " + this.name + " " + this.value + ")";
 };
 
+/** @constructor */
 Assign_Stack_Free.Intermediate = function ( name, value ) {
     Assign_Stack_Free.call( this, name, value );
 };
@@ -5406,6 +5485,7 @@ Assign_Stack_Free.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Stack
 
+/** @constructor */
 function Assign_Stack_Lex( name, value ) {
     Assign_Stack.call( this, name );
     this.value = value;
@@ -5431,6 +5511,7 @@ Assign_Stack_Lex.prototype.toString = function () {
     return "(assign-free " + this.name + " " + this.value + ")";
 };
 
+/** @constructor */
 Assign_Stack_Lex.Intermediate = function ( name, value ) {
     Assign_Stack_Lex.call( this, name, value );
 };
@@ -5449,6 +5530,7 @@ Assign_Stack_Lex.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Stack
 
+/** @constructor */
 function Assign_Stack_Literal( name, value ) {
     Assign_Stack.call( this, name );
     this.value = value;
@@ -5476,6 +5558,7 @@ Assign_Stack_Literal.prototype.toString = function () {
     return "(assign-free " + this.name + " " + this.value + ")";
 };
 
+/** @constructor */
 Assign_Stack_Literal.Intermediate = function ( name, value ) {
     Assign_Stack_Literal.call( this, name, value );
 };
@@ -5497,6 +5580,7 @@ Assign_Stack_Literal.Intermediate.prototype.operate = function (
 // ===================================================================
 // Needed early: Assign_Stack
 
+/** @constructor */
 function Assign_Stack_Other( name ) {
     Assign_Stack.call( this, name );
 }
@@ -5522,6 +5606,7 @@ Assign_Stack_Other.addInstructions = function (
         i.push( new Assign_Stack_Other.Intermediate( name ) );
 };
 
+/** @constructor */
 Assign_Stack_Other.Intermediate = function ( name ) {
     Assign_Stack_Other.call( this, name );
 };
@@ -5540,6 +5625,7 @@ Assign_Stack_Other.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Assign_Stack
 
+/** @constructor */
 function Assign_Stack_Stack( name, value ) {
     Assign_Stack.call( this, name );
     this.value = value;
@@ -5567,6 +5653,7 @@ Assign_Stack_Stack.prototype.toString = function () {
     return "(assign-free " + this.name + " " + this.value + ")";
 };
 
+/** @constructor */
 Assign_Stack_Stack.Intermediate = function ( name, value ) {
     Assign_Stack_Stack.call( this, name, value );
 };
@@ -5586,6 +5673,7 @@ Assign_Stack_Stack.Intermediate.prototype.operate = function ( vm ) {
 // Needed early: Instruction
 // Needed late: Nil
 
+/** @constructor */
 function Cond( thenExpr, elseExpr, sig ) {
     Instruction.call( this );
     this.thenExpr_ = thenExpr;
@@ -5626,6 +5714,7 @@ Cond.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: Nil BoundSymbol rainbow.vm.interpreter.Else
 
+/** @constructor */
 function If_bound_bound_literal( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
@@ -5674,6 +5763,7 @@ If_bound_bound_literal.prototype.toString = function () {
         this.elseExpr_ + ")";
 };
 
+/** @constructor */
 If_bound_bound_literal.Or = function ( a, elseExpr ) {
     Instruction.call( this );
     this.a_ = a;
@@ -5703,6 +5793,7 @@ If_bound_bound_literal.Or.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: Cond Nil BoundSymbol
 
+/** @constructor */
 function If_bound_bound_other( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
@@ -5750,6 +5841,7 @@ If_bound_bound_other.prototype.toString = function () {
         this.elseExpr_ + ")";
 };
 
+/** @constructor */
 If_bound_bound_other.Or = function ( a, elseExpr ) {
     Instruction.call( this );
     this.a_ = a;
@@ -5785,6 +5877,7 @@ If_bound_bound_other.Or.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: Nil rainbow.vm.interpreter.Else BoundSymbol
 
+/** @constructor */
 function If_bound_literal_literal( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
@@ -5830,6 +5923,7 @@ If_bound_literal_literal.addInstructions = function (
 // Needed early: Instruction
 // Needed late: Cond Nil BoundSymbol rainbow.vm.interpreter.Else
 
+/** @constructor */
 function If_bound_other_literal( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
@@ -5880,6 +5974,7 @@ If_bound_other_literal.addInstructions = function (
 // Needed early: Instruction
 // Needed late: Cond Nil BoundSymbol
 
+/** @constructor */
 function If_bound_other_other( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
@@ -5927,6 +6022,7 @@ If_bound_other_other.addInstructions = function (
 // Needed early: Instruction
 // Needed late: Cond Nil BoundSymbol
 
+/** @constructor */
 function If_other_bound_other( thenExpr, elseExpr ) {
     Instruction.call( this );
     this.elseInstructions_ = Cond.instructionsFor( elseExpr );
@@ -5972,6 +6068,7 @@ If_other_bound_other.addInstructions = function (
 // Needed early: Instruction
 // Needed late: Cond Nil rainbow.vm.interpreter.Else
 
+/** @constructor */
 function If_other_other_literal( thenExpr, elseExpr ) {
     Instruction.call( this );
     this.thenInstructions_ = Cond.instructionsFor( thenExpr );
@@ -6018,6 +6115,7 @@ If_other_other_literal.addInstructions = function (
 // Needed early: Instruction
 // Needed late: Nil rainbow.vm.interpreter.Else StackSymbol
 
+/** @constructor */
 function If_other_stack_literal( thenExpr, elseExpr ) {
     Instruction.call( this );
     this.thenExpr_ = thenExpr;
@@ -6061,6 +6159,7 @@ If_other_stack_literal.addInstructions = function (
 // Needed early: Instruction
 // Needed late: Cond Nil StackSymbol
 
+/** @constructor */
 function If_other_stack_other( thenExpr, elseExpr ) {
     Instruction.call( this );
     this.thenExpr_ = thenExpr;
@@ -6106,6 +6205,7 @@ If_other_stack_other.addInstructions = function (
 // Needed early: Instruction
 // Needed late: Nil StackSymbol rainbow.vm.interpreter.Else Symbol
 
+/** @constructor */
 function If_stack_literal_free( ifExpr, thenExpr, elseExpr ) {
     this.ifExpr_ = ifExpr;
     this.thenExpr_ = thenExpr;
@@ -6152,6 +6252,7 @@ If_stack_literal_free.addInstructions = function (
 // Needed early: Instruction
 // Needed late: Nil StackSymbol rainbow.vm.interpreter.Else
 
+/** @constructor */
 function If_stack_stack_literal( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
@@ -6200,6 +6301,7 @@ If_stack_stack_literal.addInstructions = function (
     }
 };
 
+/** @constructor */
 If_stack_stack_literal.Or = function ( a, elseExpr ) {
     Instruction.call( this );
     this.a_ = a;
@@ -6229,7 +6331,7 @@ If_stack_stack_literal.Or.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: BoundSymbol Symbol
 
-Invoke_0 = {};
+var Invoke_0 = {};
 
 Invoke_0.addInstructions = function ( i, fn ) {
     if ( fn instanceof BoundSymbol ) {
@@ -6242,6 +6344,7 @@ Invoke_0.addInstructions = function ( i, fn ) {
     }
 };
 
+/** @constructor */
 Invoke_0.Lex = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6263,6 +6366,7 @@ Invoke_0.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
+/** @constructor */
 Invoke_0.Free = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6284,6 +6388,7 @@ Invoke_0.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
+/** @constructor */
 Invoke_0.Other = function () {
     Instruction.call( this );
 };
@@ -6311,7 +6416,7 @@ Invoke_0.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: Instruction
 // Needed late: BoundSymbol Symbol Pair
 
-Invoke_1 = {};
+var Invoke_1 = {};
 
 Invoke_1.addInstructions = function ( i, fn, arg ) {
     arg.addInstructions( i );
@@ -6325,6 +6430,7 @@ Invoke_1.addInstructions = function ( i, fn, arg ) {
     }
 };
 
+/** @constructor */
 Invoke_1.Lex = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6347,6 +6453,7 @@ Invoke_1.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
+/** @constructor */
 Invoke_1.Free = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6369,6 +6476,7 @@ Invoke_1.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
+/** @constructor */
 Invoke_1.Other = function () {
     Instruction.call( this );
 };
@@ -6396,7 +6504,7 @@ Invoke_1.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: Instruction
 // Needed late: BoundSymbol Symbol Pair
 
-Invoke_2 = {};
+var Invoke_2 = {};
 
 Invoke_2.addInstructions = function ( i, fn, arg1, arg2 ) {
     arg1.addInstructions( i );
@@ -6411,6 +6519,7 @@ Invoke_2.addInstructions = function ( i, fn, arg1, arg2 ) {
     }
 };
 
+/** @constructor */
 Invoke_2.Lex = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6440,6 +6549,7 @@ Invoke_2.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
+/** @constructor */
 Invoke_2.Free = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6469,6 +6579,7 @@ Invoke_2.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
+/** @constructor */
 Invoke_2.Other = function () {
     Instruction.call( this );
 };
@@ -6505,7 +6616,7 @@ Invoke_2.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: Instruction
 // Needed late: BoundSymbol Symbol Pair
 
-Invoke_3 = {};
+var Invoke_3 = {};
 
 Invoke_3.addInstructions = function ( i, fn, arg1, arg2, arg3 ) {
     arg1.addInstructions( i );
@@ -6521,6 +6632,7 @@ Invoke_3.addInstructions = function ( i, fn, arg1, arg2, arg3 ) {
     }
 };
 
+/** @constructor */
 Invoke_3.Lex = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6546,6 +6658,7 @@ Invoke_3.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
+/** @constructor */
 Invoke_3.Free = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6571,6 +6684,7 @@ Invoke_3.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
+/** @constructor */
 Invoke_3.Other = function () {
     Instruction.call( this );
 };
@@ -6603,7 +6717,7 @@ Invoke_3.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: Instruction
 // Needed late: Nil Pair BoundSymbol Symbol
 
-Invoke_N = {};
+var Invoke_N = {};
 
 Invoke_N.addInstructions = function ( i, fn, args ) {
     var argCount = args.len();
@@ -6624,6 +6738,7 @@ Invoke_N.addInstructions = function ( i, fn, args ) {
     }
 };
 
+/** @constructor */
 Invoke_N.Lex = function ( fn, argCount ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6647,6 +6762,7 @@ Invoke_N.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
+/** @constructor */
 Invoke_N.Free = function ( fn, argCount ) {
     Instruction.call( this );
     this.fn = fn;
@@ -6669,6 +6785,7 @@ Invoke_N.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
+/** @constructor */
 Invoke_N.Other = function ( argCount ) {
     Instruction.call( this );
     this.argCount = argCount;
@@ -6698,6 +6815,7 @@ Invoke_N.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: ArcObject
 // Needed late: StackSym Symbol
 
+/** @constructor */
 function StackSymbol( name, index ) {
     ArcObject.call( this );
     this.name = name;
@@ -6748,6 +6866,7 @@ StackSymbol.prototype.inline3 = function ( p, arg, paramIndex ) {
 // Needed early: ArcObject Symbol
 // Needed late: LexSym ArcError StackSymbol
 
+/** @constructor */
 function BoundSymbol( name, nesting, index ) {
     ArcObject.call( this );
     this.nesting = nesting;
@@ -6854,6 +6973,7 @@ BoundSymbol.TYPE = Symbol.mkSym( "bound-symbol" );
 // Assign_Stack Assign_Free InterpretedFunction
 
 // PORT TODO: Remove all uses of the zero-arg SingleAssignment().
+/** @constructor */
 function SingleAssignment( next ) {
     ArcObject.call( this );
     this.name = null;
@@ -7001,6 +7121,7 @@ SingleAssignment.prototype.assignsTo = function ( name ) {
 // Needed late: Symbol BoundSymbol ArcError Assign_Lex StackSymbol
 // Assign_Stack Assign_Free InterpretedFunction
 
+/** @constructor */
 function LastAssignment() {
     SingleAssignment.call( this, null );
 }
@@ -7092,6 +7213,7 @@ LastAssignment.prototype.visit = function ( v ) {
 // Needed early: ArcObject
 // Needed late: Symbol ArcError LastAssignment SingleAssignment
 
+/** @constructor */
 function Assignment() {
     ArcObject.call( this );
     this.assignment = null;
@@ -7189,6 +7311,7 @@ Assignment.prototype.replaceBoundSymbols = function (
 // Needed early: ArcObject
 // Needed late: Symbol ArcError InterpretedFunction Invocation
 
+/** @constructor */
 function Else() {
     ArcObject.call( this );
     this.ifExpression = null;
@@ -7289,6 +7412,7 @@ Else.prototype.sig = function () {
 // Needed early: ArcObject Symbol
 // Needed late: ArcError IfThen
 
+/** @constructor */
 function IfClause() {
     ArcObject.call( this );
     this.first_ = null;
@@ -7436,6 +7560,7 @@ IfClause.TYPE = Symbol.mkSym( "if-clause" );
 // Needed late: Symbol ArcError classes Cond Nil Else StackSymbol
 // InterpretedFunction
 
+/** @constructor */
 function IfThen() {
     ArcObject.call( this );
     this.ifExpression = null;
@@ -7678,6 +7803,7 @@ IfThen.handlers = {};
 // Needed early: ArcObject
 // Needed late: Literal Symbol
 
+/** @constructor */
 function Quotation( quoted ) {
     ArcObject.call( this );
     this.quoted_ = quoted;
@@ -7714,6 +7840,7 @@ Quotation.prototype.toString = function () {
 // Needed late: Symbol Decompiler InterpretedFunction Bind ArcError
 // Pair Nil BoundSymbol StackSymbol Quotation
 
+/** @constructor */
 function Invocation( parts ) {
     ArcObject.call( this );
     this.parts = parts;
@@ -8013,6 +8140,7 @@ Invocation.prototype.visit = function ( v ) {
 // Needed late: Symbol Literal QuasiQuoteCompiler Listify AppendAll
 // Append AppendDot Nil Pair InterpretedFunction
 
+/** @constructor */
 function QuasiQuotation( target ) {
     ArcObject.call( this );
     this.target_ = target;
@@ -8477,6 +8605,7 @@ QuasiQuotation.prototype.visit = function ( v ) {
 // from vm/interpreter/qq/Unquote.java
 // ===================================================================
 
+/** @constructor */
 function Unquote() {
 }
 
@@ -8485,6 +8614,7 @@ function Unquote() {
 // from vm/interpreter/qq/UnquoteSplicing.java
 // ===================================================================
 
+/** @constructor */
 function UnquoteSplicing() {
 }
 
@@ -8493,6 +8623,7 @@ function UnquoteSplicing() {
 // from vm/interpreter/visitor/Visitor.java
 // ===================================================================
 
+/** @constructor */
 function Visitor() {
 }
 
@@ -8607,6 +8738,7 @@ Visitor.prototype.endSingleAssignment = function ( o ) {
 // Needed early: Visitor
 // Needed late: Pair ArcObject
 
+/** @constructor */
 function FunctionOwnershipVisitor( top ) {
     Visitor.call( this );
     this.owners_ = new Pair( top, ArcObject.NIL );
@@ -8633,6 +8765,7 @@ FunctionOwnershipVisitor.prototype.endInterpretedFunction = function (
 // ===================================================================
 // Needed early: Visitor
 
+/** @constructor */
 function MeasureLexicalReach( top ) {
     Visitor.call( this );
     this.stack_ = [];
@@ -8680,6 +8813,7 @@ MeasureLexicalReach.prototype.acceptBoundSymbol = function ( b ) {
 // Needed early: Visitor
 // Needed late: Pair ArcObject
 
+/** @constructor */
 function ReferenceCounter( target ) {
     Visitor.call( this );
     this.stack_ = [];
@@ -8730,6 +8864,7 @@ ReferenceCounter.prototype.acceptBoundSymbol = function ( b ) {
 
 // PORT NOTE: JavaScript can't do nanoseconds, but we pretend.
 
+/** @constructor */
 function FunctionProfile() {
     this.target = null;
     this.name = null;
@@ -8814,6 +8949,7 @@ FunctionProfile.prototype.addCallee = function ( invocation ) {
 // ===================================================================
 // Needed late: InterpretedFunction Pair ArcString Rational
 
+/** @constructor */
 function InvocationCounter( target ) {
     this.target = target;
     this.count = 0;
@@ -8846,6 +8982,7 @@ InvocationCounter.get = function ( map, o ) {
 // from vm/interceptor/ProfileData.java
 // ===================================================================
 
+/** @constructor */
 function ProfileData() {
     this.invocationProfile = {};
     this.instructionProfile = {};
@@ -8861,6 +8998,7 @@ function ProfileData() {
 
 // PORT NOTE: This was originally an enum.
 
+/** @constructor */
 function VMInterceptor() {
 }
 
@@ -8897,6 +9035,7 @@ VMInterceptor.debug = function ( vm ) {
     }
 };
 
+/** @constructor */
 VMInterceptor.NULL_class = function () {
 };
 
@@ -8913,6 +9052,7 @@ VMInterceptor.NULL_class.prototype.install = function ( vm ) {
 
 VMInterceptor.NULL = new VMInterceptor.NULL_class();
 
+/** @constructor */
 VMInterceptor.DEBUG_class = function () {
 };
 
@@ -8932,6 +9072,7 @@ VMInterceptor.DEBUG_class.prototype.install = function ( vm ) {
 
 VMInterceptor.DEBUG = new VMInterceptor.DEBUG_class();
 
+/** @constructor */
 VMInterceptor.KILL_class = function () {
 };
 
@@ -8949,6 +9090,7 @@ VMInterceptor.KILL_class.prototype.install = function ( vm ) {
 
 VMInterceptor.KILL = new VMInterceptor.KILL_class();
 
+/** @constructor */
 VMInterceptor.NEXT_FRAME_class = function () {
 };
 
@@ -8967,6 +9109,7 @@ VMInterceptor.NEXT_FRAME_class.prototype.install = function ( vm ) {
 
 VMInterceptor.NEXT_FRAME = new VMInterceptor.NEXT_FRAME_class();
 
+/** @constructor */
 VMInterceptor.PROFILE_class = function () {
 };
 
@@ -9046,6 +9189,7 @@ AssignmentBuilder.build = function ( vm, body, lexicalBindings ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 AssignmentBuilder.BuildAssignment1 = function (
     assignment, body, lexicalBindings ) {
     
@@ -9079,6 +9223,7 @@ AssignmentBuilder.BuildAssignment1.prototype.operate = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 AssignmentBuilder.BuildAssignment2 = function (
     assignment, body, lexicalBindings ) {
     
@@ -9159,6 +9304,7 @@ Compiler.compile = function ( vm, expression, lexicalBindings ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 Compiler.FinishAtString = function ( lexicalBindings ) {
     Instruction.call( this );
     this.lexicalBindings_ = lexicalBindings;
@@ -9273,6 +9419,7 @@ Compiler.compilePair = function ( vm, expression, lexicalBindings ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 Compiler.ThenCompile = function ( lexicalBindings ) {
     Instruction.call( this );
     this.lexicalBindings_ = lexicalBindings;
@@ -9288,6 +9435,7 @@ Compiler.ThenCompile.prototype.operate = function ( vm ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 Compiler.WrapQuasiQuotation = function () {
     Instruction.call( this );
     // ASYNC PORT TODO: Come up with a better owner for this.
@@ -9448,6 +9596,7 @@ FunctionBodyBuilder.build = function ( vm, args, lexicalBindings ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 FunctionBodyBuilder.Intermediate = function (
     args, lexicalBindings, myParams ) {
     
@@ -9478,6 +9627,7 @@ FunctionBodyBuilder.Intermediate.prototype.operate = function ( vm ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 FunctionBodyBuilder.Finish = function (
     parameterList, myParams, body, complexParams, ap ) {
     
@@ -9749,6 +9899,7 @@ FunctionParameterListBuilder.buildParams_ = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 FunctionParameterListBuilder.ReturnParams = function (
     result, complexParams ) {
     
@@ -9778,6 +9929,7 @@ FunctionParameterListBuilder.ReturnParams.prototype.operate =
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 FunctionParameterListBuilder.BuildParams1 = function (
     result, complexParams, parameters, lexicalBindings ) {
     
@@ -9844,6 +9996,7 @@ FunctionParameterListBuilder.BuildParams1.prototype.operate =
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 FunctionParameterListBuilder.BuildParams2a = function (
     result, complexParams, parameters, lexicalBindings,
     optionalParamName ) {
@@ -9876,6 +10029,7 @@ FunctionParameterListBuilder.BuildParams2a.prototype.operate =
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 FunctionParameterListBuilder.BuildParams2b = function (
     result, complexParams, parameters, lexicalBindings ) {
     
@@ -10125,6 +10279,7 @@ IfBuilder.build = function ( vm, body, lexicalBindings ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 IfBuilder.Reduce = function ( clause ) {
     Instruction.call( this );
     this.clause_ = clause;
@@ -10140,6 +10295,7 @@ IfBuilder.Reduce.prototype.operate = function ( vm ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 IfBuilder.BuildIf1 = function ( clause, body, lexicalBindings ) {
     Instruction.call( this );
     this.clause_ = clause;
@@ -10168,6 +10324,7 @@ IfBuilder.BuildIf1.prototype.operate = function ( vm ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 IfBuilder.BuildIf2 = function ( clause, body, lexicalBindings ) {
     Instruction.call( this );
     this.clause_ = clause;
@@ -10242,6 +10399,7 @@ InvocationBuilder.build = function ( vm, body, lexicalBindings ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 InvocationBuilder.BuildInvocation = function (
     body, lexicalBindings, original, list ) {
     
@@ -10283,6 +10441,7 @@ InvocationBuilder.BuildInvocation.prototype.operate = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 InvocationBuilder.ReducePush = function ( list ) {
     Instruction.call( this );
     this.list_ = list;
@@ -10333,6 +10492,7 @@ PairExpander.expand = function ( vm, body, lexicalBindings ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 PairExpander.ExpandPair = function ( body, lexicalBindings, result ) {
     Instruction.call( this );
     this.body_ = body;
@@ -10363,6 +10523,7 @@ PairExpander.ExpandPair.prototype.operate = function ( vm ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 PairExpander.ReducePush = function ( list ) {
     Instruction.call( this );
     this.list_ = list;
@@ -10379,6 +10540,7 @@ PairExpander.ReducePush.prototype.operate = function ( vm ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 PairExpander.FinishPair = function ( result ) {
     Instruction.call( this );
     this.result_ = result;
@@ -10462,6 +10624,7 @@ QuasiQuoteCompiler.compile = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 QuasiQuoteCompiler.CompileQuasiQuote = function (
     result, expression, lexicalBindings, nesting ) {
     
@@ -10503,6 +10666,7 @@ QuasiQuoteCompiler.CompileQuasiQuote.prototype.operate = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 QuasiQuoteCompiler.FinishQuasiQuote = function ( result ) {
     Instruction.call( this );
     this.result_ = result;
@@ -10521,6 +10685,7 @@ QuasiQuoteCompiler.FinishQuasiQuote.prototype.operate = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 QuasiQuoteCompiler.Push = function ( result ) {
     Instruction.call( this );
     this.result_ = result;
@@ -10587,6 +10752,7 @@ QuasiQuoteCompiler.compileUnquote_ = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 QuasiQuoteCompiler.Prefix = function ( prefix ) {
     Instruction.call( this );
     this.prefix_ = prefix;
@@ -10621,6 +10787,7 @@ QuasiQuoteCompiler.Prefix.prototype.operate = function ( vm ) {
 // from util/Argv.java
 // ===================================================================
 
+/** @constructor */
 function Argv( args ) {
     this.args_ = args.slice();
     this.parsed_ = {};
@@ -10780,6 +10947,7 @@ Decompiler.makeAif_ = function ( ifClause, arg ) {
 
 // PORT TODO: Change all original uses of the constructor to uses of
 // InterpretedFunction.of().
+/** @constructor */
 function Builtin() {
     ArcObject.call( this );
 }
@@ -10878,6 +11046,7 @@ Builtin.TYPE = Symbol.mkSym( "fn" );
 // Needed early: ArcObject
 // Needed late: Builtin
 
+/** @constructor */
 function Closure( expression, lc ) {
     ArcObject.call( this );
     this.expression_ = expression;
@@ -10940,6 +11109,7 @@ Evaluation.ssExpand = function ( expression ) {
 
 // PORT TODO: See if this is unused. But don't remove it! (The
 // spelling is correct, too.)
+/** @constructor */
 Evaluation.UnknownSytax = function ( symbol ) {
     ArcError.call( this, "Unknown syntax " + symbol );
 };
@@ -10991,6 +11161,7 @@ Evaluation.isCompose_ = function ( symbol ) {
 
 // PORT TODO: Change all original uses of the constructor to uses of
 // InterpretedFunction.of().
+/** @constructor */
 function InterpretedFunction() {
     ArcObject.call( this );
 }
@@ -11126,6 +11297,7 @@ InterpretedFunction.prototype.lexicalOwner = function () {
 };
 
 // NOTE: This was an anonymous class in Java.
+/** @constructor */
 InterpretedFunction.Visitor_claimInstructions_ = function ( owner ) {
     Visitor.call( this );
     this.owner_ = owner;
@@ -11507,6 +11679,7 @@ InterpretedFunction.prototype.isAifBody = function () {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure Nil Symbol
 
+/** @constructor */
 function SimpleArgs( parameterList, lexicalBindings, body ) {
     InterpretedFunction.call( this );
     this.init( parameterList, lexicalBindings, body );
@@ -11545,6 +11718,7 @@ SimpleArgs.simple_ = function ( lc, parameterList, args ) {
 // Needed early: InterpretedFunction Symbol
 // Needed late: LexicalClosure Nil Pair ArcError
 
+/** @constructor */
 function ComplexArgs( parameterList, lexicalBindings, body ) {
     InterpretedFunction.call( this );
     this.init( parameterList, lexicalBindings, body );
@@ -11566,6 +11740,7 @@ ComplexArgs.prototype.invoke3 = function ( vm, lc, args ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 ComplexArgs.Run = function ( lc, instructions, owner ) {
     Instruction.call( this );
     this.lc_ = lc;
@@ -11599,6 +11774,7 @@ ComplexArgs.prototype.complex_ = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 ComplexArgs.BuildComplex = function ( lc, parameters, args, owner ) {
     Instruction.call( this );
     this.lc_ = lc;
@@ -11655,6 +11831,7 @@ ComplexArgs.BuildComplex.prototype.operate = function ( vm ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 ComplexArgs.AddToLc = function ( lc, owner ) {
     Instruction.call( this );
     this.lc_ = lc;
@@ -11750,6 +11927,7 @@ ComplexArgs.o_ = Symbol.mkSym( "o" );
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were just super() calls) to uses of
 // StackFunctionSupport.of().
+/** @constructor */
 function StackFunctionSupport() {
     InterpretedFunction.call( this );
 }
@@ -11842,6 +12020,7 @@ StackFunctionSupport.convertItem = function (
 // Needed early: InterpretedFunction
 // Needed late: ArcObject ArcError
 
+/** @constructor */
 function Bind() {
     InterpretedFunction.call( this );
 }
@@ -11879,6 +12058,7 @@ Bind.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: ArcError LexicalClosure Nil ArcObject
 
+/** @constructor */
 function Bind_A() {
     InterpretedFunction.call( this );
 }
@@ -11929,6 +12109,7 @@ Bind_A.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: ArcError LexicalClosure ArcObject
 
+/** @constructor */
 function Bind_A_A() {
     InterpretedFunction.call( this );
 }
@@ -11981,6 +12162,7 @@ Bind_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure
 
+/** @constructor */
 function Bind_A_A_A() {
     InterpretedFunction.call( this );
 }
@@ -12024,6 +12206,7 @@ Bind_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure
 
+/** @constructor */
 function Bind_A_A_R() {
     InterpretedFunction.call( this );
 }
@@ -12068,6 +12251,7 @@ Bind_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: BoundSymbol Symbol LexicalClosure Nil
 
+/** @constructor */
 function Bind_A_Obound() {
     InterpretedFunction.call( this );
 }
@@ -12152,6 +12336,7 @@ Bind_A_Obound.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Symbol LexicalClosure Nil
 
+/** @constructor */
 function Bind_A_Oliteral() {
     InterpretedFunction.call( this );
 }
@@ -12233,6 +12418,7 @@ Bind_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Symbol LexicalClosure BindAndRun Nil
 
+/** @constructor */
 function Bind_A_Oother() {
     InterpretedFunction.call( this );
 }
@@ -12309,6 +12495,7 @@ Bind_A_Oother.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: ArcError LexicalClosure
 
+/** @constructor */
 function Bind_A_R() {
     InterpretedFunction.call( this );
 }
@@ -12347,6 +12534,7 @@ Bind_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure Pair ArcError
 
+/** @constructor */
 function Bind_D_A_A_A_d() {
     InterpretedFunction.call( this );
 }
@@ -12412,6 +12600,7 @@ Bind_D_A_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure Pair ArcError
 
+/** @constructor */
 function Bind_D_A_A_d() {
     InterpretedFunction.call( this );
 }
@@ -12462,6 +12651,7 @@ Bind_D_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Pair Symbol LexicalClosure Nil
 
+/** @constructor */
 function Bind_Obound() {
     InterpretedFunction.call( this );
 }
@@ -12531,6 +12721,7 @@ Bind_Obound.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Symbol LexicalClosure Nil
 
+/** @constructor */
 function Bind_Oliteral() {
     InterpretedFunction.call( this );
 }
@@ -12611,6 +12802,7 @@ Bind_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: Symbol LexicalClosure Nil ArcError
 
+/** @constructor */
 function Bind_Oother() {
     InterpretedFunction.call( this );
 }
@@ -12689,6 +12881,7 @@ Bind_Oother.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: InterpretedFunction
 // Needed late: LexicalClosure
 
+/** @constructor */
 function Bind_R() {
     InterpretedFunction.call( this );
 }
@@ -12722,6 +12915,7 @@ Bind_R.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_A.of*().
+/** @constructor */
 function Stack_A() {
     StackFunctionSupport.call( this );
 }
@@ -12773,6 +12967,7 @@ Stack_A.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_A_A.of*().
+/** @constructor */
 function Stack_A_A() {
     StackFunctionSupport.call( this );
 }
@@ -12824,6 +13019,7 @@ Stack_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_A_A_A.of*().
+/** @constructor */
 function Stack_A_A_A() {
     StackFunctionSupport.call( this );
 }
@@ -12881,6 +13077,7 @@ Stack_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_A_A_A_A.of*().
+/** @constructor */
 function Stack_A_A_A_A() {
     StackFunctionSupport.call( this );
 }
@@ -12942,6 +13139,7 @@ Stack_A_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_A_A_R.of*().
+/** @constructor */
 function Stack_A_A_R() {
     StackFunctionSupport.call( this );
 }
@@ -12980,6 +13178,7 @@ Stack_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_A_R.of*().
+/** @constructor */
 function Stack_A_R() {
     StackFunctionSupport.call( this );
 }
@@ -13018,6 +13217,7 @@ Stack_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_R.of*().
+/** @constructor */
 function Stack_R() {
     StackFunctionSupport.call( this );
 }
@@ -13056,6 +13256,7 @@ Stack_R.prototype.invoke3 = function ( vm, lc, args ) {
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of
 // Stack_D_A_A_A_A_d.of*().
+/** @constructor */
 function Stack_D_A_A_A_A_d() {
     StackFunctionSupport.call( this );
 }
@@ -13119,6 +13320,7 @@ Stack_D_A_A_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_D_A_A_d.of*().
+/** @constructor */
 function Stack_D_A_A_d() {
     StackFunctionSupport.call( this );
 }
@@ -13176,6 +13378,7 @@ Stack_D_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of
 // Stack_A_Oliteral.of*().
+/** @constructor */
 function Stack_A_Oliteral() {
     StackFunctionSupport.call( this );
 }
@@ -13284,6 +13487,7 @@ Stack_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_Oliteral.of*().
+/** @constructor */
 function Stack_Oliteral() {
     StackFunctionSupport.call( this );
 }
@@ -13380,6 +13584,7 @@ Stack_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // Needed early: Builtin
 // Needed late: Nil ArcObject Pair Symbol Tagged
 
+/** @constructor */
 function Macex() {
     Builtin.call( this );
     this.init( "macex" );
@@ -13429,6 +13634,7 @@ Macex.prototype.invoke = function ( vm, args ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 Macex.Again = function ( owner ) {
     Instruction.call( this );
     this.belongsTo( owner );
@@ -13488,6 +13694,7 @@ Macex.Again.prototype.operate = function ( vm ) {
 // Needed early: Builtin
 // Needed late: Symbol ArcObject ArcError
 
+/** @constructor */
 function Uniq() {
     Builtin.call( this );
     this.init( "uniq" );
@@ -13522,6 +13729,7 @@ Uniq.count_ = 0;
 // Needed early: Builtin
 // Needed late: ArcException
 
+/** @constructor */
 function Details() {
     Builtin.call( this );
     this.init( "details" );
@@ -13541,6 +13749,7 @@ Details.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcError ArcString
 
+/** @constructor */
 function Err() {
     Builtin.call( this );
     this.init( "err" );
@@ -13560,6 +13769,7 @@ Err.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Catch ArcObject
 
+/** @constructor */
 function OnErr() {
     Builtin.call( this );
     this.init( "on-err" );
@@ -13582,6 +13792,7 @@ OnErr.prototype.invokePair = function ( args ) {
 // Needed early: Builtin Visitor
 // Needed late: Pair FinallyInvoke PopArg ArcObject
 
+/** @constructor */
 function Protect() {
     Builtin.call( this );
     this.init( "protect" );
@@ -13593,6 +13804,7 @@ Protect.prototype = new Builtin();
 Protect.prototype.className = "Protect";
 
 // PORT NOTE: This was an anonymous inner class in Java.
+/** @constructor */
 Protect.Anon_v_ = function ( this_Protect ) {
     this.this_Protect_ = this_Protect;
 };
@@ -13619,6 +13831,7 @@ Protect.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: ArcError Pair Nil
 
+/** @constructor */
 function Apply() {
     Builtin.call( this );
     this.init( "apply" );
@@ -13673,6 +13886,7 @@ Apply.prototype.constructApplyArgs_ = function ( args ) {
 // Needed early: Builtin
 // Needed late: Compiler Pair
 
+/** @constructor */
 function Eval() {
     Builtin.call( this );
     this.init( "eval" );
@@ -13697,6 +13911,7 @@ Eval.prototype.invoke = function ( vm, args ) {
 //};
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 Eval.ReduceAndExecute = function ( owner ) {
     Instruction.call( this );
     this.belongsTo( owner );
@@ -13720,6 +13935,7 @@ Eval.ReduceAndExecute.prototype.operate = function ( vm ) {
 // Needed late: Symbol Evaluation ArcError Pair ArcParser
 // StringInputPort ParseException Nil ArcObject
 
+/** @constructor */
 function SSExpand() {
     Builtin.call( this );
     this.init( "ssexpand" );
@@ -13878,6 +14094,7 @@ SSExpand.ANDF_INTRASYM_CHAR = "&".charCodeAt( 0 );
 // Needed early: Builtin
 // Needed late: Symbol ArcObject Evaluation
 
+/** @constructor */
 function SSyntax() {
     Builtin.call( this );
     this.init( "ssyntax" );
@@ -13904,6 +14121,7 @@ SSyntax.isSpecial = function ( symbol ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function JavaDebug() {
     Builtin.call( this );
     this.init( "java-debug" );
@@ -13922,6 +14140,7 @@ JavaDebug.prototype.invokePair = function ( args ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function Car() {
     Builtin.call( this );
     this.init( "car" );
@@ -13945,6 +14164,7 @@ Car.prototype.invokePair = function ( args ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function Cdr() {
     Builtin.call( this );
     this.init( "cdr" );
@@ -13969,6 +14189,7 @@ Cdr.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Pair
 
+/** @constructor */
 function Cons() {
     Builtin.call( this );
     this.init( "cons" );
@@ -13993,6 +14214,7 @@ Cons.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Rational
 
+/** @constructor */
 function Len() {
     Builtin.call( this );
     this.init( "len" );
@@ -14013,6 +14235,7 @@ Len.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber ArcCharacter Nil ArcString
 
+/** @constructor */
 function NewString() {
     Builtin.call( this );
     this.init( "newstring" );
@@ -14045,6 +14268,7 @@ NewString.prototype.invokePair = function ( args ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function Scar() {
     Builtin.call( this );
     this.init( "scar" );
@@ -14067,6 +14291,7 @@ Scar.prototype.invokePair = function ( args ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function Scdr() {
     Builtin.call( this );
     this.init( "scdr" );
@@ -14092,6 +14317,7 @@ Scdr.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Real
 
+/** @constructor */
 function Acos() {
     Builtin.call( this );
     this.init( "acos" );
@@ -14114,6 +14340,7 @@ Acos.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Rational Nil Maths
 
+/** @constructor */
 function Add() {
     Builtin.call( this );
     this.init( "+" );
@@ -14161,6 +14388,7 @@ Add.sum = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Real
 
+/** @constructor */
 function Asin() {
     Builtin.call( this );
     this.init( "asin" );
@@ -14183,6 +14411,7 @@ Asin.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Real
 
+/** @constructor */
 function Atan() {
     Builtin.call( this );
     this.init( "atan" );
@@ -14205,6 +14434,7 @@ Atan.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Complex Pair
 
+/** @constructor */
 function ComplexParts() {
     Builtin.call( this );
     this.init( "complex-parts" );
@@ -14226,6 +14456,7 @@ ComplexParts.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Real
 
+/** @constructor */
 function Cosine() {
     Builtin.call( this );
     this.init( "cos" );
@@ -14248,6 +14479,7 @@ Cosine.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Nil ArcError Maths
 
+/** @constructor */
 function Divide() {
     Builtin.call( this );
     this.init( "/" );
@@ -14270,6 +14502,7 @@ Divide.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Complex Real
 
+/** @constructor */
 function Expt() {
     Builtin.call( this );
     this.init( "expt" );
@@ -14307,6 +14540,7 @@ Expt.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Complex Real
 
+/** @constructor */
 function Logarithm() {
     Builtin.call( this );
     this.init( "log" );
@@ -14331,6 +14565,7 @@ Logarithm.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Complex
 
+/** @constructor */
 function MakeComplex() {
     Builtin.call( this );
     this.init( "make-complex" );
@@ -14390,6 +14625,7 @@ Maths.precision = function ( args ) {
 }
 
 // PORT NOTE: This was originally an interface.
+/** @constructor */
 Maths.MathsOps = function () {
 };
 
@@ -14403,6 +14639,7 @@ Maths.MathsOps.prototype.multiply = void 0;
 Maths.MathsOps.prototype.divide = void 0;
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 Maths.Anon_doubleOps_ = function () {
     Maths.MathsOps.call( this );
 };
@@ -14474,6 +14711,7 @@ Maths.Anon_doubleOps_.prototype.multiplyDouble_ = function ( args ) {
 Maths.doubleOps_ = new Maths.Anon_doubleOps_();
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 Maths.Anon_complexOps_ = function () {
     Maths.MathsOps.call( this );
 };
@@ -14524,6 +14762,7 @@ Maths.Anon_complexOps_.prototype.divide = function ( args ) {
 Maths.complexOps_ = new Maths.Anon_complexOps_();
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 Maths.Anon_rationalOps_ = function () {
     Maths.MathsOps.call( this );
 };
@@ -14588,6 +14827,7 @@ Maths.rationalOps_ = new Maths.Anon_rationalOps_();
 // Needed early: Builtin
 // Needed late: ArcNumber
 
+/** @constructor */
 function Mod() {
     Builtin.call( this );
     this.init( "mod" );
@@ -14618,6 +14858,7 @@ Mod.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: Rational Nil
 
+/** @constructor */
 function Multiply() {
     Builtin.call( this );
     this.init( "*" );
@@ -14661,6 +14902,7 @@ Multiply.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Complex Pair Real
 
+/** @constructor */
 function PolarCoordinates() {
     Builtin.call( this );
     this.init( "polar-coordinates" );
@@ -14683,6 +14925,7 @@ PolarCoordinates.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Rational ArcError
 
+/** @constructor */
 function Quotient() {
     Builtin.call( this );
     this.init( "quotient" );
@@ -14712,6 +14955,7 @@ Quotient.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Rational ArcError
 
+/** @constructor */
 function Rand() {
     Builtin.call( this );
     this.init( "rand" );
@@ -14746,6 +14990,7 @@ Rand.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Real
 
+/** @constructor */
 function Sine() {
     Builtin.call( this );
     this.init( "sin" );
@@ -14767,6 +15012,7 @@ Sine.prototype.invokePair = function ( args ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function Sqrt() {
     Builtin.call( this );
     this.init( "sqrt" );
@@ -14791,6 +15037,7 @@ Sqrt.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: ArcError ArcNumber Pair Nil Add
 
+/** @constructor */
 function Subtract() {
     Builtin.call( this );
     this.init( "-" );
@@ -14844,6 +15091,7 @@ Subtract.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Real
 
+/** @constructor */
 function Tangent() {
     Builtin.call( this );
     this.init( "tan" );
@@ -14866,6 +15114,7 @@ Tangent.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Rational
 
+/** @constructor */
 function Trunc() {
     Builtin.call( this );
     this.init( "trunc" );
@@ -14894,6 +15143,7 @@ Trunc.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcError Symbol Truth
 
+/** @constructor */
 function Bound() {
     Builtin.call( this );
     this.init( "bound" );
@@ -14926,6 +15176,7 @@ Bound.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcNumber Truth Rational
 
+/** @constructor */
 function Exact() {
     Builtin.call( this );
     this.init( "exact" );
@@ -14947,6 +15198,7 @@ Exact.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcObject Pair Nil
 
+/** @constructor */
 function GreaterThan() {
     Builtin.call( this );
     this.init( ">" );
@@ -14997,6 +15249,7 @@ GreaterThan.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcObject Truth
 
+/** @constructor */
 function Is() {
     Builtin.call( this );
     this.init( "is" );
@@ -15038,6 +15291,7 @@ Is.prototype.checkIs_ = function ( test, args ) {
 // Needed early: Builtin
 // Needed late: ArcObject Pair Nil
 
+/** @constructor */
 function LessThan() {
     Builtin.call( this );
     this.init( "<" );
@@ -15086,6 +15340,7 @@ LessThan.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: VMInterceptor Symbol
 
+/** @constructor */
 function RainbowDebug() {
     Builtin.call( this );
     this.init( "rainbow-debug" );
@@ -15106,6 +15361,7 @@ RainbowDebug.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: ArcObject VM VMInterceptor
 
+/** @constructor */
 function RainbowProfile() {
     Builtin.call( this );
     this.init( "rainbow-profile" );
@@ -15138,6 +15394,7 @@ RainbowProfile.prototype.profile = function ( target ) {
 // Needed early: Builtin
 // Needed late: ArcObject VM VMInterceptor
 
+/** @constructor */
 function RainbowProfileReport() {
     Builtin.call( this );
     this.init( "rainbow-profile-report" );
@@ -15238,6 +15495,7 @@ RainbowProfileReport.prototype.createInvocationReport_ = function (
 // Needed early: Builtin
 // Needed late: Rational
 
+/** @constructor */
 function CurrentGcMilliseconds() {
     Builtin.call( this );
     this.init( "current-gc-milliseconds" );
@@ -15257,6 +15515,7 @@ CurrentGcMilliseconds.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: Rational
 
+/** @constructor */
 function CurrentProcessMilliseconds() {
     Builtin.call( this );
     this.init( "current-process-milliseconds" );
@@ -15277,6 +15536,7 @@ CurrentProcessMilliseconds.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin Symbol
 // Needed late: Compiler ArcObject
 
+/** @constructor */
 function Declare() {
     Builtin.call( this );
     this.init( "declare" );
@@ -15308,6 +15568,7 @@ Declare.atstrings = Symbol.mkSym( "atstrings" );
 // Needed early: Builtin
 // Needed late: Rational
 
+/** @constructor */
 function MSec() {
     Builtin.call( this );
     this.init( "msec" );
@@ -15327,6 +15588,7 @@ MSec.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Rational
 
+/** @constructor */
 function Seconds() {
     Builtin.call( this );
     this.init( "seconds" );
@@ -15349,6 +15611,7 @@ Seconds.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Hash TableMapper
 
+/** @constructor */
 function MapTable() {
     Builtin.call( this );
     this.init( "maptable" );
@@ -15379,6 +15642,7 @@ MapTable.prototype.invoke = function ( vm, args ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function Sref() {
     Builtin.call( this );
     this.init( "sref" );
@@ -15403,6 +15667,7 @@ Sref.prototype.invoke = function ( vm, args ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function Table() {
     Builtin.call( this );
     this.init( "table" );
@@ -15434,6 +15699,7 @@ Table.prototype.invoke = function ( vm, args ) {
 // continuations may let us implement threads by way of cooperative
 // multithreading.
 
+/** @constructor */
 function AtomicInvoke() {
     Builtin.call( this );
     this.init( "atomic-invoke" );
@@ -15462,6 +15728,7 @@ AtomicInvoke.prototype.invoke = function ( vm, args ) {
     this.invokef1( vm, args.car() );
 };
 
+/** @constructor */
 AtomicInvoke.ReleaseLock = function () {
     Instruction.call( this );
 };
@@ -15486,6 +15753,7 @@ AtomicInvoke.entryCount_ = 0;
 // Needed early: Builtin
 // Needed late: VM VMInterceptor ArcObject
 
+/** @constructor */
 function BreakThread() {
     Builtin.call( this );
     this.init( "break-thread" );
@@ -15510,6 +15778,7 @@ BreakThread.prototype.invokePair = function ( args ) {
 // Needed early: Builtin Instruction ArcObject LexicalClosure Pair
 // Needed late: ArcError
 
+/** @constructor */
 function CCC() {
     Builtin.call( this );
     this.init( "ccc" );
@@ -15538,6 +15807,7 @@ CCC.prototype.invoke = function ( vm, args ) {
     this.invokef1( vm, args.car() );
 };
 
+/** @constructor */
 CCC.TriggerCopyVM_ = function ( cc ) {
     Instruction.call( this );
     this.cc_ = cc;
@@ -15554,6 +15824,7 @@ CCC.TriggerCopyVM_.prototype.toString = function () {
     return "#<require-vm-copy #" + this.cc_.vm_.threadId + ">";
 };
 
+/** @constructor */
 CCC.ContinuationWrapper = function ( vm ) {
     ArcObject.call( this );
     this.vm_ = vm;
@@ -15639,6 +15910,7 @@ CCC.ContinuationWrapper.prototype.toString = function () {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function CurrentThread() {
     Builtin.call( this );
     this.init( "current-thread" );
@@ -15658,6 +15930,7 @@ CurrentThread.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: VM Truth
 
+/** @constructor */
 function Dead() {
     Builtin.call( this );
     this.init( "dead" );
@@ -15684,6 +15957,7 @@ Dead.prototype.invoke = function ( vm, args ) {
 // PORT TODO: Figure out whether this should be different from
 // BreakThread. But don't change it!
 
+/** @constructor */
 function KillThread() {
     Builtin.call( this );
     this.init( "kill-thread" );
@@ -15708,6 +15982,7 @@ KillThread.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: ArcThreadLocal
 
+/** @constructor */
 function NewThreadLocal() {
     Builtin.call( this );
     this.init( "thread-local" );
@@ -15727,6 +16002,7 @@ NewThreadLocal.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcThreadLocal
 
+/** @constructor */
 function ThreadLocalGet() {
     Builtin.call( this );
     this.init( "thread-local-ref" );
@@ -15747,6 +16023,7 @@ ThreadLocalGet.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: ArcThreadLocal
 
+/** @constructor */
 function ThreadLocalSet() {
     Builtin.call( this );
     this.init( "thread-local-set" );
@@ -15769,6 +16046,7 @@ ThreadLocalSet.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Tagged
 
+/** @constructor */
 function Annotate() {
     Builtin.call( this );
     this.init( "annotate" );
@@ -15793,6 +16071,7 @@ Annotate.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: Typing Symbol ArcError
 
+/** @constructor */
 function Coerce() {
     Builtin.call( this );
     this.init( "coerce" );
@@ -15870,6 +16149,7 @@ Coerce.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: Tagged
 
+/** @constructor */
 function Rep() {
     Builtin.call( this );
     this.init( "rep" );
@@ -15892,6 +16172,7 @@ Rep.prototype.invokePair = function ( args ) {
 // ===================================================================
 // Needed early: Builtin
 
+/** @constructor */
 function Type() {
     Builtin.call( this );
     this.init( "type" );
@@ -16210,6 +16491,7 @@ Typing.coerceDouble_ = function ( source, base ) {
 
 // PORT NOTE: In the original, this only took one argument, and its
 // instances were all based on anonymous classes.
+/** @constructor */
 Typing.Coercion = function ( name, opt_coerce1, opt_coerce2 ) {
     ArcObject.call( this );
     this.name_ = name;
@@ -16250,6 +16532,7 @@ Typing.cantCoerce_ = function () {
 
 // PORT TODO: Figure out a way to do this inheritance and also get a
 // real stack trace.
+/** @constructor */
 Typing.CantCoerce = function () {
 };
 Typing.CantCoerce.prototype = new Error();
@@ -16422,6 +16705,7 @@ Environment.init = function () {
 
 // ASYNC PORT NOTE: This is a completely reworked design.
 
+/** @constructor */
 function Input( original ) {
     LiteralObject.call( this );
     this.original_ = original;
@@ -16518,6 +16802,7 @@ Input.TYPE = Symbol.mkSym( "input" );
 
 // ASYNC PORT NOTE: This is a completely reworked design.
 
+/** @constructor */
 function Output( out ) {
     LiteralObject.call( this );
     this.out_ = out;
@@ -16587,6 +16872,7 @@ Output.TYPE = Symbol.mkSym( "output" );
 // PORT TODO: We've just picked an arbitrary byte encoding here. The
 // Java version uses the platform's default charset. Figure out if
 // there's something better we can do here (or there too).
+/** @constructor */
 function StringInputPort( s ) {
     var peekedBytes = [];
     var charI = 0;
@@ -16642,6 +16928,7 @@ StringInputPort.prototype.className = "StringInputPort";
 // PORT TODO: We've just picked an arbitrary byte encoding here. The
 // Java version uses the platform's default charset. Figure out if
 // there's something better we can do here (or there too).
+/** @constructor */
 function StringOutputPort() {
     var self = this;
     self.parts_ = [];
@@ -16669,7 +16956,7 @@ function StringOutputPort() {
         },
         writeByte: function ( theByte ) {
             if ( self.leftoverByte_ === null ) {
-                self.leftoverByte_ === theByte;
+                self.leftoverByte_ = theByte;
                 return;
             }
             self.parts_.push( String.fromCharCode(
@@ -16719,6 +17006,7 @@ StringOutputPort.cast = function ( argument, caller ) {
 
 var IO = {};
 
+/** @constructor */
 IO.Anon_STD_OUT_ = function () {
     Output.call( this, System_out );
 };
@@ -16735,6 +17023,7 @@ IO.Anon_STD_OUT_.prototype.toString = function () {
 
 IO.STD_OUT = new IO.Anon_STD_OUT_();
 
+/** @constructor */
 IO.Anon_STD_ERR_ = function () {
     Output.call( this, System_err );
 };
@@ -16751,6 +17040,7 @@ IO.Anon_STD_ERR_.prototype.toString = function () {
 
 IO.STD_ERR = new IO.Anon_STD_ERR_();
 
+/** @constructor */
 IO.Anon_STD_IN_ = function () {
     Input.call( this, System_in );
 };
@@ -16829,6 +17119,7 @@ IO.closeAll = function ( args ) {
 // Needed early: Builtin
 // Needed late: IO
 
+/** @constructor */
 function Close_Builtin() {
     Builtin.call( this );
     this.init( "close" );
@@ -16848,6 +17139,7 @@ Close_Builtin.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: IO ArcObject
 
+/** @constructor */
 function Disp() {
     Builtin.call( this );
     this.init( "disp" );
@@ -16878,6 +17170,7 @@ Disp.prototype.disp_ = function ( out, o ) {
 // Needed early: Builtin
 // Needed late: IO ArcObject
 
+/** @constructor */
 function FlushOut() {
     Builtin.call( this );
     this.init( "flushout" );
@@ -16901,6 +17194,7 @@ FlushOut.prototype.invokePair = function ( args ) {
 // PORT TODO: See if this should be different from close. But don't
 // change it!
 
+/** @constructor */
 function ForceClose() {
     Builtin.call( this );
     this.init( "force-close" );
@@ -16922,6 +17216,7 @@ ForceClose.prototype.invokePair = function ( args ) {
 
 // PORT TODO: This should be able to set stderr. But don't change it!
 
+/** @constructor */
 function StdErr() {
     Builtin.call( this );
     this.init( "stderr" );
@@ -16943,6 +17238,7 @@ StdErr.prototype.invokePair = function ( args ) {
 
 // PORT TODO: This should be able to set stdin. But don't change it!
 
+/** @constructor */
 function StdIn() {
     Builtin.call( this );
     this.init( "stderr" );
@@ -16965,6 +17261,7 @@ StdIn.prototype.invokePair = function ( args ) {
 
 // PORT TODO: This should be able to set stdout. But don't change it!
 
+/** @constructor */
 function StdOut() {
     Builtin.call( this );
     this.init( "stdout" );
@@ -16984,6 +17281,7 @@ StdOut.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: IO ArcObject
 
+/** @constructor */
 function Write() {
     Builtin.call( this );
     this.init( "write" );
@@ -17004,6 +17302,7 @@ Write.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: IO Rational ArcObject
 
+/** @constructor */
 function WriteB() {
     Builtin.call( this );
     this.init( "writeb" );
@@ -17025,6 +17324,7 @@ WriteB.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: IO ArcCharacter ArcObject
 
+/** @constructor */
 function WriteC() {
     Builtin.call( this );
     this.init( "writec" );
@@ -17046,6 +17346,7 @@ WriteC.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: StringInputPort ArcString
 
+/** @constructor */
 function InString() {
     Builtin.call( this );
     this.init( "instring" );
@@ -17066,6 +17367,7 @@ InString.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: StringOutputPort
 
+/** @constructor */
 function Inside() {
     Builtin.call( this );
     this.init( "inside" );
@@ -17086,6 +17388,7 @@ Inside.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: StringOutputPort
 
+/** @constructor */
 function OutString() {
     Builtin.call( this );
     this.init( "outstring" );
@@ -17105,6 +17408,7 @@ OutString.prototype.invokePair = function ( args ) {
 // Needed early: Builtin
 // Needed late: SetThreadLocal IO Input ArcObject
 
+/** @constructor */
 function CallWStdIn() {
     Builtin.call( this );
     this.init( "call-w/stdin" );
@@ -17128,6 +17432,7 @@ CallWStdIn.prototype.invoke = function ( vm, args ) {
 // Needed early: Builtin
 // Needed late: SetThreadLocal IO Output ArcObject
 
+/** @constructor */
 function CallWStdOut() {
     Builtin.call( this );
     this.init( "call-w/stdout" );
@@ -17154,6 +17459,7 @@ CallWStdOut.prototype.invoke = function ( vm, args ) {
 // ASYNC PORT NOTE: This had to be converted to an asynchronous
 // design.
 
+/** @constructor */
 function ReadB() {
     Builtin.call( this );
     this.init( "readb" );
@@ -17176,6 +17482,7 @@ ReadB.prototype.invoke = function ( vm, args ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 ReadB.Go = function ( port, owner ) {
     Instruction.call( this );
     this.port_ = port;
@@ -17212,6 +17519,7 @@ ReadB.Go.prototype.operate = function ( vm ) {
 // ASYNC PORT NOTE: This had to be converted to an asynchronous
 // design.
 
+/** @constructor */
 function ReadC() {
     Builtin.call( this );
     this.init( "readc" );
@@ -17234,6 +17542,7 @@ ReadC.prototype.invoke = function ( vm, args ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 ReadC.Go = function ( port, owner ) {
     Instruction.call( this );
     this.port_ = port;
@@ -17270,6 +17579,7 @@ ReadC.Go.prototype.operate = function ( vm ) {
 // ASYNC PORT NOTE: This had to be converted to an asynchronous
 // design.
 
+/** @constructor */
 function Sread() {
     Builtin.call( this );
     this.init( "sread" );
@@ -17287,6 +17597,7 @@ Sread.prototype.invoke = function ( vm, args ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 Sread.Go = function ( port, eof ) {
     Instruction.call( this );
     this.port_ = port;
@@ -17480,6 +17791,7 @@ Console.interpretAsync_ = function (
 };
 
 // PORT NOTE: This was an anonymous class in Java.
+/** @constructor */
 Console.Anon_mkVisitor_ = function ( owner ) {
     Visitor.call( this );
     this.owner_ = owner;
@@ -17505,6 +17817,7 @@ Console.compileAndEvalAsync_ = function (
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 Console.CompileAndEval = function ( expression ) {
     Instruction.call( this );
     this.expression_ = expression;
@@ -17522,6 +17835,7 @@ Console.CompileAndEval.prototype.operate = function ( vm ) {
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 Console.AndEval = function () {
     Instruction.call( this );
     // ASYNC PORT TODO: Come up with a better owner for this.
@@ -17553,6 +17867,7 @@ Console.AndEval.prototype.operate = function ( vm ) {
 // PORT TODO: Figure out whether it's even appropriate to keep this in
 // here.
 
+/** @constructor */
 function NewThread() {
     Builtin.call( this );
     this.init( "new-thread" );
@@ -17572,6 +17887,7 @@ NewThread.prototype.invokePair = function ( args ) {
 // Needed early: Instruction
 
 // ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
 function BindAndRun( lc, instructions, owner ) {
     Instruction.call( this );
     this.lc_ = lc;

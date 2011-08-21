@@ -41,410 +41,50 @@ body > pre { margin-left: 2em; }
 #repl .prompt { display: block; width: 95%; }
 #repl .eval {}
 </style>
-<script type="text/javascript">"use strict";
-
-(function () {
-
-var root = window;
-
-
-function shaveBytesFromAroundString( string ) {
-    var chars = [];
-    var leftoverByte = string.charCodeAt( 0 ) & 0xFF;
-    for ( var i = 1, len = string.length; i < len; i++ ) {
-        var code = string.charCodeAt( i );
-        chars.push( root.String.fromCharCode(
-            leftoverByte << 8 | (code >>> 8 & 0xFF) ) );
-        leftoverByte = code & 0xFF;
-    }
-    return chars.join( "" );
-}
-
-// TODO: See what to do about concurrent reads. Right now we just
-// always favor the latest read and never respond to the previous
-// ones.
-function makeInputAndOutput( name ) {
-    var buffer = [];
-    var cursor = 0;
-    var closed = false;
-    var callback = null, callbackMethod = null;
-    
-    function useCallback() {
-        if ( callback === null )
-            return;
-        var then = callback, thenMethod = callbackMethod;
-        callback = null, callbackMethod = null;
-        thenMethod( then );
-    }
-    
-    var output = {};
-    output.writeString = function ( string ) {
-        if ( closed ) return;
-        if ( string === "" )
-            return;
-        buffer.push( { type: "string", val: string } );
-        useCallback();
-    };
-    output.writeByte = function ( theByte ) {
-        if ( closed ) return;
-        buffer.push( { type: "byte", val: theByte } );
-        useCallback();
-    };
-    output.close = function () {
-        closed = true;
-        useCallback();
-    };
-    output.flush = function () {};
-    
-    var input = {};
-    var readByteAsync = input.readByteAsync = function (
-        then, opt_sync ) {
-        
-        if ( buffer.length !== 0 ) {
-            var entry = buffer[ 0 ];
-            if ( entry.type === "byte" ) {
-                buffer.shift();
-                then( null, entry.val );
-                return true;
-            } else {
-                var string = entry.val;
-                var code = string.charCodeAt( cursor >>> 1 );
-                var b = (cursor & 1 ? code : code >>> 8) & 0xFF;
-                cursor++;
-                if ( string.length << 1 <= cursor ) {
-                    buffer.shift();
-                    cursor = 0;
-                }
-                then( null, b );
-                return true;
-            }
-        } else if ( closed ) {
-            then( null, null );
-            return true;
-        } else if ( opt_sync ) {
-            return false;
-        } else {
-            callback = then, callbackMethod = readByteAsync;
-            return false;
-        }
-    };
-    function peekOrReadCharCodeAsync(
-        then, reading, method, opt_sync ) {
-        
-        if ( buffer.length !== 0 ) {
-            
-            var firstEntry = buffer[ 0 ];
-            if ( buffer.length === 1 && (firstEntry.type === "byte"
-                || firstEntry.val.length << 1 === cursor + 1) ) {
-                if ( closed ) {
-                    // TODO: Figure out what to really do in this
-                    // case. There's just one byte left in the stream,
-                    // but we're reading or peeking at a character
-                    // code....
-                    if ( reading )
-                        buffer = [];
-                    then( null, null );
-                    return true;
-                } else if ( opt_sync ) {
-                    return false;
-                } else {
-                    callback = then, callbackMethod = method;
-                    return false;
-                }
-            }
-            
-            var hi;
-            var lo;
-            var bufferIndex = 0;
-            var tempCursor = cursor;
-            var entry = firstEntry;
-            if ( entry.type === "byte" ) {
-                bufferIndex++;
-                hi = entry.val;
-            } else {
-                var string = entry.val;
-                var code = string.charCodeAt( tempCursor >>> 1 );
-                if ( tempCursor & 1 ) {
-                    if ( reading ) {
-                        cursor++;
-                        if ( string.length << 1 <= cursor ) {
-                            buffer.shift();
-                            cursor = 0;
-                        }
-                    }
-                    then( null, code );
-                    return true;
-                }
-                hi = (code >>> 8) & 0xFF;
-                tempCursor++;
-                if ( string.length << 1 <= tempCursor ) {
-                    bufferIndex++;
-                    tempCursor = 0;
-                }
-            }
-            entry = buffer[ bufferIndex ];
-            if ( entry.type === "byte" ) {
-                bufferIndex++;
-                lo = entry.val;
-            } else {
-                var string = entry.val;
-                var code = string.charCodeAt( tempCursor >>> 1 );
-                lo = (tempCursor & 1 ? code : code >>> 8) & 0xFF;
-                tempCursor++;
-                if ( string.length << 1 <= tempCursor ) {
-                    bufferIndex++;
-                    tempCursor = 0;
-                }
-            }
-            if ( reading ) {
-                if ( bufferIndex )
-                    buffer.shift();
-                cursor = tempCursor;
-            }
-            then( null, hi << 8 | lo );
-            return true;
-        } else if ( closed ) {
-            then( null, null );
-            return true;
-        } else if ( opt_sync ) {
-            return false;
-        } else {
-            callback = then, callbackMethod = method;
-            return false;
-        }
-    }
-    var readCharCodeAsync = input.readCharCodeAsync = function (
-        then, opt_sync ) {
-        
-        return peekOrReadCharCodeAsync(
-            then, !!"reading", readCharCodeAsync, opt_sync );
-    };
-    var peekCharCodeAsync = input.peekCharCodeAsync = function (
-        then, opt_sync ) {
-        
-        return peekOrReadCharCodeAsync(
-            then, !"reading", peekCharCodeAsync, opt_sync );
-    };
-    input.close = function () {};
-    
-    input.readStringAvailable = function () {
-        var len = buffer.length;
-        var bufferIndex = 0;
-        var hasLeftover = false;
-        var leftoverByte;
-        var parts = [];
-        var i = 0;
-        if ( cursor & 1 ) {
-            var string = buffer[ 0 ].val;
-            hasLeftover = true;
-            leftoverByte = string.charCodeAt( cursor >>> 1 ) & 0xFF;
-            cursor++;
-            for ( var j = cursor >>> 1, slen = string.length;
-                j < slen; j++ ) {
-                var code = string.charCodeAt( j );
-                parts.push( root.String.fromCharCode(
-                    leftoverByte << 8 | (code >>> 8 & 0xFF)
-                ) );
-                leftoverByte = code & 0xFF;
-            }
-            cursor = 0;
-            i++;
-        } else if ( cursor ) {
-            parts.push( buffer[ 0 ].val.substring( cursor >>> 1 ) );
-            cursor = 0;
-            i++;
-        }
-        for ( len = buffer.length; i < len; i++ ) {
-            var entry = buffer[ i ];
-            if ( entry.type === "byte" ) {
-                if ( hasLeftover ) {
-                    parts.push( root.String.fromCharCode(
-                        leftoverByte << 8 | entry.val ) );
-                    hasLeftover = false;
-                } else {
-                    leftoverByte = entry.val;
-                    hasLeftover = true;
-                }
-            } else {
-                var string = entry.val;
-                if ( hasLeftover ) {
-                    for ( var j = 0, slen = string.length;
-                        j < slen; j++ ) {
-                        var code = string.charCodeAt( j );
-                        parts.push( root.String.fromCharCode(
-                            leftoverByte << 8 | (code >>> 8 & 0xFF)
-                        ) );
-                        leftoverByte = code & 0xFF;
-                    }
-                } else {
-                    parts.push( string );
-                }
-            }
-        }
-        buffer = hasLeftover ?
-            [ { type: "byte", val: leftoverByte } ] : [];
-        return parts.join( "" );
-    };
-    
-    return { i: input, o: output };
-}
-
-root.consoleIn = makeInputAndOutput( "consoleIn" );
-
-root.rainbowStdin = makeInputAndOutput( "rainbowStdin" );
-root.rainbowStdout = makeInputAndOutput( "rainbowStdout" );
-root.rainbowStderr = makeInputAndOutput( "rainbowStderr" );
-
-root.System_in = root.rainbowStdin.i;
-root.System_out = root.rainbowStdout.o;
-root.System_err = root.rainbowStderr.o;
-
-})();
-
-</script>
+<!--
+<script type="text/javascript" src="index-first.js"></script>
 <script type="text/javascript" src="../rainbow.js"></script>
-<script type="text/javascript">"use strict";
-
-(function () {
-
-var root = window;
-
-function handle( el, eventName, handler ) {
-    if ( el.addEventListener )
-        el.addEventListener( eventName, handler, !"capture" );
-    else  // IE
-        el.attachEvent( "on" + eventName, handler );
-}
-
-function keyCode( event ) {
-    return event.which ||
-        event.keyCode;  // IE
-}
-
-function preventDefault( event ) {
-    if ( event.preventDefault )
-        event.preventDefault();
-    else
-        event.returnValue = false;  // IE
-}
-
-root.onload = function () {
-    
-    var ENTER_KEY = 13;
-    
-    var repl = root.document.getElementById( "repl" );
-    
-    var scrollback = root.document.createElement( "pre" );
-    scrollback.className = "scrollback";
-    scrollback.appendChild( root.document.createTextNode( "" ) );
-    repl.appendChild( scrollback );
-    
-    var prompt = root.document.createElement( "textarea" );
-    prompt.className = "prompt";
-    handle( prompt, "keydown", function ( event ) {
-        if ( keyCode( event ) === ENTER_KEY )
-            preventDefault( event );
-    } );
-    handle( prompt, "keyup", function ( event ) {
-        if ( keyCode( event ) === ENTER_KEY )
-            doEval();
-    } );
-    repl.appendChild( prompt );
-    
-    var evalButton = root.document.createElement( "button" );
-    evalButton.className = "eval";
-    evalButton.appendChild( root.document.createTextNode( "Eval" ) );
-    handle( evalButton, "click", function ( event ) {
-        doEval();
-    } );
-    repl.appendChild( evalButton );
-    
-    function doEval() {
-        var command = prompt.value + "\n";
-        prompt.value = "";
-        root.consoleIn.o.writeString( command );
-    }
-    
-    function readStringAvailable( stream, then ) {
-        if ( stream.readStringAvailable !== void 0 )
-            return stream.readStringAvailable();
-        
-        var chars = [];
-        var going = true;
-        while ( going ) {
-            if ( !stream.readCharCodeAsync( function ( e, c ) {
-                    if ( e ) throw e;
-                    if ( c !== null )
-                        going = false;
-                    else
-                        chars.push( root.String.fromCharCode( c ) );
-                }, !!"sync" ) )
-                going = false;
-        }
-        return chars.join( "" );
-    }
-    
-    var goingToScroll = false;
-    function pr( string ) {
-        scrollback.appendChild(
-            root.document.createTextNode( string ) );
-        if ( !goingToScroll ) {
-            goingToScroll = true;
-            root.setTimeout( function () {
-                goingToScroll = false;
-                scrollback.scrollTop = scrollback.scrollHeight;
-            }, 0 );
-        }
-    }
-    
-    function processConsoleIn( e, c ) {
-        if ( e ) throw e;
-        var string = readStringAvailable( root.consoleIn.i );
-        if ( string === "" ) return;
-        pr( string );
-        root.rainbowStdin.o.writeString( string );
-        root.consoleIn.i.peekCharCodeAsync( processConsoleIn );
-    }
-    root.consoleIn.i.peekCharCodeAsync( processConsoleIn );
-    
-    function processStdout( e, c ) {
-        if ( e ) throw e;
-        var string = readStringAvailable( root.rainbowStdout.i );
-        if ( string === "" ) return;
-        pr( string );
-        root.rainbowStdout.i.peekCharCodeAsync( processStdout );
-    }
-    root.rainbowStdout.i.peekCharCodeAsync( processStdout );
-    
-    function processStderr( e, c ) {
-        if ( e ) throw e;
-        var string = readStringAvailable( root.rainbowStderr.i );
-        if ( string === "" ) return;
-        pr( string );
-        root.rainbowStderr.i.peekCharCodeAsync( processStderr );
-    }
-    root.rainbowStderr.i.peekCharCodeAsync( processStderr );
-    
-    root.Console.mainAsync( {}, function () {} );
-};
-
-
-})();
-
-</script>
+<script type="text/javascript" src="index-last.js"></script>
+-->
+<script type="text/javascript" src="index-min.js"></script>
 </head>
 <body>
-<p>This page loads rainbow.js (all 553 KB!) and exposes the REPL
-  below. We don't load arc.arc automatically yet, but you can load it
-  yourself by just copying <a href=
+<p>This page loads Rainbow.js in as much of a minified form as I can
+  bother to get now, which still comes to about 260 KB. It's the
+  result of running the Closure Compiler using a command like
+  this:</p>
+<pre>
+java -jar compiler.jar \
+  --js index-first.js --js rainbow.js --js index-last.js \
+  --js_output_file index.min.js
+</pre>
+<p>What I'd really like is to use this...</p>
+<pre>
+java -jar compiler.jar --compilation_level ADVANCED_OPTIMIZATIONS \
+  --js index-first.js --js rainbow.js --js index-last.js \
+  --js_output_file index.min.js
+</pre>
+<p>...but apparently it causes an internal compiler error. The Dean
+Edwards packer at full power breaks too, simply because there's so
+much code.</p>
+<p>We don't load arc.arc or friends automatically yet, but you can
+  load it yourself by just copying <a href=
   "https://github.com/conanite/rainbow/blob/92e07a98fd86f8e1985b32a7d2c265810eb76809/src/arc/arc.arc"
-  >Java Rainbow's arc.arc source</a> and pasting it all into the
-  REPL. Although arc.arc will load, the utilities may not actually
-  work when they're called. For instance, Rainbow.js doesn't implement
-  file operations at all, so even though arc.arc defines
-  <code>load</code>, it won't do us much good!</p>
-<p>I've tested this in Chrome, Opera, Firefox, and IE. To
-  compare them a bit, I pasted arc.arc surrounded by the following
+  >Java Rainbow's arc.arc source</a> (and any other files you want to
+  load) and pasting the code into the REPL. Although I've successfully
+  loaded all of Java Rainbow's automatically loaded files this
+  way,<sup>*</sup> the utilities may not actually work when they're
+  called. For instance, Rainbow.js doesn't implement file operations
+  at all, so even though arc.arc defines <code>load</code>, it won't
+  do us much good!</p>
+<p><sup>*</sup> Namely, I've successfully loaded arc.arc, strings.arc,
+  lib/bag-of-tricks.arc, rainbow.arc, pprint.arc, code.arc, html.arc,
+  srv.arc, app.arc, prompt.arc, profile.arc, unit-test.arc, and
+  parser.arc. Rainbow also automatically loads
+  rainbow/rainbow-libs.arc in order to load some of these, but that
+  file relies on <code>load</code>, so it won't work.</p>
+<p>I've tested this page in Chrome, Firefox, Opera, and IE. To compare
+  the browsers a bit, I pasted arc.arc surrounded by the following
   code...</p>
 <pre>
 (assign starttime (msec))
@@ -455,16 +95,26 @@ root.onload = function () {
 </pre>
 <p>...and got these results:</p>
 <ul>
-  <li>Chrome 13.0.782.112 m: <b>8614 ms</b></li>
-  <li>Opera 11.50: <b>15059 ms</b></li>
-  <li>Firefox 5.0: <b>17463 ms</b></li>
-  <li>Internet Explorer 8.0.6001.18702: <b>106719 ms</b> (but this
+  <li>Chrome 13.0.782.112 m: <b>1429 ms</b></li>
+  <li>Firefox 5.0: <b>2640 ms</b></li>
+  <li>Opera 11.11: <b>4065 ms</b></li>
+  <li>Internet Explorer 8.0.6001.18702: <b>40812 ms</b> (but this
     includes the time it took for me to dismiss four "Stop running
     this script?" dialogs)</li>
 </ul>
 <p>I was running all four browsers at the same time, so it was a
   pretty casual test. But hey, at least I wasn't <i>testing</i> them
   all at the same time. ^_^</p>
+<p>Oh, but then Firefox and Opera updated, so I tested everything
+  again:</p>
+<ul>
+  <li>Chrome 13.0.782.112 m: <b>1479 ms</b></li>
+  <li>Firefox 6.0: <b>2835 ms</b></li>
+  <li>Opera 11.50: <b>4173 ms</b></li>
+  <li>Internet Explorer 8.0.6001.18702: <b>41453 ms</b> (but this
+    includes the time it took for me to dismiss four "Stop running
+    this script?" dialogs)</li>
+</ul>
 <div id="repl"></div>
 </body>
 </html>
