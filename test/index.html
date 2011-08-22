@@ -49,34 +49,18 @@ body > pre { margin-left: 2em; }
 <script type="text/javascript" src="index-min.js"></script>
 </head>
 <body>
-<p>This page loads Rainbow.js in as much of a minified form as I can
-  bother to get now, which still comes to about 260 KB. It's the
-  result of running the Closure Compiler using a command like
-  this:</p>
-<pre>
-java -jar compiler.jar \
-  --js index-first.js --js rainbow.js --js index-last.js \
-  --js_output_file index.min.js
-</pre>
-<p>What I'd really like is to use this...</p>
-<pre>
-java -jar compiler.jar --compilation_level ADVANCED_OPTIMIZATIONS \
-  --js index-first.js --js rainbow.js --js index-last.js \
-  --js_output_file index.min.js
-</pre>
-<p>...but apparently it causes an internal compiler error. The Dean
-Edwards packer at full power breaks too, simply because there's so
-much code.</p>
-<p>We don't load arc.arc or friends automatically yet, but you can
-  load it yourself by just copying <a href=
+<p>Below is a REPL for Rainbow.js, an implementation of most of
+  Rainbow, which is an implemenation of Arc. We don't load arc.arc or
+  friends automatically yet, but you can load them yourself by copying
+  <a href=
   "https://github.com/conanite/rainbow/blob/92e07a98fd86f8e1985b32a7d2c265810eb76809/src/arc/arc.arc"
-  >Java Rainbow's arc.arc source</a> (and any other files you want to
-  load) and pasting the code into the REPL. Although I've successfully
+  >Java Rainbow's arc.arc source</a>, and any other files you want to
+  load, and pasting all that code into the REPL. I've successfully
   loaded all of Java Rainbow's automatically loaded files this
-  way,<sup>*</sup> the utilities may not actually work when they're
-  called. For instance, Rainbow.js doesn't implement file operations
-  at all, so even though arc.arc defines <code>load</code>, it won't
-  do us much good!</p>
+  way,<sup>*</sup> but that doesn't mean all the functionality is
+  available. For instance, Rainbow.js doesn't implement file
+  operations at all, so even though arc.arc defines <code>load</code>,
+  it won't do us much good!</p>
 <p><sup>*</sup> Namely, I've successfully loaded arc.arc, strings.arc,
   lib/bag-of-tricks.arc, rainbow.arc, pprint.arc, code.arc, html.arc,
   srv.arc, app.arc, prompt.arc, profile.arc, unit-test.arc, and
@@ -95,26 +79,40 @@ much code.</p>
 </pre>
 <p>...and got these results:</p>
 <ul>
-  <li>Chrome 13.0.782.112 m: <b>1429 ms</b></li>
-  <li>Firefox 5.0: <b>2640 ms</b></li>
-  <li>Opera 11.11: <b>4065 ms</b></li>
-  <li>Internet Explorer 8.0.6001.18702: <b>40812 ms</b> (but this
-    includes the time it took for me to dismiss four "Stop running
+  <li>Chrome 13.0.782.112 m: <b>1591 ms</b></li>
+  <li>Firefox 6.0: <b>2238 ms</b></li>
+  <li>Opera 11.50: <b>3310 ms</b></li>
+  <li>Internet Explorer 8.0.6001.18702: <b>32469 ms</b> (but this
+    includes the time it took for me to dismiss three "Stop running
     this script?" dialogs)</li>
 </ul>
 <p>I was running all four browsers at the same time, so it was a
   pretty casual test. But hey, at least I wasn't <i>testing</i> them
   all at the same time. ^_^</p>
-<p>Oh, but then Firefox and Opera updated, so I tested everything
-  again:</p>
+<p>It seems the Closure Compiler boosted the performance by about
+  20-25% on everything but Chrome. Now that we're using it, I've also
+  tried loading all those automatically loaded files I was talking
+  about, all in one paste:</p>
 <ul>
-  <li>Chrome 13.0.782.112 m: <b>1479 ms</b></li>
-  <li>Firefox 6.0: <b>2835 ms</b></li>
-  <li>Opera 11.50: <b>4173 ms</b></li>
-  <li>Internet Explorer 8.0.6001.18702: <b>41453 ms</b> (but this
-    includes the time it took for me to dismiss four "Stop running
+  <li>Chrome 13.0.782.112 m: <b>5209 ms</b></li>
+  <li>Firefox 6.0: <b>7220 ms</b></li>
+  <li>Opera 11.50: <b>11369 ms</b></li>
+  <li>Internet Explorer 8.0.6001.18702: <b>216219 ms</b> (but this
+    includes the time it took for me to dismiss twelve "Stop running
     this script?" dialogs)</li>
 </ul>
+<p>And on the same machine, Java Rainbow's own time is...</p>
+<pre>
+*** redefining no
+*** redefining map1
+*** redefining pr
+*** redefining list
+repl in 12296ms
+arc>
+</pre>
+<p>Could it be? Is Rainbow.js already faster than Java Rainbow (IE 8
+  notwithstanding)?! Maybe this is just a biased benchmark. After all,
+  Rainbow has to do file IO here. Yeah, that's gotta be it....</p>
 <div id="repl"></div>
 </body>
 </html>

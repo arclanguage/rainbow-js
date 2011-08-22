@@ -20,6 +20,39 @@
 "use strict";
 
 
+// Replace the contents of this file with this to get a Closure
+// Compiler result that's only 98 KB:
+
+//Console.compileAndEvalAsync_( new VM(),
+//    ArcParser.readFirstObjectFromString(
+//        "((fn a a) ((fn a a) 4 3 2) 1)" ),
+//    function ( e, r ) { alert( r ); }, !!"sync" );
+
+// Replace it with this to get a 13 KB result:
+
+//alert( ArcParser.readFirstObjectFromString( "((1 2 3) 4)" ) );
+
+// TODO: The 98 KB bloat is probably because of the fact that the
+// fields of the "classes" object are all calculated strings, which
+// the Closure Compiler shies away from optimizing. See if there's a
+// better way to catch its attention, like this perhaps:
+//
+// var If_bound_bound_literal.old_classes_If_of_ = classes_If_of;
+// classes_If_of = function ( expr ) {
+//    if ( expr.ifExpression instanceof BoundSymbol
+//        && expr.thenExpression instanceof BoundSymbol
+//        && expr.next instanceof Else && expr.next.literal() )
+//        return If_bound_bound_literal.of;
+//    else
+//        return If_bound_bound_literal.old_classes_If_of_();
+// };
+//
+// With any luck, it'll be able to inline every single one of these
+// functions to create one function with a big ... ? ... : ... switch.
+
+// TODO: Keep the above KB measurements up to date. :-p
+
+
 function handle( el, eventName, handler ) {
     if ( el.addEventListener )
         el.addEventListener( eventName, handler, !"capture" );

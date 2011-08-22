@@ -1,4 +1,4 @@
-// http://rocketnia.github.com/rainbow-js/test/index-last.js
+// http://rocketnia.github.com/rainbow-js/test/index-first.js
 
 // Copyright (c) 2011 Ross Angle
 //

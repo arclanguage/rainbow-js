@@ -8,40 +8,54 @@ cases it's been given. If you write an application that uses it,
 you're likely to stumble across a few simple-to-fix bugs here and
 there. Bug reports and bug fixes are both welcome. ^_^
 
-As a JavaScript program, this is *really freaking big*. It's over
-10000 lines of code. It also happens to break
-http://dean.edwards.name/packer/ for some reason, so for now I'm
-leaving it unminified at over half a megabyte. But don't worry,
-building this codebase involved a lot of copying and pasting, copying
-and pasting. ^_-
-
-Now that you know how big it is, if you're willing to load it all in
-your browser, you can play around with the REPL here:
+You can play around with the REPL here:
 
   http://rocketnia.github.com/rainbow-js/test/
 
-For any other JavaScript project, I'd have combatted the size of the
-program using a bunch of higher-order functions or even a macro system
-(and I've already made those things, as you can see at
-https://github.com/rocketnia/lathe). However, the main goal of this
-particular project is to have the code be as similar to the original
-code as reasonably possible, so that any given bug fix or enhancement
-to either codebase is likely to benefit the other. In fact, I would
-not necessarily call Rainbow.js an implementation of Arc, because it's
-more faithful to Rainbow than to Arc.
+At over 10000 lines of code (not including blank lines and comments!),
+Rainbow.js is a pretty freaking big JavaScript file, but with the help
+of the Closure Compiler, I'm minifying Rainbow.js together with the
+code for the test REPL down to about 140 KB. I'm using a command like
+this:
 
-A secondary goal of this project is to be performant. Rainbow is the
-fastest faithful Arc implementation, as far as I'm concerned, so it's
-worth maintaining that where possible. As such, even if I had the
-option to use some higher-order function like Array.prototype.forEach,
-I went with a more direct style.
+  java -jar compiler.jar --compilation_level ADVANCED_OPTIMIZATIONS \
+    --js index-first.js --js rainbow.js --js index-last.js \
+    --js_output_file index-min.js
 
-A *tertiary* goal of this project is to be compatible with lots of
-browsers, and also with ECMAScript 5's strict mode and the Closure
-Compiler.
+I've observed that simple Rainbow.js-based test applications that
+*don't* have a full REPL can minify down to a smaller size. However,
+it's not very much smaller yet. Ideally, if a Rainbow.js application
+only uses the compiler during initialization, I'd like the Closure
+Compiler to be able to weed out the whole Rainbow.js compiler as dead
+code.
 
-Despite the focus on keeping the Rainbow.js code similar to the
-original, it differs in at least the following ways:
+The main goals of this project are as follows:
+
+- To be faithful to Rainbow (even where it differs from Arc 3.1), even
+  down to having similar code wherever possible so that the Java
+  Rainbow and Rainbow.js codebases can improve side-by-side.
+
+- To be performant. Java Rainbow is the fastest faithful Arc
+  implementation, and it would be nice for Rainbow.js to carry that
+  benefit over as much as possible. As part of this goal, I've done
+  silly premature optimizations like using for loops and imperative
+  style instead of higher-order functions.
+
+  Actually, it turns out that Rainbow.js performs even faster than
+  Java Rainbow in my tests, at least on Chrome, Firefox, and Opera.
+  Spooky!
+
+- To be compatible with lots of browsers, ECMAScript 5's strict mode,
+  and the Closure Compiler. We're probably already there, at least for
+  people who've upgraded their browsers.
+
+As you can see, Rainbow.js is coming up on a point where its
+unfinished business is in short supply. If you have any ideas for
+where you want this project to go, please feel free to contact me or
+open an issue or something. :)
+
+Despite the focus on keeping the Rainbow.js code similar to the Java
+Rainbow code, it differs in at least the following ways:
 
 - There is no support for threads, file system utilities, or
   Java-specific operations. However, for certain thread operations and
@@ -95,8 +109,11 @@ There are other significant design issues worth mentioning, which I
 
 - Where Java Rainbow relies on the platform's default charset for the
   purposes of mapping bytes to characters and vice versa, Rainbow.js
-  currently uses a big-endian UTF-16, since
-  String.prototype.charCodeAt returns UTF-16 code units.
+  currently uses big-endian UTF-16, since String.prototype.charCodeAt
+  returns UTF-16 code units. The big-endianness was chosen rather
+  arbitrarily, but at least this way
+  "str.getCharCodeAt( i ).toString( 16 )" shows the nibbles in the
+  same order as they appear in the stream.
 
 Some other miscellaneous notes:
 
