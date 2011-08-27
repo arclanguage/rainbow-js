@@ -26,9 +26,13 @@ for Arc.
 <meta name="viewport" content=
    "initial-scale = 1.0, maximum-scale = 1.0, width = device-width" />
 <style type="text/css">
-html { font-family: sans-serif; }
+html { font-family: sans-serif; margin: 2em; }
 
 body > pre { margin-left: 2em; }
+
+p, ul { max-width: 40em; }
+
+code { font-size: 1.2em; }
 
 #repl .scrollback {
     display: block;
@@ -49,7 +53,11 @@ body > pre { margin-left: 2em; }
 <script type="text/javascript" src="index-min.js"></script>
 </head>
 <body>
-<p>Below is a REPL for Rainbow.js, an implementation of most of
+<h1>Rainbow.js</h1>
+<div id="repl"></div>
+<p>(The "Eval" button is just there in case pressing enter doesn't
+  work for you. I run into this kind of snafu on mobile devices.)</p>
+<p>Above is a REPL for Rainbow.js, an implementation of most of
   Rainbow, which is an implemenation of Arc. We don't load arc.arc or
   friends automatically yet, but you can load them yourself by copying
   <a href=
@@ -113,6 +121,47 @@ arc>
 <p>Could it be? Is Rainbow.js already faster than Java Rainbow (IE 8
   notwithstanding)?! Maybe this is just a biased benchmark. After all,
   Rainbow has to do file IO here. Yeah, that's gotta be it....</p>
-<div id="repl"></div>
+<h3>Doing JavaScript things</h3>
+<p>Since those tests, I've made an addition to this REPL. Now
+  <code>window</code>, which isn't defined in rainbow.js proper, is
+  defined in this REPL to be the page's window object, and you can
+  access it like this (using <code>java-invoke</code>, which <i>is</i>
+  defined in rainbow.js):</p>
+<pre>
+repl in 3ms
+arc> (assign list (fn a a))
+(fn a a)
+arc>
+  (assign jsget-impl
+    (java-invoke
+      window 'eval (list "(function ( o, k ) { return o[ k ]; })")))
+
+function ( o, k ) { return o[ k ]; }
+arc>
+  (assign jsget
+    (fn (o k) (java-invoke jsget-impl 'call (list nil o k))))
+
+(fn (o k) (java-invoke jsget-impl 'call (list nil o k)))
+arc> (jsget window "Object")
+function Object() { [native code] }
+</pre>
+<p>You <i>could</i> do crazy meta-things this way, like calling parts
+  of Rainbow.js's implementation. However, all the JavaScript code
+  this page uses is minified, so good luck with that. :-p</p>
+<p>Rainbow.js (like Java Rainbow) takes care of some simple type
+  conversions for you, like converting native strings to Arc
+  strings:</p>
+<pre>
+arc>
+  (+ "The title of the page is: "
+     (jsget (jsget window "document") "title"))
+
+"The title of the page is: It's Rainbow in JavaScript!"
+</pre>
+<p>I'm not sure I actually like that automatic conversion, since I'd
+  rather define my own conversion rules as a library. I'm also not
+  sure it's really appropriate to call <code>java-invoke</code> the
+  same thing as it's called in Java Rainbow. In some ways, Rainbow.js
+  may be staying a bit too true to the original. ^_^</p>
 </body>
 </html>

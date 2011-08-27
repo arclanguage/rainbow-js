@@ -50,7 +50,13 @@
 // With any luck, it'll be able to inline every single one of these
 // functions to create one function with a big ... ? ... : ... switch.
 
-// TODO: Keep the above KB measurements up to date. :-p
+// TODO: Keep the above KB measurements up to date. :-p They're
+// actually out of date already.
+
+
+// Rainbow.js extensions (just the one for now, since it allows usage
+// of window.eval)
+Symbol.make( "window" ).setValue( new JsObject( window ) );
 
 
 function handle( el, eventName, handler ) {

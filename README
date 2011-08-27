@@ -15,7 +15,7 @@ You can play around with the REPL here:
 At over 10000 lines of code (not including blank lines and comments!),
 Rainbow.js is a pretty freaking big JavaScript file, but with the help
 of the Closure Compiler, I'm minifying Rainbow.js together with the
-code for the test REPL down to about 140 KB. I'm using a command like
+code for the test REPL down to about 144 KB. I'm using a command like
 this:
 
   java -jar compiler.jar --compilation_level ADVANCED_OPTIMIZATIONS \

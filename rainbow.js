@@ -3580,7 +3580,8 @@ JsObject.getClassInstance = function ( className ) {
 };
 */
 
-JsObject.prototype.invoke = function ( methodName, args ) {
+// PORT NOTE: We've renamed all uses of JsObject.invoke().
+JsObject.prototype.invokeJs = function ( methodName, args ) {
     return JsObject.invokeMethod_( this.object_, methodName, args );
 };
 
@@ -3618,12 +3619,13 @@ JsObject.invokeMethod_ = function ( target, methodName, args ) {
         "[object Function]" )
         throw new ArcError(
             "Field " + methodName + " is not a method on " + target );
-    return method.call( target, JsObject.unwrapList1_( args ) );
+    return method.apply( target, JsObject.unwrapList1_( args ) );
 };
 
 JsObject.unwrapList1_ = function ( args ) {
     var result = [];
     JsObject.unwrapList2_( result, args );
+    return result;
 };
 
 JsObject.unwrapList2_ = function ( result, args ) {
@@ -3642,12 +3644,53 @@ JsObject.unwrap = function ( arcObject ) {
     return arcObject.unwrap();
 };
 
+// PORT NOTE: This may be slightly different from Java Rainbow's
+// version. In particular, we don't have cases for ArcCharacter,
+// InputStream, OutputStream, or Map like Java Rainbow does.
+JsObject.wrap = function ( o ) {
+    if ( o === null ) {
+        return ArcObject.NIL;
+    } else if ( o instanceof ArcObject ) {
+        return o;
+    }
+    // PORT NOTE: This local variable didn't exist in Java.
+    var type = Object.prototype.toString.call( o );
+    if ( type === "[object Number]" ) {
+        o *= 1;
+        return o === Math.floor( o ) ?
+            Rational.make1( o ) : Real.make( o );
+    } else if ( type === "[object String]" ) {
+        return ArcString.make( "" + o );
+    } else if ( type === "[object Array]"
+        || type === "[object Arguments]" ) {
+        return JsObject.wrapList_( o );
+    } else if ( type === "[object Boolean]" ) {
+        if ( !!o ) {
+            return ArcObject.T;
+        } else {
+            return ArcObject.NIL;
+        }
+    } else {
+        return new JsObject( o );
+    }
+};
+
+JsObject.wrapList_ = function ( objects ) {
+    var result = new Array( ~~objects.length );
+    for ( var i = 0; i < objects.length; i++ ) {
+        result[ i ] = JsObject.wrap( objects[ i ] );
+    }
+    return Pair.buildFrom1( result );
+};
+
 JsObject.prototype.close = function () {
     // PORT TODO: The Java version takes this opportunity to close raw
     // InputStream and OutputStream objects. Handle any analogous
     // JavaScript objects here.
     throw new ArcError( "close: unexpected object: " + this );
 };
+
+JsObject.TYPE = Symbol.mkSym( "java-object" );
 
 
 // ===================================================================
@@ -13741,7 +13784,7 @@ function Uniq() {
 Uniq.prototype = new Builtin();
 Uniq.prototype.className = "Uniq";
 
-Uniq.prototype.invokef1 = function ( vm ) {
+Uniq.prototype.invokef0 = function ( vm ) {
     // PORT NOTE: This was synchronized on Uniq.class in Java.
     vm.pushA( Symbol.mkSym( "gs" + (++Uniq.count_) ) );
 };
@@ -14170,6 +14213,33 @@ JavaDebug.prototype.className = "JavaDebug";
 
 JavaDebug.prototype.invokePair = function ( args ) {
     return args.car();
+};
+
+
+// ===================================================================
+// from functions/java/JavaInvoke.java
+// ===================================================================
+// Needed early: Builtin
+// Needed late: JsObject Symbol Pair
+
+/** @constructor */
+function JavaInvoke() {
+    Builtin.call( this );
+    this.init( "java-invoke" );
+}
+
+JavaInvoke.prototype = new Builtin();
+JavaInvoke.prototype.className = "JavaInvoke";
+
+JavaInvoke.prototype.invokePair = function ( args ) {
+    var target = JsObject.cast( args.car(), this );
+    var methodName = Symbol.cast( args.cdr().car(), this ).name();
+    // PORT NOTE: This local variable didn't exist in Java.
+    var jsArgs = args.cdr().cdr().car();
+    // PORT NOTE: This was a cast in Java.
+    if ( !(jsArgs instanceof Pair) )
+        throw new TypeError();
+    return JsObject.wrap( target.invokeJs( methodName, jsArgs ) );
 };
 
 
@@ -16634,7 +16704,7 @@ Environment.init = function () {
     // java integration
 //    new JavaNew();
 //    new JavaClass();
-//    new JavaInvoke();
+    new JavaInvoke();
 //    new JavaStaticInvoke();
 //    new JavaStaticField();
     new JavaDebug();
