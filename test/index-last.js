@@ -59,13 +59,6 @@
 Symbol.make( "window" ).setValue( new JsObject( window ) );
 
 
-function handle( el, eventName, handler ) {
-    if ( el.addEventListener )
-        el.addEventListener( eventName, handler, !"capture" );
-    else  // IE
-        el.attachEvent( "on" + eventName, handler );
-}
-
 function keyCode( event ) {
     return event.which ||
         event.keyCode;  // IE

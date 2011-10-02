@@ -249,6 +249,13 @@ function makeInputAndOutput( name ) {
     return { i: input, o: output };
 }
 
+function handle( el, eventName, handler ) {
+    if ( el.addEventListener )
+        el.addEventListener( eventName, handler, !"capture" );
+    else  // IE
+        el.attachEvent( "on" + eventName, handler );
+}
+
 var consoleIn = makeInputAndOutput( "consoleIn" );
 
 var rainbowStdin = makeInputAndOutput( "rainbowStdin" );
@@ -258,3 +265,59 @@ var rainbowStderr = makeInputAndOutput( "rainbowStderr" );
 var System_in = rainbowStdin.i;
 var System_out = rainbowStdout.o;
 var System_err = rainbowStderr.o;
+
+var System_fs = {
+    dirAsync: function ( path, then, opt_sync ) {
+        then( new ArcError( "No filesystem." ) );
+        return true;
+    },
+    dirExistsAsync: function ( path, then, opt_sync ) {
+        then( null, false );
+        return true;
+    },
+    inFileAsync: function ( path, then, opt_sync ) {
+        if ( opt_sync )
+            return then( new ArcError(
+                "Can't access the Web synchronously." ) ), true;
+        var req = new XMLHttpRequest();
+        if ( "withCredentials" in req ) {
+            req.open( "GET", path, !!"async" );
+        } else if ( "XDomainRequest" in window ) {
+            req = new XDomainRequest();
+            req.open( "GET", path );
+        } else {
+            then( new ArcError( "No AJAX." ) );
+            return true;
+        }
+        handle( req, "error", function () {
+            then( new ArcError(
+                "Couldn't open page: " + path + " because of " +
+                "error: " + req.statusText ) );
+        } );
+        handle( req, "load", function () {
+            then( null, new StringInputPort( req.responseText ) );
+        } );
+        req.send( null );
+        return false;
+    },
+    outFileAsync: function ( path, then, opt_sync ) {
+        then( new ArcError( "No filesystem." ) );
+        return true;
+    },
+    makeDirectoryAsync: function ( path, then, opt_sync ) {
+        then( new ArcError( "No filesystem." ) );
+        return true;
+    },
+    makeDirectoriesAsync: function ( path, then, opt_sync ) {
+        then( new ArcError( "No filesystem." ) );
+        return true;
+    },
+    mvFileAsync: function ( fromPath, toPath, then, opt_sync ) {
+        then( new ArcError( "No filesystem." ) );
+        return true;
+    },
+    rmFileAsync: function ( path, then, opt_sync ) {
+        then( new ArcError( "No filesystem." ) );
+        return true;
+    }
+};

@@ -57,11 +57,11 @@ open an issue or something. :)
 Despite the focus on keeping the Rainbow.js code similar to the Java
 Rainbow code, it differs in at least the following ways:
 
-- There is no support for threads, file system utilities, or
-  Java-specific operations. However, for certain thread operations and
-  Java-specific operations that make sense in a single-threaded
-  JavaScript program (even if they don't do anything useful!), a
-  JavaScript equivalent is given under the same name.
+- There is no support for threads or Java-specific operations.
+  However, for certain thread operations and Java-specific operations
+  that make sense in a single-threaded JavaScript program (even if
+  they don't do anything useful!), a JavaScript equivalent is given
+  under the same name.
 
 - Input streams in the implementation of Rainbow.js are asynchronous,
   but in the language itself they're still synchronous. This is done

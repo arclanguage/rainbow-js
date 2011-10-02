@@ -18,10 +18,10 @@
 // "Modified Version" bears a name that is different from any name
 // used for Arc.
 
-// To load this file, the variables System_in, System_out, and
-// System_err must already be defined. Here's an example
-// implementation where stdin is always at EOF and stdout and stderr
-// are noops:
+// To load this file, the variables System_in, System_out, System_err,
+// and System_fs must already be defined. Here's an example
+// implementation where stdin is always at EOF, stdout and stderr are
+// noops, and filesystem operations never work:
 
 //var System_in = {
 //    readByteAsync: function ( then, opt_sync ) {
@@ -49,6 +49,64 @@
 //    writeByte: function ( theByte ) {},
 //    close: function () {},
 //    flush: function () {}
+//};
+//var System_fs = {
+//    dirAsync: function ( path, then, opt_sync ) {
+//        then( new ArcError( "No filesystem." ) );
+//        // This would have done then( null, arcListOfDirs ) on
+//        // success.
+//        return true;
+//    },
+//    dirExistsAsync: function ( path, then, opt_sync ) {
+//        then( null, false );
+//        return true;
+//    },
+//    fileExistsAsync: function ( path, then, opt_sync ) {
+//        then( null, false );
+//        return true;
+//    },
+//    inFileAsync: function ( path, then, opt_sync ) {
+//        then( new ArcError( "No filesystem." ) );
+//        // This would have done then( null, arcInput ) on success.
+//        return true;
+//    },
+//    outFileAsync: function ( path, then, opt_sync ) {
+//        then( new ArcError( "No filesystem." ) );
+//        // This would have done then( null, arcOutput ) on success.
+//        return true;
+//    },
+//    makeDirectoryAsync: function ( path, then, opt_sync ) {
+//        then( new ArcError( "No filesystem." ) );
+//        // This would have done then( null, true ) on success,
+//        // then( null, false ) on noncritical failure(?), had an
+//        // error if the file already existed and wasn't a directory,
+//        // or had an error on critical failure(?). These
+//        // critical/noncritical failures were determined by
+//        // java.io.File.mkdir() in the original.
+//        return true;
+//    },
+//    makeDirectoriesAsync: function ( path, then, opt_sync ) {
+//        then( new ArcError( "No filesystem." ) );
+//        // This would have done then( null, true ) on success,
+//        // then( null, false ) on noncritical failure(?), had an
+//        // error if the file already existed and wasn't a directory,
+//        // or had an error on critical failure(?). These
+//        // critical/noncritical failures were determined by
+//        // java.io.File.mkdirs() in the original, and they are
+//        // to be only partial failures, whereby some but not all of
+//        // the directories have been created.
+//        return true;
+//    },
+//    mvFileAsync: function ( fromPath, toPath, then, opt_sync ) {
+//        then( new ArcError( "No filesystem." ) );
+//        // This would have done then( null ) on success.
+//        return true;
+//    },
+//    rmFileAsync: function ( fromPath, toPath, then, opt_sync ) {
+//        then( new ArcError( "No filesystem." ) );
+//        // This would have done then( null ) on success.
+//        return true;
+//    }
 //};
 
 // TODO: Actually document these stream interfaces.
@@ -310,6 +368,16 @@
 // functions/io/ReadB.java
 // functions/io/ReadC.java
 // functions/io/Sread.java
+// functions/fs/*
+//   functions/fs/Dir.java
+//   functions/fs/DirExists.java
+//   functions/fs/FileExists.java
+//   functions/fs/InFile.java
+//   functions/fs/OutFile.java
+//   functions/fs/MakeDirectory.java
+//   functions/fs/MakeDirectories.java
+//   functions/fs/MvFile.java
+//   functions/fs/RmFile.java
 // Console.java
 // functions/threads/NewThread.java (just a dummy)
 //
@@ -325,16 +393,6 @@
 // types/SocketOutputPort.java
 // cheat/*
 //   cheat/NoWrapTextPane.java
-// functions/fs/*
-//   functions/fs/Dir.java
-//   functions/fs/DirExists.java
-//   functions/fs/FileExists.java
-//   functions/fs/InFile.java
-//   functions/fs/MakeDirectories.java
-//   functions/fs/MakeDirectory.java
-//   functions/fs/MvFile.java
-//   functions/fs/OutFile.java
-//   functions/fs/RmFile.java
 // functions/java/JavaClass.java
 // functions/java/JavaImplement.java
 // functions/java/JavaInvoke.java
@@ -16783,16 +16841,16 @@ Environment.init = function () {
 //    new SocketAccept();
 //    new Connect();
     
-//    new OutFile();
-//    new InFile();
+    new OutFile();
+    new InFile();
     
-//    new DirExists();
-//    new FileExists();
-//    new Dir();
-//    new RmFile();
-//    new MvFile();
-//    new MakeDirectory();
-//    new MakeDirectories();
+    new DirExists();
+    new FileExists();
+    new Dir();
+    new RmFile();
+    new MvFile();
+    new MakeDirectory();
+    new MakeDirectories();
     
     new InString();
     new OutString();
@@ -17562,7 +17620,7 @@ CallWStdOut.prototype.invoke = function ( vm, args ) {
 // from functions/io/ReadB.java
 // ===================================================================
 // Needed early: Builtin Instruction
-// Needed late: SetThreadLocal IO Input ArcObject
+// Needed late: IO
 
 // ASYNC PORT NOTE: This had to be converted to an asynchronous
 // design.
@@ -17594,11 +17652,7 @@ ReadB.prototype.invoke = function ( vm, args ) {
 ReadB.Go = function ( port, owner ) {
     Instruction.call( this );
     this.port_ = port;
-    this.belongsTo( parent );
-    
-    this.ready_ = false;
-    this.hasError_ = false;
-    this.result_ = void 0;
+    this.belongsTo( owner );
 };
 
 ReadB.Go.prototype = new Instruction();
@@ -17622,7 +17676,7 @@ ReadB.Go.prototype.operate = function ( vm ) {
 // from functions/io/ReadC.java
 // ===================================================================
 // Needed early: Builtin Instruction
-// Needed late: SetThreadLocal IO Input ArcObject
+// Needed late: IO
 
 // ASYNC PORT NOTE: This had to be converted to an asynchronous
 // design.
@@ -17654,11 +17708,7 @@ ReadC.prototype.invoke = function ( vm, args ) {
 ReadC.Go = function ( port, owner ) {
     Instruction.call( this );
     this.port_ = port;
-    this.belongsTo( parent );
-    
-    this.ready_ = false;
-    this.hasError_ = false;
-    this.result_ = void 0;
+    this.belongsTo( owner );
 };
 
 ReadC.Go.prototype = new Instruction();
@@ -17682,7 +17732,7 @@ ReadC.Go.prototype.operate = function ( vm ) {
 // from functions/io/Sread.java
 // ===================================================================
 // Needed early: Builtin Instruction
-// Needed late: SetThreadLocal IO Input ArcObject
+// Needed late: Input
 
 // ASYNC PORT NOTE: This had to be converted to an asynchronous
 // design.
@@ -17701,20 +17751,16 @@ Sread.prototype.className = "Sread";
 // .invoke( VM, Pair ) instead.
 Sread.prototype.invoke = function ( vm, args ) {
     vm.pushFrame( new Sread.Go(
-        Input.cast( args.car(), this ), args.cdr().car() ) );
+        Input.cast( args.car(), this ), args.cdr().car(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Sread.Go = function ( port, eof ) {
+Sread.Go = function ( port, eof, owner ) {
     Instruction.call( this );
     this.port_ = port;
     this.eof_ = eof;
-    this.belongsTo( parent );
-    
-    this.ready_ = false;
-    this.hasError_ = false;
-    this.result_ = void 0;
+    this.belongsTo( owner );
 };
 
 Sread.Go.prototype = new Instruction();
@@ -17734,6 +17780,493 @@ Sread.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
 Sread.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
+
+
+// ===================================================================
+// from functions/fs/Dir.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_fs
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function Dir() {
+    Builtin.call( this );
+    this.init( "dir" );
+}
+
+Dir.prototype = new Builtin();
+Dir.prototype.className = "Dir";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+Dir.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new Dir.Go(
+        ArcString.cast( args.car(), this ).value(), this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+Dir.Go = function ( path, owner ) {
+    Instruction.call( this );
+    this.path_ = path;
+    this.belongsTo( owner );
+};
+
+Dir.Go.prototype = new Instruction();
+Dir.Go.prototype.implementsAsync = true;
+Dir.Go.prototype.className = "Dir.Go";
+
+Dir.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return System_fs.dirAsync( this.path_, function ( e, result ) {
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
+    }, opt_sync );
+};
+
+Dir.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
+// from functions/fs/DirExists.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_fs ArcObject
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function DirExists() {
+    Builtin.call( this );
+    this.init( "dir-exists" );
+}
+
+DirExists.prototype = new Builtin();
+DirExists.prototype.className = "DirExists";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+DirExists.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new DirExists.Go( args.car(), this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+DirExists.Go = function ( path, owner ) {
+    Instruction.call( this );
+    this.path_ = path;
+    this.belongsTo( owner );
+};
+
+DirExists.Go.prototype = new Instruction();
+DirExists.Go.prototype.implementsAsync = true;
+DirExists.Go.prototype.className = "DirExists.Go";
+
+DirExists.Go.prototype.operateAsync = function (
+    vm, then, opt_sync ) {
+    
+    return System_fs.dirExistsAsync(
+        ArcString.cast( this.path_, this.owner() ).value(),
+        function ( e, result ) {
+        
+        if ( e ) return void then( e );
+        vm.pushA( result ? this.path_ : ArcObject.NIL );
+        then( null );
+    }, opt_sync );
+};
+
+DirExists.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
+// from functions/fs/FileExists.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_fs ArcObject
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function FileExists() {
+    Builtin.call( this );
+    this.init( "file-exists" );
+}
+
+FileExists.prototype = new Builtin();
+FileExists.prototype.className = "FileExists";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+FileExists.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new FileExists.Go( args.car(), this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+FileExists.Go = function ( path, owner ) {
+    Instruction.call( this );
+    this.path_ = path;
+    this.belongsTo( owner );
+};
+
+FileExists.Go.prototype = new Instruction();
+FileExists.Go.prototype.implementsAsync = true;
+FileExists.Go.prototype.className = "FileExists.Go";
+
+FileExists.Go.prototype.operateAsync = function (
+    vm, then, opt_sync ) {
+    
+    return System_fs.fileExistsAsync(
+        ArcString.cast( this.path_, this.owner() ).value(),
+        function ( e, result ) {
+        
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
+    }, opt_sync );
+};
+
+FileExists.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
+// from functions/fs/InFile.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_fs
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function InFile() {
+    Builtin.call( this );
+    this.init( "infile" );
+}
+
+InFile.prototype = new Builtin();
+InFile.prototype.className = "InFile";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+InFile.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new InFile.Go(
+        ArcString.cast( args.car(), this ).value(), this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+InFile.Go = function ( path, owner ) {
+    Instruction.call( this );
+    this.path_ = path;
+    this.belongsTo( owner );
+};
+
+InFile.Go.prototype = new Instruction();
+InFile.Go.prototype.implementsAsync = true;
+InFile.Go.prototype.className = "InFile.Go";
+
+InFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return System_fs.inFileAsync( this.path_, function ( e, result ) {
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
+    }, opt_sync );
+};
+
+InFile.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
+// from functions/fs/OutFile.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: Nil Symbol System_fs
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function OutFile() {
+    Builtin.call( this );
+    this.init( "outfile" );
+}
+
+OutFile.prototype = new Builtin();
+OutFile.prototype.className = "OutFile";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+OutFile.prototype.invoke = function ( vm, args ) {
+    var name = ArcString.cast( args.car(), this ).value();
+    var appendSymbol = args.cdr().car();
+    var append = !(appendSymbol instanceof Nil) &&
+        Symbol.cast( appendSymbol, this ).name() === "append";
+    vm.pushFrame( new OutFile.Go( name, append, this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+OutFile.Go = function ( name, append, owner ) {
+    Instruction.call( this );
+    this.name_ = name;
+    this.append_ = append;
+    this.belongsTo( owner );
+};
+
+OutFile.Go.prototype = new Instruction();
+OutFile.Go.prototype.implementsAsync = true;
+OutFile.Go.prototype.className = "OutFile.Go";
+
+OutFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return System_fs.inFileAsync( this.name_, this.append_, function (
+        e, result ) {
+        
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
+    }, opt_sync );
+};
+
+OutFile.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
+// from functions/fs/MakeDirectory.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_fs Truth
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function MakeDirectory() {
+    Builtin.call( this );
+    this.init( "make-directory" );
+}
+
+MakeDirectory.prototype = new Builtin();
+MakeDirectory.prototype.className = "MakeDirectory";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+MakeDirectory.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new MakeDirectory.Go(
+        ArcString.cast( args.car(), this ).value(), this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+MakeDirectory.Go = function ( path, owner ) {
+    Instruction.call( this );
+    this.path_ = path;
+    this.belongsTo( owner );
+};
+
+MakeDirectory.Go.prototype = new Instruction();
+MakeDirectory.Go.prototype.implementsAsync = true;
+MakeDirectory.Go.prototype.className = "MakeDirectory.Go";
+
+MakeDirectory.Go.prototype.operateAsync = function (
+    vm, then, opt_sync ) {
+    
+    return System_fs.makeDirectoryAsync( this.path_, function (
+        e, result ) {
+        
+        if ( e ) return void then( e );
+        vm.pushA( result ? Truth.T : Truth.NIL );
+        then( null );
+    }, opt_sync );
+};
+
+MakeDirectory.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
+// from functions/fs/MakeDirectories.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_fs Truth
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function MakeDirectories() {
+    Builtin.call( this );
+    this.init( "make-directory*" );
+}
+
+MakeDirectories.prototype = new Builtin();
+MakeDirectories.prototype.className = "MakeDirectories";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+MakeDirectories.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new MakeDirectories.Go(
+        ArcString.cast( args.car(), this ).value(), this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+MakeDirectories.Go = function ( path, owner ) {
+    Instruction.call( this );
+    this.path_ = path;
+    this.belongsTo( owner );
+};
+
+MakeDirectories.Go.prototype = new Instruction();
+MakeDirectories.Go.prototype.implementsAsync = true;
+MakeDirectories.Go.prototype.className = "MakeDirectories.Go";
+
+MakeDirectories.Go.prototype.operateAsync = function (
+    vm, then, opt_sync ) {
+    
+    return System_fs.makeDirectoriesAsync( this.path_, function (
+        e, result ) {
+        
+        if ( e ) return void then( e );
+        vm.pushA( result ? Truth.T : Truth.NIL );
+        then( null );
+    }, opt_sync );
+};
+
+MakeDirectories.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
+// from functions/fs/MvFile.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_fs ArcObject
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function MvFile() {
+    Builtin.call( this );
+    this.init( "mvfile" );
+}
+
+MvFile.prototype = new Builtin();
+MvFile.prototype.className = "MvFile";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+MvFile.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new MvFile.Go(
+        ArcString.cast( args.car(), this ).value(),
+        ArcString.cast( args.cdr().car(), this ).value(),
+        this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+MvFile.Go = function ( opath, npath, owner ) {
+    Instruction.call( this );
+    this.opath_ = opath;
+    this.npath_ = npath;
+    this.belongsTo( owner );
+};
+
+MvFile.Go.prototype = new Instruction();
+MvFile.Go.prototype.implementsAsync = true;
+MvFile.Go.prototype.className = "MvFile.Go";
+
+MvFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return System_fs.mvFileAsync( this.opath_, this.npath_, function (
+        e ) {
+        
+        if ( e ) return void then( e );
+        vm.pushA( ArcObject.NIL );
+        then( null );
+    }, opt_sync );
+};
+
+MvFile.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
+// from functions/fs/RmFile.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_fs ArcObject
+
+// ASYNC PORT NOTE: This had to be converted to an asynchronous
+// design.
+
+/** @constructor */
+function RmFile() {
+    Builtin.call( this );
+    this.init( "rmfile" );
+}
+
+RmFile.prototype = new Builtin();
+RmFile.prototype.className = "RmFile";
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+RmFile.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new RmFile.Go(
+        ArcString.cast( args.car(), this ).value(), this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+RmFile.Go = function ( path, owner ) {
+    Instruction.call( this );
+    this.path_ = path;
+    this.belongsTo( owner );
+};
+
+RmFile.Go.prototype = new Instruction();
+RmFile.Go.prototype.implementsAsync = true;
+RmFile.Go.prototype.className = "RmFile.Go";
+
+RmFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return System_fs.rmFileAsync( this.path_, function ( e ) {
+        if ( e ) return void then( e );
+        vm.pushA( ArcObject.NIL );
+        then( null );
+    }, opt_sync );
+};
+
+RmFile.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
 
 // ===================================================================
 // from Console.java
