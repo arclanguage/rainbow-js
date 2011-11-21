@@ -15671,7 +15671,7 @@ CurrentGcMilliseconds.prototype = new Builtin();
 CurrentGcMilliseconds.prototype.className = "CurrentGcMilliseconds";
 
 CurrentGcMilliseconds.prototype.invoke = function ( vm, args ) {
-    return Rational.make1( 1 );
+    vm.pushA( Rational.make1( 1 ) );
 };
 
 
@@ -15692,7 +15692,7 @@ CurrentProcessMilliseconds.prototype.className =
     "CurrentProcessMilliseconds";
 
 CurrentProcessMilliseconds.prototype.invoke = function ( vm, args ) {
-    return Rational.make1( 1 );
+    vm.pushA( Rational.make1( 1 ) );
 };
 
 
@@ -16110,7 +16110,7 @@ Dead.prototype.invoke = function ( vm, args ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(victim instanceof VM) )
         throw new TypeError();
-    return Truth.valueOf( victim.dead() );
+    vm.pushA( Truth.valueOf( victim.dead() ) );
 };
 
 
@@ -16138,7 +16138,7 @@ KillThread.prototype.invoke = function ( vm, args ) {
     if ( !(victim instanceof VM) )
         throw new TypeError();
     victim.setInterceptor( VMInterceptor.KILL );
-    return ArcObject.NIL;
+    vm.pushA( ArcObject.NIL );
 };
 
 
