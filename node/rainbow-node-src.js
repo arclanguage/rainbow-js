@@ -1,6 +1,4 @@
-// http://rocketnia.github.com/rainbow-js/test/index-first.js
-
-// Copyright (c) 2011 Ross Angle
+// Copyright (c) 2012 Ross Angle
 //
 // This software is derived from Rainbow, software which is
 // copyright (c) 2011 Conan Dalton, distributed under the
@@ -16,8 +14,21 @@
 // "Modified Version" bears a name that is different from any name
 // used for Arc.
 
+var fs = require( "fs" );
 
-"use strict";
+
+// This file is concatenated to some other text in build.js, which
+// provides this extra export:
+//
+//   exports.makeRainbow = function (
+//       System_in, System_out, System_err, System_fs ) {
+//   
+//   [contents of rainbow.js]
+//   
+//   return Console;
+//   
+//   };
+
 
 
 function makeInputAndOutput( name ) {
@@ -251,75 +262,216 @@ function makeInputAndOutput( name ) {
     return { i: input, o: output };
 }
 
-function handle( el, eventName, handler ) {
-    if ( el.addEventListener )
-        el.addEventListener( eventName, handler, !"capture" );
-    else  // IE
-        el.attachEvent( "on" + eventName, handler );
+
+function nodeInToRainbowIn( nodeIn, close ) {
+    var io = makeInputAndOutput( "ReadableStream" );
+    nodeIn.on( "end", function () {
+        io.o.close();
+    } );
+    nodeIn.on( "data", function ( data ) {
+        if ( data instanceof Buffer ) {
+            for ( var i = 0, n = data.length; i < n; i++ )
+                io.o.writeByte( data[ i ] );
+        } else {
+            io.o.writeString( data );
+        }
+    } );
+    nodeIn.resume();
+    return {
+        readByteAsync: function ( then, opt_sync ) {
+            return io.i.readByteAsync( then, opt_sync );
+        },
+        readCharCodeAsync: function ( then, opt_sync ) {
+            return io.i.readCharCodeAsync( then, opt_sync );
+        },
+        peekCharCodeAsync: function ( then, opt_sync ) {
+            return io.i.peekCharCodeAsync( then, opt_sync );
+        },
+        close: close
+    };
 }
 
-var consoleIn = makeInputAndOutput( "consoleIn" );
-
-var rainbowStdin = makeInputAndOutput( "rainbowStdin" );
-var rainbowStdout = makeInputAndOutput( "rainbowStdout" );
-var rainbowStderr = makeInputAndOutput( "rainbowStderr" );
-
-var System_in = rainbowStdin.i;
-var System_out = rainbowStdout.o;
-var System_err = rainbowStderr.o;
-
-var System_fs = {
-    dirAsync: function ( path, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
-        return true;
-    },
-    dirExistsAsync: function ( path, then, opt_sync ) {
-        then( null, false );
-        return true;
-    },
-    inFileAsync: function ( path, then, opt_sync ) {
-        if ( opt_sync )
-            return then( new ArcError(
-                "Can't access the Web synchronously." ) ), true;
-        var req = new XMLHttpRequest();
-        if ( "withCredentials" in req ) {
-            req.open( "GET", path, !!"async" );
-        } else if ( "XDomainRequest" in window ) {
-            req = new XDomainRequest();
-            req.open( "GET", path );
-        } else {
-            then( new ArcError( "No AJAX." ) );
-            return true;
-        }
-        handle( req, "error", function () {
-            then( new ArcError(
-                "Couldn't open page: " + path + " because of " +
-                "error: " + req.statusText ) );
-        } );
-        handle( req, "load", function () {
-            then( null, new StringInputPort( req.responseText ) );
-        } );
-        req.send( null );
-        return false;
-    },
-    outFileAsync: function ( path, append, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
-        return true;
-    },
-    makeDirectoryAsync: function ( path, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
-        return true;
-    },
-    makeDirectoriesAsync: function ( path, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
-        return true;
-    },
-    mvFileAsync: function ( fromPath, toPath, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
-        return true;
-    },
-    rmFileAsync: function ( path, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
-        return true;
+function nodeOutToRainbowOut( getNodeOut, closeable ) {
+    return {
+        writeString: function ( string ) {
+            getNodeOut().write( string );
+        },
+        writeByte: function ( theByte ) {
+            getNodeOut().write( new Buffer( [ theByte ] ) );
+        },
+        close: function () {
+            if ( closeable )
+                getNodeOut().end();
+        },
+        flush: function () {}
     }
+}
+
+
+exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
+    
+    // TODO: Figure out a more appropriate place to set the encoding.
+    stdin.setEncoding( "utf8" );
+    
+    return exports.makeRainbow(
+        nodeInToRainbowIn( stdin, function () {} ),
+        nodeOutToRainbowOut( function () {
+            return getStdout();
+        }, !"closeable" ),
+        nodeOutToRainbowOut( function () {
+            return getStderr();
+        }, !"closeable" ),
+        {  // filesystem
+            dirAsync: function ( path, then, opt_sync ) {
+                function toArc( files ) {
+                    return rainbow.list( files.map( function ( it ) {
+                        return rainbow.string( it );
+                    } ) );
+                }
+                if ( opt_sync ) {
+                    then( null, toArc( fs.readdirSync( path ) ) );
+                    return true;
+                } else {
+                    fs.readdir( path, function ( e, files ) {
+                        if ( e ) return void then( e );
+                        then( null, toArc( files ) );
+                    } );
+                    return false;
+                }
+            },
+            dirExistsAsync: function ( path, then, opt_sync ) {
+                if ( opt_sync ) {
+                    then( null, fs.statSync( path ).isDirectory() );
+                    return true;
+                } else {
+                    fs.stat( path, function ( e, stats ) {
+                        if ( e ) return void then( e );
+                        then( null, stats.isDirectory() );
+                    } );
+                    return false;
+                }
+            },
+            fileExistsAsync: function ( path, then, opt_sync ) {
+                if ( opt_sync ) {
+                    then( null, fs.statSync( path ).isFile() );
+                    return true;
+                } else {
+                    fs.stat( path, function ( e, stats ) {
+                        if ( e ) return void then( e );
+                        then( null, stats.isFile() );
+                    } );
+                    return false;
+                }
+            },
+            inFileAsync: function ( path, then, opt_sync ) {
+                // TODO: See if there's a synchronous way to do this.
+                if ( opt_sync )
+                    return false;
+                // TODO: See if we'd get a cleaner interface by
+                // skipping the Node readable stream.
+                var stream = fs.createReadStream( path );
+                function onError( e ) {
+                    stream.removeListener( "error", onError );
+                    stream.removeListener( "open", onOpen );
+                    then( e );
+                }
+                function onOpen( fd ) {
+                    stream.removeListener( "error", onError );
+                    stream.removeListener( "open", onOpen );
+                    then( null, nodeInToRainbowIn( stream,
+                        function () {
+                        
+                        // TODO: See if this callback should do
+                        // anything.
+                        fs.close( fd, function ( e ) {} );
+                    } ) );
+                }
+                stream.on( "error", onError );
+                stream.on( "open", onOpen );
+                return false;
+            },
+            outFileAsync: function ( path, append, then, opt_sync ) {
+                // TODO: See if there's a synchronous way to do this.
+                if ( opt_sync )
+                    return false;
+                // TODO: See if we'd get a cleaner interface by
+                // skipping the Node writable stream.
+                var stream = fs.createWriteStream( path,
+                    { flags: append ? "a" : "w" } );
+                function onError( e ) {
+                    stream.removeListener( "error", onError );
+                    stream.removeListener( "open", onOpen );
+                    then( e );
+                }
+                function onOpen( fd ) {
+                    stream.removeListener( "error", onError );
+                    stream.removeListener( "open", onOpen );
+                    then( null, nodeOutToRainbowOut( stream ) );
+                }
+                stream.on( "error", onError );
+                stream.on( "open", onOpen );
+                return false;
+            },
+            makeDirectoryAsync: function ( path, then, opt_sync ) {
+                if ( opt_sync ) {
+                    fs.mkdirSync( path );
+                    then( null, true );
+                    return true;
+                } else {
+                    fs.mkdir( path, function ( e ) {
+                        if ( e ) return void then( e );
+                        then( null, true );
+                    } );
+                    return false;
+                }
+            },
+            makeDirectoriesAsync: function ( path, then, opt_sync ) {
+                // TODO: Implement this.
+                then( new ArcError( "No make-directory*." ) );
+                return true;
+            },
+            mvFileAsync: function (
+                fromPath, toPath, then, opt_sync ) {
+                
+                if ( opt_sync ) {
+                    fs.renameSync( fromPath, toPath );
+                    then( null );
+                    return true;
+                } else {
+                    fs.rename( fromPath, toPath, function ( e ) {
+                        if ( e ) return void then( e );
+                        then( null );
+                    } );
+                    return false;
+                }
+            },
+            rmFileAsync: function ( path, then, opt_sync ) {
+                if ( opt_sync ) {
+                    fs.unlinkSync( path );
+                    then( null );
+                    return true;
+                } else {
+                    fs.unlink( path, function ( e ) {
+                        if ( e ) return void then( e );
+                        then( null );
+                    } );
+                    return false;
+                }
+            }
+        }
+    );
 };
+
+var sharedRainbow = null;
+exports.getSharedRainbow = function () {
+    return sharedRainbow || (sharedRainbow = exports.makeNodeRainbow(
+        process.stdin, function () { return process.stdout; },
+        function () { return process.stderr; } ));
+};
+
+if ( require.main === module )
+    exports.getSharedRainbow().mainAsync( {}, function () {
+        // TODO: See if this is ever reached.
+        console.log( "Thanks for using Rainbow.js on Node." );
+        process.exit();
+    } );
