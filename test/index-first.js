@@ -297,7 +297,8 @@ var System_fs = {
                 "error: " + req.statusText ) );
         } );
         handle( req, "load", function () {
-            then( null, new StringInputPort( req.responseText ) );
+            then( null,
+                new StringInputPort( req.responseText ).unwrap() );
         } );
         req.send( null );
         return false;

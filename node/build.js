@@ -15,7 +15,12 @@
 // used for Arc.
 
 var fs = require( "fs" );
-fs.writeFileSync( "./bin/rainbow-node.js",
+
+// https://github.com/ryanmcgrath/wrench-js
+var wrench = require( "wrench" );
+
+wrench.copyDirSyncRecursive( "../src/arc", "./bin/arc" );
+fs.writeFileSync( "./bin/arc/rainbow-node.js",
     "exports.makeRainbow = function (\n" +
     "    System_in, System_out, System_err, System_fs ) {\n" +
     "\n" +

@@ -168,5 +168,5 @@ handle( window, "load", function () {
     }
     rainbowStderr.i.peekCharCodeAsync( processStderr );
     
-    Console.mainAsync( {}, function () {} );
+    Console.mainAsync( { noLibs: true }, function () {} );
 } );

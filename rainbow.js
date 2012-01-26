@@ -67,12 +67,14 @@
 //    },
 //    inFileAsync: function ( path, then, opt_sync ) {
 //        then( new ArcError( "No filesystem." ) );
-//        // This would have done then( null, arcInput ) on success.
+//        // This would have done then( null, inputStream ) on
+//        // success, where inputStream is like stdin.
 //        return true;
 //    },
 //    outFileAsync: function ( path, append, then, opt_sync ) {
 //        then( new ArcError( "No filesystem." ) );
-//        // This would have done then( null, arcOutput ) on success.
+//        // This would have done then( null, outputStream ) on
+//        // success, where outputStream is like stdout.
 //        return true;
 //    },
 //    makeDirectoryAsync: function ( path, then, opt_sync ) {
@@ -5474,7 +5476,7 @@ Assign_Free_Stack.prototype = new Assign_Free();
 Assign_Free_Stack.prototype.className = "Assign_Free_Stack";
 
 Assign_Free_Stack.prototype.operate = function ( vm ) {
-    v = this.value.get( vm );
+    var v = this.value.get( vm );
     this.name.setValue( v );
     vm.pushA( v );
 };
@@ -8264,7 +8266,7 @@ QuasiQuotation.prototype.type = function () {
     return Symbol.mkSym( "quasiquotation" );
 };
 
-// PORT TODO: Rename all uses of addInstructions( List, ArcObject )
+// PORT TODO: Rename all uses of addInstructions( List, ArcObject ).
 QuasiQuotation.prototype.addInstructions = function ( i ) {
     this.addInstructions2( i, this.target_ );
 };
@@ -11336,7 +11338,7 @@ InterpretedFunction.prototype.assigned = function ( name ) {
 };
 
 InterpretedFunction.prototype.assignedName = function () {
-    return name;
+    return this.name;
 };
 
 InterpretedFunction.prototype.profileName = function () {
@@ -17244,8 +17246,9 @@ IO.close = function ( port ) {
         port.close();
     else if ( port instanceof Output )
         port.close();
-    else if ( port instanceof ArcSocket )
-        port.close();
+    // PORT TODO: Put this in when ArcSocket is defined.
+//    else if ( port instanceof ArcSocket )
+//        port.close();
     else if ( port instanceof JsObject )
         port.close();
     else
@@ -17984,7 +17987,7 @@ InFile.Go.prototype.className = "InFile.Go";
 InFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     return System_fs.inFileAsync( this.path_, function ( e, result ) {
         if ( e ) return void then( e );
-        vm.pushA( result );
+        vm.pushA( new Input( result ) );
         then( null );
     }, opt_sync );
 };
@@ -18041,7 +18044,7 @@ OutFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
         function ( e, result ) {
         
         if ( e ) return void then( e );
-        vm.pushA( result );
+        vm.pushA( new Output( result ) );
         then( null );
     }, opt_sync );
 };
@@ -18273,7 +18276,7 @@ RmFile.Go.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: ArcObject Visitor Instruction
 // Needed late: Environment VM Symbol ArcParser StringInputPort
-// ParseException ArcError Compiler
+// ParseException ArcError System_fs Compiler
 
 // PORT NOTE: This is substantially different from the original.
 
@@ -18289,6 +18292,13 @@ Console.stackfunctions = true;
 // minified.
 Console.mainAsync = function ( options, then, opt_sync ) {
     var started = new Date().getTime();
+    
+    // PORT TODO: See if we should implement the original's
+    // getArcPath() instead of this.
+    var path = options.ARC_PATH || [];
+    if ( path.indexOf( "." ) === -1 )
+        path = [ "." ].concat( path );
+    
     var programArgs = Console.parseAll_( options.args || [] );
     
     if ( options.nosf )
@@ -18300,25 +18310,43 @@ Console.mainAsync = function ( options, then, opt_sync ) {
     
     Symbol.mkSym( "*argv*" ).setValue(
         Pair.buildFrom1( programArgs ) );
+    // PORT TODO: Implement *env*.
     Symbol.mkSym( "call*" ).setValue( new Hash() );
     Symbol.mkSym( "sig" ).setValue( new Hash() );
     
+    var filesToLoad = (options.noLibs ? [] : [
+        "arc",
+        "strings",
+        "lib/bag-of-tricks",
+        "rainbow/rainbow"
+        // PORT TODO: Make this work, and add it to the list.
+//        "rainbow/rainbow-libs"
+    ]).concat( options.f || [] );
+    
     var achievedSync = true;
     
-    if ( !Console.interpretAllAsync_( vm, options.e || [], function (
+    if ( !Console.loadAllAsync_( vm, path, filesToLoad, function (
             e ) {
             
             if ( e ) return void then( e );
             
-            if ( options.q ) {
-                then();
-            } else {
-                var ready = new Date().getTime();
-                System_out_println(
-                    "repl in " + (ready - started) + "ms" );
-                if ( !Console.replAsync_( vm, then, opt_sync ) )
-                    achievedSync = false;
-            }
+            if ( !Console.interpretAllAsync_( vm, options.e || [],
+                    function ( e ) {
+                    
+                    if ( e ) return void then( e );
+                    
+                    if ( options.q ) {
+                        then();
+                    } else {
+                        var ready = new Date().getTime();
+                        System_out_println(
+                            "repl in " + (ready - started) + "ms" );
+                        if ( !Console.replAsync_(
+                            vm, then, opt_sync ) )
+                            achievedSync = false;
+                    }
+                }, opt_sync ) )
+                achievedSync = false;
         }, opt_sync ) )
         achievedSync = false;
     
@@ -18337,6 +18365,26 @@ Console.parseAll_ = function ( list ) {
         result.push( ArcParser.readFirstObjectFromString( "" + it ) );
     }
     return result;
+};
+
+Console.loadAllAsync_ = function (
+    vm, arcPath, files, then, opt_sync ) {
+    
+    var thisSync = true;
+    var n = files.length;
+    function next( i ) {
+        if ( i === n )
+            return void then();
+        var file = files[ i ];
+        if ( !Console.loadFileAsync( vm, arcPath, file,
+                function ( e ) {
+                if ( e ) return void then( e );
+                next( i + 1 );
+            }, opt_sync ) )
+            thisSync = false;
+    }
+    next( 0 );
+    return thisSync;
 };
 
 Console.interpretAllAsync_ = function (
@@ -18430,6 +18478,94 @@ Console.interpretAsync_ = function (
     }, opt_sync );
 };
 
+// PORT TODO: See if this should be changed to consume only a constant
+// number of stack frames, rather than a number proportional to
+// arcPath.length.
+Console.findAsync = function ( arcPath, filePath, then, opt_sync ) {
+    // PORT NOTE: The original used File.separator.
+    // PORT TODO: See if we should stop hardcoding the path separator.
+    var options = [];
+    var originalLength = arcPath.length;
+    for ( var i = 0; i < originalLength; i++ ) {
+        var base = "" + arcPath[ i ] + "/" + filePath;
+        options.push( base, base + ".arc" );
+    }
+    var finalLength = options.length;
+    var thisSync = true;
+    function findNext( i ) {
+        if ( i === finalLength )
+            return void then( new Error(
+                "Could not find " + filePath + " under " +
+                JSON.stringify( arcPath ) ) );
+        var option = options[ i ];
+        if ( !Console.isValidSourceFileAsync_( option,
+                function ( e, valid ) {
+                if ( e ) return void then( e );
+                if ( valid )
+                    return void then( null, option );
+                findNext( i + 1 );
+            }, opt_sync ) )
+            thisSync = false;
+    }
+    findNext( 0 );
+    return thisSync;
+};
+
+Console.loadFileAsync = function (
+    vm, arcPath, path, then, opt_sync ) {
+    
+    var thisSync = true;
+    var f = path;
+    // PORT TODO: Stop checking if the path is valid if it isn't
+    // absolute. To accomplish this, we may want to add a System_fs
+    // interface for normalizing paths. Confer with the original.
+    if ( !Console.isValidSourceFileAsync_( f, function ( e, valid ) {
+            if ( e ) return void then( e );
+            if ( !valid ) {
+                if ( !Console.findAsync( arcPath, path,
+                        function ( e, f ) {
+                        
+                        if ( e ) return void then( e );
+                        if ( !System_fs.inFileAsync( f,
+                                function ( e, stream ) {
+                                
+                                if ( e ) return void then( e );
+                                if ( !Console.loadAsync(
+                                    vm, stream, then, opt_sync ) )
+                                    thisSync = false;
+                            }, opt_sync ) )
+                            thisSync = false;
+                    }, opt_sync ) )
+                    thisSync = false;
+            }
+        }, opt_sync ) )
+        thisSync = false;
+    return thisSync;
+};
+
+// PORT TODO: See if this should be changed to consume only a constant
+// number of stack frames, rather than a number proportional to the
+// number of commands available in the stream without blocking.
+Console.loadAsync = function ( vm, stream, then, opt_sync ) {
+    var thisSync = true;
+    if ( !ArcParser.readObjectAsync( stream, function ( e, command ) {
+            if ( e ) return void then( e );
+            if ( command === null )
+                return void then();
+            if ( !Console.compileAndEvalAsync_( vm, command,
+                    function ( e, result ) {
+                    
+                    if ( e ) return void then( e );
+                    if ( !Console.loadAsync(
+                        vm, stream, then, opt_sync ) )
+                        thisSync = false;
+                }, opt_sync ) )
+                thisSync = false;
+        }, opt_sync ) )
+        thisSync = false;
+    return thisSync;
+};
+
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
 Console.Anon_mkVisitor_ = function ( owner ) {
@@ -18493,6 +18629,10 @@ Console.AndEval.prototype.operate = function ( vm ) {
     var instructions = Pair.buildFrom1( i );
     instructions.visit( Console.mkVisitor_( expression ) );
     vm.pushInvocation2( null, instructions );
+};
+
+Console.isValidSourceFileAsync_ = function ( f, then, opt_sync ) {
+    return System_fs.fileExistsAsync( f, then, opt_sync );
 };
 
 

@@ -15,6 +15,7 @@
 // used for Arc.
 
 var fs = require( "fs" );
+var $path = require( "path" );
 
 
 // This file is concatenated to some other text in build.js, which
@@ -341,24 +342,40 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
             },
             dirExistsAsync: function ( path, then, opt_sync ) {
                 if ( opt_sync ) {
-                    then( null, fs.statSync( path ).isDirectory() );
+                    then( null, $path.existsSync( p ) &&
+                        fs.statSync( path ).isDirectory() );
                     return true;
                 } else {
-                    fs.stat( path, function ( e, stats ) {
-                        if ( e ) return void then( e );
-                        then( null, stats.isDirectory() );
+                    $path.exists( path, function ( exists ) {
+                        // TODO: Figure out if there's any
+                        // error propagation we need to do here.
+//                        if ( e ) return void then( e );
+                        if ( !exists )
+                            return void then( null, false );
+                        fs.stat( path, function ( e, stats ) {
+                            if ( e ) return void then( e );
+                            then( null, stats.isDirectory() );
+                        } );
                     } );
                     return false;
                 }
             },
             fileExistsAsync: function ( path, then, opt_sync ) {
                 if ( opt_sync ) {
-                    then( null, fs.statSync( path ).isFile() );
+                    then( null, $path.existsSync( p ) &&
+                        fs.statSync( path ).isFile() );
                     return true;
                 } else {
-                    fs.stat( path, function ( e, stats ) {
-                        if ( e ) return void then( e );
-                        then( null, stats.isFile() );
+                    $path.exists( path, function ( exists ) {
+                        // TODO: Figure out if there's any
+                        // error propagation we need to do here.
+//                        if ( e ) return void then( e );
+                        if ( !exists )
+                            return void then( null, false );
+                        fs.stat( path, function ( e, stats ) {
+                            if ( e ) return void then( e );
+                            then( null, stats.isFile() );
+                        } );
                     } );
                     return false;
                 }
@@ -370,6 +387,10 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
                 // TODO: See if we'd get a cleaner interface by
                 // skipping the Node readable stream.
                 var stream = fs.createReadStream( path );
+                // TODO: See if we really want to do this. What
+                // happpens to binary operations? What should we do
+                // with non-UTF-8 files?
+                stream.setEncoding( "utf8" );
                 function onError( e ) {
                     stream.removeListener( "error", onError );
                     stream.removeListener( "open", onOpen );
@@ -381,9 +402,11 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
                     then( null, nodeInToRainbowIn( stream,
                         function () {
                         
-                        // TODO: See if this callback should do
-                        // anything.
-                        fs.close( fd, function ( e ) {} );
+                        // TODO: Both of these seem to cause the
+                        // process to terminate, consistently. Do
+                        // something that actually works instead.
+//                        fs.closeSync( fd );
+//                        fs.close( fd, function ( e ) {} );
                     } ) );
                 }
                 stream.on( "error", onError );
@@ -470,8 +493,11 @@ exports.getSharedRainbow = function () {
 };
 
 if ( require.main === module )
-    exports.getSharedRainbow().mainAsync( {}, function () {
+    exports.getSharedRainbow().mainAsync( {}, function ( e ) {
         // TODO: See if this is ever reached.
-        console.log( "Thanks for using Rainbow.js on Node." );
+        if ( e )
+            console.log( e );
+        else
+            console.log( "Thanks for using Rainbow.js on Node." );
         process.exit();
     } );
