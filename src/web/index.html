@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+<title>It's Rainbow in JavaScript!</title>
+<!-- http://rocketnia.github.com/rainbow-js/test/index.html -->
+<!--
+
+Copyright (c) 2011 Ross Angle
+
+This software is derived from Rainbow, software which is
+copyright (c) 2011 Conan Dalton, distributed under the
+Perl Foundation's Artistic License 2.0. In the sense described in
+section (4)(c)(i) of that document, using its own terminology,
+permission to use this "Modified Version" is granted under the
+"Original License."
+
+This software may also be derived from Arc, software which is
+copyright (c) Paul Graham and Robert Morris, distributed under the
+Perl Foundation's Artistic License 2.0. In the sense described in
+section (4)(b) of that document, using its own terminology, this
+"Modified Version" bears a name that is different from any name used
+for Arc.
+
+-->
+<meta name="viewport" content=
+   "initial-scale = 1.0, maximum-scale = 1.0, width = device-width" />
+<style type="text/css">
+html { font-family: sans-serif; margin: 2em; }
+
+body > pre { margin-left: 2em; }
+
+p, ul { max-width: 40em; }
+
+code { font-size: 1.2em; }
+
+#repl .scrollback {
+    display: block;
+    width: 95%;
+    height: 200px;
+    overflow: auto;
+    resize: vertical;
+    border: 2px solid black;
+}
+#repl .prompt { display: block; width: 95%; }
+#repl .eval {}
+</style>
+<!--
+<script type="text/javascript" src="index-first.js"></script>
+<script type="text/javascript" src="../rainbow.js"></script>
+<script type="text/javascript" src="index-last.js"></script>
+-->
+<script type="text/javascript" src="index-min.js"></script>
+</head>
+<body>
+<h1>Rainbow.js</h1>
+<div id="repl"></div>
+<p>(The "Eval" button is just there in case pressing enter doesn't
+  work for you. I run into this kind of snafu on mobile devices.)</p>
+<p>Above is a REPL for Rainbow.js, an implementation of most of
+  Rainbow, which is an implemenation of Arc. We don't load arc.arc or
+  friends automatically yet, but you can load them yourself by copying
+  <a href=
+  "https://github.com/conanite/rainbow/blob/92e07a98fd86f8e1985b32a7d2c265810eb76809/src/arc/arc.arc"
+  >Java Rainbow's arc.arc source</a>, and any other files you want to
+  load, and pasting all that code into the REPL. I've successfully
+  loaded all of Java Rainbow's automatically loaded files this
+  way,<sup>*</sup> but that doesn't mean all the functionality is
+  available. For instance, Rainbow.js doesn't implement file
+  operations at all, so even though arc.arc defines <code>load</code>,
+  it won't do us much good!</p>
+<p><sup>*</sup> Namely, I've successfully loaded arc.arc, strings.arc,
+  lib/bag-of-tricks.arc, rainbow.arc, pprint.arc, code.arc, html.arc,
+  srv.arc, app.arc, prompt.arc, profile.arc, unit-test.arc, and
+  parser.arc. Rainbow also automatically loads
+  rainbow/rainbow-libs.arc in order to load some of these, but that
+  file relies on <code>load</code>, so it won't work.</p>
+<p>I've tested this page in Chrome, Firefox, Opera, and IE. To compare
+  the browsers a bit, I pasted arc.arc surrounded by the following
+  code...</p>
+<pre>
+(assign starttime (msec))
+
+...
+
+(- (msec) starttime)
+</pre>
+<p>...and got these results:</p>
+<ul>
+  <li>Chrome 13.0.782.112 m: <b>1591 ms</b></li>
+  <li>Firefox 6.0: <b>2238 ms</b></li>
+  <li>Opera 11.50: <b>3310 ms</b></li>
+  <li>Internet Explorer 8.0.6001.18702: <b>32469 ms</b> (but this
+    includes the time it took for me to dismiss three "Stop running
+    this script?" dialogs)</li>
+</ul>
+<p>I was running all four browsers at the same time, so it was a
+  pretty casual test. But hey, at least I wasn't <i>testing</i> them
+  all at the same time. ^_^</p>
+<p>It seems the Closure Compiler boosted the performance by about
+  20-25% on everything but Chrome. Now that we're using it, I've also
+  tried loading all those automatically loaded files I was talking
+  about, all in one paste:</p>
+<ul>
+  <li>Chrome 13.0.782.112 m: <b>5209 ms</b></li>
+  <li>Firefox 6.0: <b>7220 ms</b></li>
+  <li>Opera 11.50: <b>11369 ms</b></li>
+  <li>Internet Explorer 8.0.6001.18702: <b>216219 ms</b> (but this
+    includes the time it took for me to dismiss twelve "Stop running
+    this script?" dialogs)</li>
+</ul>
+<p>And on the same machine, Java Rainbow's own time is...</p>
+<pre>
+*** redefining no
+*** redefining map1
+*** redefining pr
+*** redefining list
+repl in 12296ms
+arc>
+</pre>
+<p>Could it be? Is Rainbow.js already faster than Java Rainbow (IE 8
+  notwithstanding)?! Maybe this is just a biased benchmark. After all,
+  Rainbow has to do file IO here. Yeah, that's gotta be it....</p>
+<h3>Doing JavaScript things</h3>
+<p>Since those tests, I've made an addition to this REPL. Now
+  <code>window</code>, which isn't defined in rainbow.js proper, is
+  defined in this REPL to be the page's window object, and you can
+  access it like this (using <code>java-invoke</code>, which <i>is</i>
+  defined in rainbow.js):</p>
+<pre>
+repl in 3ms
+arc> (assign list (fn a a))
+(fn a a)
+arc>
+  (assign jsget-impl
+    (java-invoke
+      window 'eval (list "(function ( o, k ) { return o[ k ]; })")))
+
+function ( o, k ) { return o[ k ]; }
+arc>
+  (assign jsget
+    (fn (o k) (java-invoke jsget-impl 'call (list nil o k))))
+
+(fn (o k) (java-invoke jsget-impl 'call (list nil o k)))
+arc> (jsget window "Object")
+function Object() { [native code] }
+</pre>
+<p>You <i>could</i> do crazy meta-things this way, like calling parts
+  of Rainbow.js's implementation. However, all the JavaScript code
+  this page uses is minified, so good luck with that. :-p</p>
+<p>Rainbow.js (like Java Rainbow) takes care of some simple type
+  conversions for you, like converting native strings to Arc
+  strings:</p>
+<pre>
+arc>
+  (+ "The title of the page is: "
+     (jsget (jsget window "document") "title"))
+
+"The title of the page is: It's Rainbow in JavaScript!"
+</pre>
+<p>I'm not sure I actually like that automatic conversion, since I'd
+  rather define my own conversion rules as a library. I'm also not
+  sure it's really appropriate to call <code>java-invoke</code> the
+  same thing as it's called in Java Rainbow. In some ways, Rainbow.js
+  may be staying a bit too true to the original. ^_^</p>
+</body>
+</html>

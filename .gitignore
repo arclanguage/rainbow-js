@@ -17,8 +17,8 @@
 # for Arc.
 
 # Ignore some build artifacts but not others.
-/node/bin/
-#/test/index-min.js
+/bin/
+#/test/
 
 # Ignore npm packages.
-/node/node_modules/
+/node_modules/
