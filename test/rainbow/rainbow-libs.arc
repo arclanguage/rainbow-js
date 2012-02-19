@@ -18,6 +18,7 @@
 ;(prn "self-test:")
 ;(run-all-tests)
 
-(require-by-name rainbow/ welder fsb tetris mines)
+; PORT TODO: Uncomment this.
+;(require-by-name rainbow/ welder fsb tetris mines)
 (requires (rondo prelude) rainbow/midi/midi)
 (requires start-spiral-app rainbow/spiral)

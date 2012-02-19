@@ -71,6 +71,10 @@ function preventDefault( event ) {
         event.returnValue = false;  // IE
 }
 
+handle( window, "hashchange", function () {
+    location.reload( !"bust cache" );
+} );
+
 handle( window, "load", function () {
     
     var ENTER_KEY = 13;
@@ -168,5 +172,54 @@ handle( window, "load", function () {
     }
     rainbowStderr.i.peekCharCodeAsync( processStderr );
     
-    Console.mainAsync( { noLibs: true }, function () {} );
+    // NOTE: We could say '"noLibs: location.hash !== "#libs"' here,
+    // except that that causes two failed HTTP requests and one
+    // successful one for each library.
+    Console.mainAsync( { "noLibs": true, "e": [
+        "(assign load-from-web" +
+        "  (fn ()" +
+        "    ( (fn (eof f loop)" +
+        "        (assign loop" +
+        "          (fn ()" +
+        "            ( (fn (command)" +
+        "              (if (is command eof)" +
+        "                (eval" +
+        "                  '(do (load \"strings.arc\")" +
+        "                       (load \"lib/bag-of-tricks.arc\")" +
+        "                       (load \"rainbow/rainbow.arc\")" +
+        "                       (load \"rainbow/rainbow-libs.arc\")" +
+        "                       ))" +
+        "                ( (fn ()" +
+        "                  eval.command" +
+        "                  (loop)" +
+        "                ) ))" +
+        "            ) (sread f eof))))" +
+        "        (loop)" +
+        "    ) (uniq) (infile \"arc.arc\") nil)))" ].concat(
+            location.hash !== "#libs" ? [] : [ "(load-from-web)" ]
+        )
+// Here's the same code again, for copying and pasting into a REPL:
+/*
+
+(assign load-from-web
+  (fn ()
+    ( (fn (eof f loop)
+        (assign loop
+          (fn ()
+            ( (fn (command)
+              (if (is command eof)
+                (eval
+                  '(do (load "strings.arc")
+                       (load "lib/bag-of-tricks.arc")
+                       (load "rainbow/rainbow.arc")))
+                ( (fn ()
+                  eval.command
+                  (loop)
+                ) ))
+            ) (sread f eof))))
+        (loop)
+    ) (uniq) (infile "arc.arc") nil)))
+
+*/
+    }, function () {} );
 } );

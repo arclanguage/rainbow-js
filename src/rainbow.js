@@ -18295,13 +18295,13 @@ Console.mainAsync = function ( options, then, opt_sync ) {
     
     // PORT TODO: See if we should implement the original's
     // getArcPath() instead of this.
-    var path = options.ARC_PATH || [];
+    var path = options[ "ARC_PATH" ] || [];
     if ( path.indexOf( "." ) === -1 )
         path = [ "." ].concat( path );
     
-    var programArgs = Console.parseAll_( options.args || [] );
+    var programArgs = Console.parseAll_( options[ "args" ] || [] );
     
-    if ( options.nosf )
+    if ( options[ "nosf" ] )
         Console.stackfunctions = false;
     
     Environment.init();
@@ -18314,14 +18314,13 @@ Console.mainAsync = function ( options, then, opt_sync ) {
     Symbol.mkSym( "call*" ).setValue( new Hash() );
     Symbol.mkSym( "sig" ).setValue( new Hash() );
     
-    var filesToLoad = (options.noLibs ? [] : [
+    var filesToLoad = (options[ "noLibs" ] ? [] : [
         "arc",
         "strings",
         "lib/bag-of-tricks",
-        "rainbow/rainbow"
-        // PORT TODO: Make this work, and add it to the list.
-//        "rainbow/rainbow-libs"
-    ]).concat( options.f || [] );
+        "rainbow/rainbow",
+        "rainbow/rainbow-libs"
+    ]).concat( options[ "f" ] || [] );
     
     var achievedSync = true;
     
@@ -18330,12 +18329,12 @@ Console.mainAsync = function ( options, then, opt_sync ) {
             
             if ( e ) return void then( e );
             
-            if ( !Console.interpretAllAsync_( vm, options.e || [],
-                    function ( e ) {
+            if ( !Console.interpretAllAsync_(
+                    vm, options[ "e" ] || [], function ( e ) {
                     
                     if ( e ) return void then( e );
                     
-                    if ( options.q ) {
+                    if ( options[ "q" ] ) {
                         then();
                     } else {
                         var ready = new Date().getTime();
@@ -18516,25 +18515,28 @@ Console.loadFileAsync = function (
     
     var thisSync = true;
     var f = path;
+    function finish( f ) {
+        if ( !System_fs.inFileAsync( f, function ( e, stream ) {
+                if ( e ) return void then( e );
+                if ( !Console.loadAsync(
+                    vm, stream, then, opt_sync ) )
+                    thisSync = false;
+            }, opt_sync ) )
+            thisSync = false;
+    }
     // PORT TODO: Stop checking if the path is valid if it isn't
     // absolute. To accomplish this, we may want to add a System_fs
     // interface for normalizing paths. Confer with the original.
     if ( !Console.isValidSourceFileAsync_( f, function ( e, valid ) {
             if ( e ) return void then( e );
-            if ( !valid ) {
+            if ( valid ) {
+                finish( f );
+            } else {
                 if ( !Console.findAsync( arcPath, path,
                         function ( e, f ) {
                         
                         if ( e ) return void then( e );
-                        if ( !System_fs.inFileAsync( f,
-                                function ( e, stream ) {
-                                
-                                if ( e ) return void then( e );
-                                if ( !Console.loadAsync(
-                                    vm, stream, then, opt_sync ) )
-                                    thisSync = false;
-                            }, opt_sync ) )
-                            thisSync = false;
+                        finish( f );
                     }, opt_sync ) )
                     thisSync = false;
             }

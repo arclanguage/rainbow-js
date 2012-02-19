@@ -33,6 +33,7 @@ var $path = require( "path" );
 
 
 function makeInputAndOutput( name ) {
+//    console.log( "opened " + name );
     var buffer = [];
     var cursor = 0;
     var closed = false;
@@ -51,6 +52,7 @@ function makeInputAndOutput( name ) {
     
     var output = {};
     output.writeString = function ( string ) {
+//        console.log( "wrote  " + name + " " + JSON.stringify( string.substr( string.length - 20 ) ) );
         if ( closed ) return;
         if ( string === "" )
             return;
@@ -63,6 +65,7 @@ function makeInputAndOutput( name ) {
         useCallbacks();
     };
     output.close = function () {
+//        console.log( "closed " + name );
         closed = true;
         useCallbacks();
     };
@@ -264,16 +267,26 @@ function makeInputAndOutput( name ) {
 }
 
 
-function nodeInToRainbowIn( nodeIn, close ) {
-    var io = makeInputAndOutput( "ReadableStream" );
+// TODO: Figure out why this sometimes stops reading a file partway
+// through (almost always right at the end), hangs for a while, and
+// then causes an out of memory eror. It breaks loading libraries.
+function nodeInToRainbowIn( name, nodeIn, close ) {
+//    console.log( "opened " + name );
+    var io = makeInputAndOutput( "ReadableStream " + name );
     nodeIn.on( "end", function () {
+//    console.log( "ended  " + name );
         io.o.close();
+    } );
+    nodeIn.on( "close", function () {
+//    console.log( "CLOSED " + name );
     } );
     nodeIn.on( "data", function ( data ) {
         if ( data instanceof Buffer ) {
+//    console.log( "binary " + name );
             for ( var i = 0, n = data.length; i < n; i++ )
                 io.o.writeByte( data[ i ] );
         } else {
+//    console.log( "string " + name + " " + JSON.stringify( data.substr( Math.max( 0, data.length - 20 ) ) ) );
             io.o.writeString( data );
         }
     } );
@@ -315,7 +328,7 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
     stdin.setEncoding( "utf8" );
     
     return exports.makeRainbow(
-        nodeInToRainbowIn( stdin, function () {} ),
+        nodeInToRainbowIn( "stdin", stdin, function () {} ),
         nodeOutToRainbowOut( function () {
             return getStdout();
         }, !"closeable" ),
@@ -399,7 +412,7 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
                 function onOpen( fd ) {
                     stream.removeListener( "error", onError );
                     stream.removeListener( "open", onOpen );
-                    then( null, nodeInToRainbowIn( stream,
+                    then( null, nodeInToRainbowIn( path, stream,
                         function () {
                         
                         // TODO: Both of these seem to cause the

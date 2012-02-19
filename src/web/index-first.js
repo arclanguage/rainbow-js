@@ -277,6 +277,29 @@ var System_fs = {
         then( null, false );
         return true;
     },
+    fileExistsAsync: function ( path, then, opt_sync ) {
+        if ( opt_sync )
+            return then( new ArcError(
+                "Can't access the Web synchronously." ) ), true;
+        var req = new XMLHttpRequest();
+        if ( "withCredentials" in req ) {
+            req.open( "GET", path, !!"async" );
+        } else if ( "XDomainRequest" in window ) {
+            req = new XDomainRequest();
+            req.open( "GET", path );
+        } else {
+            then( null, false );
+            return true;
+        }
+        handle( req, "error", function () {
+            then( null, false );
+        } );
+        handle( req, "load", function () {
+            then( null, true );
+        } );
+        req.send( null );
+        return false;
+    },
     inFileAsync: function ( path, then, opt_sync ) {
         if ( opt_sync )
             return then( new ArcError(
