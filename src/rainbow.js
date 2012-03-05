@@ -467,6 +467,22 @@ function printStackTrace( e, opt_stream ) {
 
 var classes = {};
 
+var stringMapPrefix = "rainbow_";
+function StringMap() {}
+StringMap.prototype.init = function () {
+    this.contents_ = {};
+    return this;
+};
+StringMap.prototype.get = function ( k ) {
+    return this.contents_[ stringMapPrefix + k ];
+};
+StringMap.prototype.put = function ( k, v ) {
+    return this.contents_[ stringMapPrefix + k ] = v;
+};
+StringMap.prototype.has = function ( k ) {
+    return stringMapPrefix + k in this.contents_;
+};
+
 
 // ===================================================================
 // from ArcError.java
@@ -1458,11 +1474,11 @@ Symbol.prototype.toString = function () {
 };
 
 Symbol.nu = function ( s, parseableName ) {
-    if ( s in Symbol.map_ )
-        return Symbol.map_[ s ];
+    if ( Symbol.map_.has( s ) )
+        return Symbol.map_.get( s );
     
     var result = new Symbol( s, parseableName );
-    Symbol.map_[ s ] = result;
+    Symbol.map_.put( s, result );
     return result;
 };
 
@@ -1543,7 +1559,7 @@ Symbol.prototype.getCoercion = function ( from ) {
     return this.coerceFrom_[ from ] || null;
 };
 
-Symbol.map_ = {};
+Symbol.map_ = new StringMap().init();
 Symbol.requiresPiping_ = /.*(["'; \t\n\)\(]|([^\\]|^)\|).*/;
 Symbol.hasEscapedPiping_ = /.*\\\|/;
 
@@ -3766,7 +3782,7 @@ JsObject.TYPE = Symbol.mkSym( "java-object" );
 function Hash() {
     LiteralObject.call( this );
     this.name_ = ArcObject.NIL;
-    this.map_ = {};
+    this.map_ = new StringMap().init();
     this.firstEntry_ = null;
     this.lastEntry_ = null;
     this.naming_ = new Hash.DontName();
@@ -3822,7 +3838,7 @@ Hash.prototype.sref = function ( value, key ) {
         this.naming_.unname( previous, key );
     } else {
         var hash = key.hashCode();
-        var list = this.map_[ hash ] || (this.map_[ hash ] = []);
+        var list = this.map_.get( hash ) || this.map_.put( hash, [] );
         var entry = null;
         for ( var i = 0, len = list.length; i < len; i++ ) {
             var thisEntry = list[ i ];
@@ -3852,7 +3868,7 @@ Hash.prototype.sref = function ( value, key ) {
 
 Hash.prototype.unref = function ( key ) {
     var hash = key.hashCode();
-    var list = this.map_[ hash ];
+    var list = this.map_.get( hash );
     if ( !list )
         return;
     for ( var i = 0, len = list.length; i < len; i++ ) {
@@ -3875,7 +3891,7 @@ Hash.prototype.unref = function ( key ) {
 
 Hash.prototype.value = function ( key ) {
     var hash = key.hashCode();
-    var list = this.map_[ hash ];
+    var list = this.map_.get( hash );
     if ( !list )
         return ArcObject.NIL;
     for ( var i = 0, len = list.length; i < len; i++ ) {
@@ -13919,7 +13935,7 @@ function OnErr() {
 OnErr.prototype = new Builtin();
 OnErr.prototype.className = "OnErr";
 
-OnErr.prototype.invokePair = function ( args ) {
+OnErr.prototype.invoke = function ( vm, args ) {
     var c = new Catch( args.car(), vm.getAp() );
     c.belongsTo( this );
     vm.pushFrame( c );
@@ -15996,9 +16012,9 @@ CCC.TriggerCopyVM_.prototype.toString = function () {
 /** @constructor */
 CCC.ContinuationWrapper = function ( vm ) {
     ArcObject.call( this );
-    this.vm_ = vm;
+    this.vm_ = vm.copy();
     this.copyRequired_ = false;
-}
+};
 
 CCC.ContinuationWrapper.prototype = new ArcObject();
 CCC.ContinuationWrapper.prototype.className =
