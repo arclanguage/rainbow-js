@@ -850,6 +850,18 @@ ArcObject.prototype.disp = function () {
     return this.toString();
 };
 
+// PORT NOTE: The original just used Java's own default
+// implementations of hashCode() and equals().
+ArcObject.prototype.hashCode = function () {
+    return this.hashCode_ || (this.hashCode_ = 1 + Math.random());
+};
+
+// PORT NOTE: The original just used Java's own default
+// implementations of hashCode() and equals().
+ArcObject.prototype.equals = function ( other ) {
+    return this === other;
+};
+
 
 // ASYNC PORT NOTE: This is a completely reworked design.
 
@@ -13694,7 +13706,7 @@ Stack_Oliteral[ "of3" ] = function (
 
 Stack_Oliteral.prototype.invokef0 = function ( vm ) {
     if ( this.curried !== null )
-        this.curried.invokef1( vm );
+        this.curried.invokef0( vm );
     else
         vm.pushInvocation3(
             null, this.instructions_, [ this.optExpr_ ] );
