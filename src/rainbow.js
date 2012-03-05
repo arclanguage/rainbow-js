@@ -2600,7 +2600,7 @@ ArcString.prototype.srefChar = function ( index, value ) {
     index = index.toInt();
     if ( !(0 <= index && index < this.value_.length) )
         throw new RangeError();
-    this.value_ = this.value_.substring( 0, index - 1 ) +
+    this.value_ = this.value_.substring( 0, index ) +
         String.fromCharCode( value.value() ) +
         this.value_.substring( index + 1 );
 };
@@ -3202,7 +3202,7 @@ Rational.prototype.equals = function ( object ) {
 
 Rational.prototype.sameValue_ = function ( other ) {
     return this.numerator_ === other.numerator_ &&
-        this.denominator_ === other.denominator;
+        this.denominator_ === other.denominator_;
 };
 
 Rational.cast = function ( argument, caller ) {
@@ -14105,12 +14105,13 @@ SSExpand.expandAndf_ = function ( symbol ) {
     var toks = [ Symbol.mkSym( "andf" ) ];
     var tokenised = SSExpand.andToks_( symbol );
     for ( var i = 0, len = tokenised.length; i < len; i++ ) {
+        var s = tokenised[ i ];
         // PORT NOTE: This local variable didn't exist in Java.
         var sym = Symbol.make( s );
         // PORT NOTE: This was a cast in Java.
         if ( !(sym instanceof Symbol) )
             throw new TypeError();
-        toks.add( SSExpand.readValueObject_( sym ) );
+        toks.push( SSExpand.readValueObject_( sym ) );
     }
     return Pair.buildFrom1( toks );
 };
@@ -17101,14 +17102,6 @@ function StringOutputPort() {
     var self = this;
     self.parts_ = [];
     self.leftoverByte_ = null;
-    function getBytes() {
-        var result = charI < s.length;
-        if ( result ) {
-            var code = s.charCodeAt( charI++ );
-            peekedBytes.push( code >>> 8 & 0xFF, code & 0xFF );
-        }
-        return result;
-    }
     Output.call( this, {
         writeString: function ( string ) {
             if ( self.leftoverByte_ === null ) {
