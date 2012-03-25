@@ -282,21 +282,31 @@ var System_fs = {
             return then( new ArcError(
                 "Can't access the Web synchronously." ) ), true;
         var req = new XMLHttpRequest();
-        if ( "withCredentials" in req ) {
-            req.open( "GET", path, !!"async" );
-        } else if ( "XDomainRequest" in window ) {
-            req = new XDomainRequest();
-            req.open( "GET", path );
-        } else {
+        
+        req.open( "GET", path, !!"async" );
+        // TODO: See if this helps support support cross-origin
+        // loading. Note that Opera hits the "no AJAX" case, so we
+        // might want to fall back to the above anyway.
+//        if ( "withCredentials" in req ) {
+//            req.open( "GET", path, !!"async" );
+//        } else if ( "XDomainRequest" in window ) {
+//            req = new XDomainRequest();
+//            req.open( "GET", path );
+//        } else {
+//            then( null, false );
+//            return true;
+//        }
+        
+        // NOTE: We're not using handle() because Opera doesn't
+        // support addEventListener() or attachEvent() on
+        // XMLHttpRequest.
+        req.onerror = function () {
             then( null, false );
-            return true;
-        }
-        handle( req, "error", function () {
-            then( null, false );
-        } );
-        handle( req, "load", function () {
+        };
+        req.onload = function () {
             then( null, true );
-        } );
+        };
+        
         req.send( null );
         return false;
     },
@@ -305,24 +315,34 @@ var System_fs = {
             return then( new ArcError(
                 "Can't access the Web synchronously." ) ), true;
         var req = new XMLHttpRequest();
-        if ( "withCredentials" in req ) {
-            req.open( "GET", path, !!"async" );
-        } else if ( "XDomainRequest" in window ) {
-            req = new XDomainRequest();
-            req.open( "GET", path );
-        } else {
-            then( new ArcError( "No AJAX." ) );
-            return true;
-        }
-        handle( req, "error", function () {
+        
+        req.open( "GET", path, !!"async" );
+        // TODO: See if this helps support support cross-origin
+        // loading. Note that Opera hits the "no AJAX" case, so we
+        // might want to fall back to the above anyway.
+//        if ( "withCredentials" in req ) {
+//            req.open( "GET", path, !!"async" );
+//        } else if ( "XDomainRequest" in window ) {
+//            req = new XDomainRequest();
+//            req.open( "GET", path );
+//        } else {
+//            then( new ArcError( "No AJAX." ) );
+//            return true;
+//        }
+        
+        // NOTE: We're not using handle() because Opera doesn't
+        // support addEventListener() or attachEvent() on
+        // XMLHttpRequest.
+        req.onerror = function () {
             then( new ArcError(
                 "Couldn't open page: " + path + " because of " +
                 "error: " + req.statusText ) );
-        } );
-        handle( req, "load", function () {
+        };
+        req.onload = function () {
             then( null,
                 new StringInputPort( req.responseText ).unwrap() );
-        } );
+        };
+        
         req.send( null );
         return false;
     },
