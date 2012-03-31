@@ -523,11 +523,15 @@ ArcError.prototype.getCause = function () {
 // Needed late: ArcError Pair
 
 /** @constructor */
-function LexicalClosure( length, parent ) {
+function LexicalClosure() {
+}
+
+LexicalClosure.prototype.init = function ( length, parent ) {
     this.parent = parent;
     this.bindings_ = new Array( ~~length );
     this.count_ = 0;
-}
+    return this;
+};
 
 LexicalClosure.prototype.add = function ( value ) {
     if ( this.bindings_.length <= this.count_ )
@@ -1596,8 +1600,6 @@ var Pair_st = {};
 Pair.prototype = new ArcObject();
 Pair.prototype.className = "Pair";
 
-// PORT NOTE: This didn't exist in Java. (It was part of a
-// constructor.)
 Pair.prototype.init0 = function () {
     this.car_ = this.cdr_ = null;
     return this;
@@ -11241,8 +11243,6 @@ var Builtin_st = {};
 Builtin.prototype = new ArcObject();
 Builtin.prototype.className = "Builtin";
 
-// PORT NOTE: This didn't exist in Java. (It was part of the
-// constructor.)
 Builtin.prototype.initBuiltin = function ( name ) {
     // PORT NOTE: The name field was protected in Java, but there's
     // also a name method.
@@ -11448,8 +11448,6 @@ InterpretedFunction.prototype = new ArcObject();
 InterpretedFunction.prototype.Cons_ = InterpretedFunction;
 InterpretedFunction.prototype.className = "InterpretedFunction";
 
-// PORT NOTE: This didn't exist in Java. (It was part of the
-// constructor.)
 InterpretedFunction.prototype.initInterpretedFunction = function (
     parameterList, lexicalBindings, body ) {
     
@@ -11968,7 +11966,7 @@ SimpleArgs.prototype.invoke3 = function ( vm, lc, args ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     SimpleArgs_st.simple_( lc, this.parameterList_, args );
     vm.pushInvocation2( lc, this.instructions_ );
 };
@@ -12009,7 +12007,7 @@ ComplexArgs.prototype.invoke3 = function ( vm, lc, args ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     vm.pushFrame(
         new ComplexArgs_st.Run( lc, this.instructions_, this ) );
     this.complex_( vm, lc, this.parameterList_, args );
@@ -12036,7 +12034,7 @@ ComplexArgs_st.Run.prototype.operate = function ( vm ) {
 //    var len = 0;
 //    for ( var k in this.lexicalBindings )
 //        len++;
-//    lc = new LexicalClosure( len, lc );
+//    lc = new LexicalClosure().init( len, lc );
 //    ComplexArgs_st.complex_( vm, lc, this.parameterList_, args );
 //    vm.pushInvocation2( lc, this.instructions_ );
 //};
@@ -12211,8 +12209,6 @@ StackFunctionSupport.prototype = new InterpretedFunction();
 StackFunctionSupport.prototype.Cons_ = StackFunctionSupport;
 StackFunctionSupport.prototype.className = "StackFunctionSupport";
 
-// PORT NOTE: This didn't exist in Java. (It was part of the
-// constructor.)
 StackFunctionSupport.prototype.initStackFunctionSupport = function (
     parameterList, lexicalBindings, body ) {
     
@@ -12357,7 +12353,7 @@ Bind_A.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushInvocation2( lc, this.instructions_ );
 };
@@ -12415,7 +12411,7 @@ Bind_A_A.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -12464,7 +12460,7 @@ Bind_A_A_A.prototype.invokeN3 = function (
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
     lc.add( arg3 );
@@ -12518,7 +12514,7 @@ Bind_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( args.car() );
     lc.add( args.cdr().car() );
     lc.add( args.cdr().cdr() );
@@ -12583,7 +12579,7 @@ Bind_A_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
         var len = 0;
         for ( var k in this.lexicalBindings )
             len++;
-        lc = new LexicalClosure( len, lc );
+        lc = new LexicalClosure().init( len, lc );
         lc.add( arg );
         lc.add( this.optExpr_.interpret( lc ) );
         vm.pushInvocation2( lc, this.instructions_ );
@@ -12594,7 +12590,7 @@ Bind_A_Obound.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -12665,7 +12661,7 @@ Bind_A_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
         var len = 0;
         for ( var k in this.lexicalBindings )
             len++;
-        lc = new LexicalClosure( len, lc );
+        lc = new LexicalClosure().init( len, lc );
         lc.add( arg );
         lc.add( this.optExpr_ );
         vm.pushInvocation2( lc, this.instructions_ );
@@ -12676,7 +12672,7 @@ Bind_A_Oliteral.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -12731,7 +12727,7 @@ Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushFrame( new BindAndRun( lc, this.instructions_, this ) );
     vm.pushInvocation2( lc, this.optInstructions_ );
@@ -12742,7 +12738,7 @@ Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
 //    var len = 0;
 //    for ( var k in this.lexicalBindings )
 //        len++;
-//    lc = new LexicalClosure( len, lc );
+//    lc = new LexicalClosure().init( len, lc );
 //    lc.add( arg );
 //    vm.pushInvocation2( lc, this.optInstructions_ );
 //    lc.add( vm.thread() );
@@ -12753,7 +12749,7 @@ Bind_A_Oother.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -12807,7 +12803,7 @@ Bind_A_R.prototype.invoke3 = function ( vm, lc, args ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( args.car() );
     lc.add( args.cdr() );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -12844,7 +12840,7 @@ Bind_D_A_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     
     var destructured = arg;
     // PORT NOTE: This was a cast in Java.
@@ -12910,7 +12906,7 @@ Bind_D_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     
     var destructured = arg;
     // PORT NOTE: This was a cast in Java.
@@ -12974,7 +12970,7 @@ Bind_Obound.prototype.invokeN0 = function ( vm, lc ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( this.optionalExpression_.interpret( lc ) );
     vm.pushInvocation2( lc, this.instructions_ );
 };
@@ -12983,7 +12979,7 @@ Bind_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushInvocation2( lc, this.instructions_ );
 };
@@ -13055,7 +13051,7 @@ Bind_Oliteral.prototype.invokeN0 = function ( vm, lc ) {
         var len = 0;
         for ( var k in this.lexicalBindings )
             len++;
-        lc = new LexicalClosure( len, lc );
+        lc = new LexicalClosure().init( len, lc );
         lc.add( this.optExpr_ );
         vm.pushInvocation2( lc, this.instructions_ );
     }
@@ -13065,7 +13061,7 @@ Bind_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushInvocation2( lc, this.instructions_ );
 };
@@ -13124,7 +13120,7 @@ Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     vm.pushFrame( new BindAndRun( lc, this.instructions_, this ) );
     vm.pushInvocation2( lc, this.optInstructions_ );
 };
@@ -13134,7 +13130,7 @@ Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
 //    var len = 0;
 //    for ( var k in this.lexicalBindings )
 //        len++;
-//    lc = new LexicalClosure( len, lc );
+//    lc = new LexicalClosure().init( len, lc );
 //    vm.pushInvocation2( lc, this.optInstructions_ );
 //    lc.add( vm.thread() );
 //    vm.pushInvocation2( lc, this.instructions_ );
@@ -13144,7 +13140,7 @@ Bind_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushInvocation2( lc, this.instructions_ );
 };
@@ -13197,7 +13193,7 @@ Bind_R.prototype.invoke3 = function ( vm, lc, args ) {
     var len = 0;
     for ( var k in this.lexicalBindings )
         len++;
-    lc = new LexicalClosure( len, lc );
+    lc = new LexicalClosure().init( len, lc );
     lc.add( args );
     vm.pushInvocation2( lc, this.instructions_ );
 };
