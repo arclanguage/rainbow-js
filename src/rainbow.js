@@ -5937,7 +5937,7 @@ If_bound_bound_literal.prototype.operate = function ( vm ) {
         vm.pushA( this.thenExpr_.interpret( vm.lc() ) );
 };
 
-If_bound_bound_literal_stForClasses[ "addInstructions" ] = function (
+If_bound_bound_literal_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6019,7 +6019,7 @@ If_bound_bound_other.prototype.operate = function ( vm ) {
         vm.pushA( this.thenExpr_.interpret( vm.lc() ) );
 };
 
-If_bound_bound_other_stForClasses[ "addInstructions" ] = function (
+If_bound_bound_other_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6110,8 +6110,8 @@ If_bound_literal_literal.prototype.toString = function () {
         this.elseExpr_ + ")";
 };
 
-If_bound_literal_literal_stForClasses[ "addInstructions" ] =
-    function ( i, ifExpr, thenExpr, elseExpr ) {
+If_bound_literal_literal_stForClasses.addInstructions = function (
+    i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
     if ( !(elseExpr instanceof Else) )
@@ -6162,7 +6162,7 @@ If_bound_other_literal.prototype.visit = function ( v ) {
     this.thenInstructions_.visit( v );
 };
 
-If_bound_other_literal_stForClasses[ "addInstructions" ] = function (
+If_bound_other_literal_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6215,7 +6215,7 @@ If_bound_other_other.prototype.visit = function ( v ) {
     this.thenInstructions_.visit( v );
 };
 
-If_bound_other_other_stForClasses[ "addInstructions" ] = function (
+If_bound_other_other_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6261,7 +6261,7 @@ If_other_bound_other.prototype.visit = function ( v ) {
     this.elseInstructions_.visit( v );
 };
 
-If_other_bound_other_stForClasses[ "addInstructions" ] = function (
+If_other_bound_other_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     ifExpr.addInstructions( i );
@@ -6308,7 +6308,7 @@ If_other_other_literal.prototype.visit = function ( v ) {
     this.thenInstructions_.visit( v );
 };
 
-If_other_other_literal_stForClasses[ "addInstructions" ] = function (
+If_other_other_literal_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6350,7 +6350,7 @@ If_other_stack_literal.prototype.toString = function () {
     return "(if ? " + this.thenExpr_ + " " + this.elseExpr_ + ")";
 };
 
-If_other_stack_literal_stForClasses[ "addInstructions" ] = function (
+If_other_stack_literal_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6401,7 +6401,7 @@ If_other_stack_other.prototype.visit = function ( v ) {
     this.elseInstructions_.visit( v );
 };
 
-If_other_stack_other_stForClasses[ "addInstructions" ] = function (
+If_other_stack_other_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     ifExpr.addInstructions( i );
@@ -6443,7 +6443,7 @@ If_stack_literal_free.prototype.toString = function () {
         this.elseExpr_ + ")";
 };
 
-If_stack_literal_free_stForClasses[ "addInstructions" ] = function (
+If_stack_literal_free_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6493,7 +6493,7 @@ If_stack_stack_literal.prototype.toString = function () {
         this.elseExpr_ + ")";
 };
 
-If_stack_stack_literal_stForClasses[ "addInstructions" ] = function (
+If_stack_stack_literal_stForClasses.addInstructions = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -7837,11 +7837,7 @@ IfThen_st.loadHandler = function ( classname ) {
         IfThen_st.handlers[ classname ] = null;
         return;
     }
-    // PORT TODO: Figure out a better way to have the Closure Compiler
-    // realize that "addInstructions" is actually used here. For now,
-    // we just keep it from renaming "addInstructions" by using a
-    // string literal.
-    var m = C[ "addInstructions" ];
+    var m = C.addInstructions;
     if ( m === void 0 )
         throw new ArcError(
             "couldn't find handler method " +
@@ -9972,12 +9968,8 @@ FunctionBodyBuilder_st.buildFunctionBody = function (
     
     try {
         // PORT NOTE: This local variable didn't exist in Java.
-        // PORT TODO: Figure out a better way to have the Closure
-        // Compiler realize that "of" is actually used here. For now,
-        // we just keep it from renaming "of" by using a string
-        // literal.
-        var result = Cons[ "of" ](
-            parameterList, lexicalBindings, expandedBody );
+        var result =
+            Cons.of( parameterList, lexicalBindings, expandedBody );
         // PORT NOTE: This was a cast in Java.
         if ( !(result instanceof ArcObject) )
             throw new TypeError();
@@ -10009,12 +10001,8 @@ FunctionBodyBuilder_st.buildStackFunctionBody = function (
     
     try {
         // PORT NOTE: This local variable didn't exist in Java.
-        // PORT TODO: Figure out a better way to have the Closure
-        // Compiler realize that "of3" is actually used here. For now,
-        // we just keep it from renaming "of3" by using a string
-        // literal.
-        var result = Cons[ "of3" ](
-            parameterList, lexicalBindings, expandedBody );
+        var result =
+            Cons.of3( parameterList, lexicalBindings, expandedBody );
         // PORT NOTE: This was a cast in Java.
         if ( !(result instanceof ArcObject) )
             throw new TypeError();
@@ -10041,11 +10029,7 @@ FunctionBodyBuilder_st.convertToStackParams = function ( ifn ) {
     
     try {
         // PORT NOTE: This local variable didn't exist in Java.
-        // PORT TODO: Figure out a better way to have the Closure
-        // Compiler realize that "of1" is actually used here. For now,
-        // we just keep it from renaming "of1" by using a string
-        // literal.
-        var result = Cons[ "of1" ]( ifn );
+        var result = Cons.of1( ifn );
         // PORT NOTE: This was a cast in Java.
         if ( !(result instanceof ArcObject) )
             throw new TypeError();
@@ -12301,7 +12285,7 @@ Bind.prototype.className = "Bind";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_stForClasses[ "of" ] = function (
+Bind_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind().initInterpretedFunction(
@@ -12342,7 +12326,7 @@ Bind_A.prototype.className = "Bind_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_stForClasses[ "of" ] = function (
+Bind_A_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind_A().initInterpretedFunction(
@@ -12396,7 +12380,7 @@ Bind_A_A.prototype.className = "Bind_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_A_stForClasses[ "of" ] = function (
+Bind_A_A_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind_A_A().initInterpretedFunction(
@@ -12451,7 +12435,7 @@ Bind_A_A_A.prototype.className = "Bind_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_A_A_stForClasses[ "of" ] = function (
+Bind_A_A_A_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind_A_A_A().initInterpretedFunction(
@@ -12497,7 +12481,7 @@ Bind_A_A_R.prototype.className = "Bind_A_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_A_R_stForClasses[ "of" ] = function (
+Bind_A_A_R_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind_A_A_R().initInterpretedFunction(
@@ -12544,7 +12528,7 @@ Bind_A_Obound.prototype.className = "Bind_A_Obound";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_Obound_stForClasses[ "of" ] = function (
+Bind_A_Obound_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     var result = new Bind_A_Obound().initInterpretedFunction(
@@ -12631,7 +12615,7 @@ Bind_A_Oliteral.prototype.className = "Bind_A_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_Oliteral_stForClasses[ "of" ] = function (
+Bind_A_Oliteral_stForClasses.of = function (
     parameterList, lexicalBindings, expandedBody ) {
     
     var result = new Bind_A_Oliteral().initInterpretedFunction(
@@ -12713,7 +12697,7 @@ Bind_A_Oother.prototype.className = "Bind_A_Oother";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_Oother_stForClasses[ "of" ] = function (
+Bind_A_Oother_stForClasses.of = function (
     parameterList, lexicalBindings, expandedBody ) {
     
     var result = new Bind_A_Oother().initInterpretedFunction(
@@ -12790,7 +12774,7 @@ Bind_A_R.prototype.className = "Bind_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_R_stForClasses[ "of" ] = function (
+Bind_A_R_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind_A_R().initInterpretedFunction(
@@ -12831,7 +12815,7 @@ Bind_D_A_A_A_d.prototype.className = "Bind_D_A_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_D_A_A_A_d_stForClasses[ "of" ] = function (
+Bind_D_A_A_A_d_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind_D_A_A_A_d().initInterpretedFunction(
@@ -12897,7 +12881,7 @@ Bind_D_A_A_d.prototype.className = "Bind_D_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_D_A_A_d_stForClasses[ "of" ] = function (
+Bind_D_A_A_d_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind_D_A_A_d().initInterpretedFunction(
@@ -12950,7 +12934,7 @@ Bind_Obound.prototype.className = "Bind_Obound";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_Obound_stForClasses[ "of" ] = function (
+Bind_Obound_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     var result = new Bind_Obound().initInterpretedFunction(
@@ -13023,7 +13007,7 @@ Bind_Oliteral.prototype.className = "Bind_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_Oliteral_stForClasses[ "of" ] = function (
+Bind_Oliteral_stForClasses.of = function (
     parameterList, lexicalBindings, expandedBody ) {
     
     var result = new Bind_Oliteral().initInterpretedFunction(
@@ -13105,7 +13089,7 @@ Bind_Oother.prototype.className = "Bind_Oother";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_Oother_stForClasses[ "of" ] = function (
+Bind_Oother_stForClasses.of = function (
     parameterList, lexicalBindings, expandedBody ) {
     
     var result = new Bind_Oother().initInterpretedFunction(
@@ -13184,7 +13168,7 @@ Bind_R.prototype.className = "Bind_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_R_stForClasses[ "of" ] = function (
+Bind_R_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
     return new Bind_R().initInterpretedFunction(
@@ -13221,15 +13205,15 @@ Stack_A.prototype.className = "Stack_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_A_stForClasses[ "of3" ]( original.parameterList(),
+Stack_A_stForClasses.of1 = function ( original ) {
+    return Stack_A_stForClasses.of3( original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_stForClasses[ "of3" ] = function (
+Stack_A_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A().initStackFunctionSupport(
@@ -13275,15 +13259,15 @@ Stack_A_A.prototype.className = "Stack_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_A_A_stForClasses[ "of3" ]( original.parameterList(),
+Stack_A_A_stForClasses.of1 = function ( original ) {
+    return Stack_A_A_stForClasses.of3( original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_stForClasses[ "of3" ] = function (
+Stack_A_A_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_A().initStackFunctionSupport(
@@ -13329,16 +13313,15 @@ Stack_A_A_A.prototype.className = "Stack_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_A_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_A_A_A_stForClasses[ "of3" ](
-        original.parameterList(),
+Stack_A_A_A_stForClasses.of1 = function ( original ) {
+    return Stack_A_A_A_stForClasses.of3( original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_A_stForClasses[ "of3" ] = function (
+Stack_A_A_A_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_A_A().initStackFunctionSupport(
@@ -13390,16 +13373,15 @@ Stack_A_A_A_A.prototype.className = "Stack_A_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_A_A_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_A_A_A_A_stForClasses[ "of3" ](
-        original.parameterList(),
+Stack_A_A_A_A_stForClasses.of1 = function ( original ) {
+    return Stack_A_A_A_A_stForClasses.of3( original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_A_A_stForClasses[ "of3" ] = function (
+Stack_A_A_A_A_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_A_A_A().initStackFunctionSupport(
@@ -13453,16 +13435,15 @@ Stack_A_A_R.prototype.className = "Stack_A_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_R_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_A_A_R_stForClasses[ "of3" ](
-        original.parameterList(),
+Stack_A_A_R_stForClasses.of1 = function ( original ) {
+    return Stack_A_A_R_stForClasses.of3( original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_R_stForClasses[ "of3" ] = function (
+Stack_A_A_R_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_A_R().initStackFunctionSupport(
@@ -13495,15 +13476,15 @@ Stack_A_R.prototype.className = "Stack_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_R_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_A_R_stForClasses[ "of3" ]( original.parameterList(),
+Stack_A_R_stForClasses.of1 = function ( original ) {
+    return Stack_A_R_stForClasses.of3( original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_R_stForClasses[ "of3" ] = function (
+Stack_A_R_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_R().initStackFunctionSupport(
@@ -13536,15 +13517,15 @@ Stack_R.prototype.className = "Stack_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_R_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_R_stForClasses[ "of3" ]( original.parameterList(),
+Stack_R_stForClasses.of1 = function ( original ) {
+    return Stack_R_stForClasses.of3( original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_R_stForClasses[ "of3" ] = function (
+Stack_R_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_R().initStackFunctionSupport(
@@ -13577,8 +13558,8 @@ Stack_D_A_A_A_A_d.prototype.className = "Stack_D_A_A_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_D_A_A_A_A_d_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_D_A_A_A_A_d_stForClasses[ "of3" ](
+Stack_D_A_A_A_A_d_stForClasses.of1 = function ( original ) {
+    return Stack_D_A_A_A_A_d_stForClasses.of3(
         original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
@@ -13586,7 +13567,7 @@ Stack_D_A_A_A_A_d_stForClasses[ "of1" ] = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_D_A_A_A_A_d_stForClasses[ "of3" ] = function (
+Stack_D_A_A_A_A_d_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_D_A_A_A_A_d().initStackFunctionSupport(
@@ -13642,16 +13623,15 @@ Stack_D_A_A_d.prototype.className = "Stack_D_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_D_A_A_d_stForClasses[ "of1" ] = function ( original ) {
-    return Stack_D_A_A_d_stForClasses[ "of3" ](
-        original.parameterList(),
+Stack_D_A_A_d_stForClasses.of1 = function ( original ) {
+    return Stack_D_A_A_d_stForClasses.of3( original.parameterList(),
         original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_D_A_A_d_stForClasses[ "of3" ] = function (
+Stack_D_A_A_d_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_D_A_A_d().initStackFunctionSupport(
@@ -13701,7 +13681,7 @@ Stack_A_Oliteral.prototype.className = "Stack_A_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_Oliteral_stForClasses[ "of1" ] = function ( original ) {
+Stack_A_Oliteral_stForClasses.of1 = function ( original ) {
     var result = new Stack_A_Oliteral().initStackFunctionSupport(
         original.parameterList(), original.lexicalBindings,
         StackFunctionSupport_st.convertBody(
@@ -13727,7 +13707,7 @@ Stack_A_Oliteral_stForClasses[ "of1" ] = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_Oliteral_stForClasses[ "of3" ] = function (
+Stack_A_Oliteral_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     var result = new Stack_A_Oliteral().initStackFunctionSupport(
@@ -13810,7 +13790,7 @@ Stack_Oliteral.prototype.className = "Stack_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_Oliteral_stForClasses[ "of1" ] = function ( original ) {
+Stack_Oliteral_stForClasses.of1 = function ( original ) {
     var result = new Stack_Oliteral().initStackFunctionSupport(
         original.parameterList(), original.lexicalBindings,
         StackFunctionSupport_st.convertBody(
@@ -13836,7 +13816,7 @@ Stack_Oliteral_stForClasses[ "of1" ] = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_Oliteral_stForClasses[ "of3" ] = function (
+Stack_Oliteral_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
     var result = new Stack_Oliteral().initStackFunctionSupport(

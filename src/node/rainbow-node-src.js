@@ -26,7 +26,7 @@ var $path = require( "path" );
 //   
 //   [contents of rainbow.js]
 //   
-//   return Console;
+//   return Console_st;
 //   
 //   };
 
