@@ -119,7 +119,7 @@ fs.writeFileSync( "bin/node/rainbow-node.js",
     "\n" +
     fs.readFileSync( "src/rainbow.js", "utf8" ) +
     "\n" +
-    "return Console;\n" +
+    "return Console_st;\n" +
     "\n" +
     "};\n" +
     "\n" +

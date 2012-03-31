@@ -530,7 +530,7 @@ LexicalClosure.prototype.add = function ( value ) {
         throw new ArcError(
             "Can't add " + value + " to bindings: already full " +
             "(" + this.count_ + ") " +
-            Pair.buildFrom1( this.bindings_ ) );
+            Pair_st.buildFrom1( this.bindings_ ) );
     this.bindings_[ this.count_ ] = value;
     this.count_++;
 };
@@ -595,7 +595,7 @@ ParseException.prototype = new Error();
 // from Truth.java
 // from vm/Instruction.java
 // ===================================================================
-// Needed late: ArcError Hash Invoke_N.Other StringInputPort
+// Needed late: ArcError Hash Invoke_N_st.Other StringInputPort
 // ParseException ArcString ArcCharacter Rational Symbol Real Complex
 // FreeSym ArcNumber Literal "hash codes"
 
@@ -604,6 +604,7 @@ ParseException.prototype = new Error();
 /** @constructor */
 function ArcObject() {
 }
+var ArcObject_st = {};
 
 // PORT NOTE: We're representing interfaces as properties.
 ArcObject.prototype.implementsConditional = false;
@@ -621,7 +622,8 @@ ArcObject.prototype.addInstructions = function ( i ) {
 
 ArcObject.prototype.invoke = function ( vm, args ) {
     // PORT NOTE: This local variable didn't exist in Java.
-    var typeDispatcherTable = ArcObject.TYPE_DISPATCHER_TABLE.value();
+    var typeDispatcherTable =
+        ArcObject_st.TYPE_DISPATCHER_TABLE.value();
     // PORT NOTE: This was a cast in Java.
     if ( !(typeDispatcherTable instanceof Hash) )
         throw new TypeError();
@@ -630,26 +632,26 @@ ArcObject.prototype.invoke = function ( vm, args ) {
         throw new ArcError(
             "No handler for " + this.type() + " in call* table: " +
             "called " + this + " with args " + args );
-    fn.invoke( vm, new Pair( this, args ) );
+    fn.invoke( vm, new Pair().init2( this, args ) );
 };
 
 // PORT NOTE: We've made sure all uses of .invokef were renamed.
 ArcObject.prototype.invokef0 = function ( vm ) {
-    this.invoke( vm, ArcObject.NIL );
+    this.invoke( vm, ArcObject_st.NIL );
 };
 
 ArcObject.prototype.invokef1 = function ( vm, arg ) {
-    this.invoke( vm, new Pair( arg, ArcObject.NIL ) );
+    this.invoke( vm, new Pair().init2( arg, ArcObject_st.NIL ) );
 };
 
 ArcObject.prototype.invokef2 = function ( vm, arg1, arg2 ) {
-    this.invoke(
-        vm, new Pair( arg1, new Pair( arg2, ArcObject.NIL ) ) );
+    this.invoke( vm, new Pair().init2(
+        arg1, new Pair().init2( arg2, ArcObject_st.NIL ) ) );
 };
 
 ArcObject.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
-    this.invoke( vm, new Pair(
-        arg1, new Pair( arg2, new Pair( arg3, ArcObject.NIL ) ) ) );
+    this.invoke( vm, new Pair().init2( arg1, new Pair().init2(
+        arg2, new Pair().init2( arg3, ArcObject_st.NIL ) ) ) );
 };
 
 ArcObject.prototype.len = function () {
@@ -673,7 +675,7 @@ ArcObject.prototype.compareTo = function ( right ) {
 };
 
 ArcObject.prototype.xcar = function () {
-    return ArcObject.NIL;
+    return ArcObject_st.NIL;
 };
 
 ArcObject.prototype.car = function () {
@@ -712,11 +714,11 @@ ArcObject.prototype.isNotPair = function () {
 };
 
 ArcObject.prototype.mustBePairOrNil = function () {
-    throw new Pair.NotPair();
+    throw new Pair_st.NotPair();
 };
 
 ArcObject.prototype.mustBeNil = function () {
-    throw new ArcObject.NotNil();
+    throw new ArcObject_st.NotNil();
 };
 
 ArcObject.prototype.or = function ( other ) {
@@ -733,8 +735,8 @@ ArcObject.prototype.invokeAndWait = function ( vm, args ) {
         len++;
     }
     vm.pushFrame(
-        new ArcObject.ConvertError( orig, vm.getAp(), this ) );
-    var i = new Invoke_N.Other( len );
+        new ArcObject_st.ConvertError( orig, vm.getAp(), this ) );
+    var i = new Invoke_N_st.Other( len );
     i.belongsTo( this );
     vm.pushFrame( i );
     var i2 = new Literal( this );
@@ -752,7 +754,7 @@ ArcObject.prototype.invokeAndWait = function ( vm, args ) {
 //        len++;
 //    }
 //    vm.pushA( this );
-//    var i = new Invoke_N.Other( len );
+//    var i = new Invoke_N_st.Other( len );
 //    i.belongsTo( this );
 //    vm.pushFrame( i );
 //    try {
@@ -797,7 +799,7 @@ ArcObject.prototype.assigned = function ( name ) {
 };
 
 ArcObject.prototype.assignedName = function () {
-    return ArcObject.NIL;
+    return ArcObject_st.NIL;
 };
 
 ArcObject.prototype.profileName = function () {
@@ -821,7 +823,7 @@ ArcObject.prototype.multiply = function ( argObject ) {
 
 // PORT NOTE: In Java, this extended Throwable.
 /** @constructor */
-ArcObject.NotNil = function () {
+ArcObject_st.NotNil = function () {
 };
 
 ArcObject.prototype.reduce = function () {
@@ -865,9 +867,9 @@ ArcObject.prototype.equals = function ( other ) {
 
 // ASYNC PORT NOTE: This is a completely reworked design.
 
-var ArcParser = {};
+var ArcParser_st = {};
 
-ArcParser.isNonSymAtom = function ( s ) {
+ArcParser_st.isNonSymAtom = function ( s ) {
     if ( /^-?[01-9]+\/[01-9]+$/.test( s )
         || /^-?[01-9]+$/.test( s )
         || /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?$/.test( s )
@@ -892,9 +894,9 @@ ArcParser.isNonSymAtom = function ( s ) {
     return false;
 };
 
-ArcParser.readFirstObjectFromString = function ( s ) {
+ArcParser_st.readFirstObjectFromString = function ( s ) {
     var result = null;
-    if ( !ArcParser.readObjectAsync(
+    if ( !ArcParser_st.readObjectAsync(
         new StringInputPort( s ).unwrap(), function ( e, o ) {
             if ( e ) throw e;
             result = o;
@@ -903,7 +905,7 @@ ArcParser.readFirstObjectFromString = function ( s ) {
     return result;
 };
 
-ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
+ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
     function peekChar( then ) {
         return input.peekCharCodeAsync( function (
             e, charCode ) {
@@ -992,10 +994,10 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
             var last = parts[ lenm1 ];
             return typeof part === "string" &&
                 last instanceof ArcString ?
-                    parts.slice( 0, lenm1 ).concat(
-                        [ ArcString.make( last.value() + part ) ] ) :
+                    parts.slice( 0, lenm1 ).concat( [
+                        ArcString_st.make( last.value() + part ) ] ) :
                 typeof part === "string" ?
-                    parts.concat( [ ArcString.make( part ) ] ) :
+                    parts.concat( [ ArcString_st.make( part ) ] ) :
                     parts.concat( [ part ] );
         }
         var thisSync = true;
@@ -1090,7 +1092,7 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
         var thisSync = true;
         var done = false;
         function code( code ) {
-            then( null, ArcCharacter.makeFromCharCode( code ) );
+            then( null, ArcCharacter_st.makeFromCharCode( code ) );
         }
         while ( thisSync && !done ) {
             done = true;
@@ -1142,7 +1144,7 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                     if ( c === null || /[^01-9a-fA-F]/.test( c ) ) {
                         if ( soFar === "" )
                             return void then( new ParseException() );
-                        then( null, Rational.make1(
+                        then( null, Rational_st.make1(
                             parseInt( soFar, 16 ) ) );
                     } else {
                         if ( !readChar( function ( e, c ) {
@@ -1169,7 +1171,7 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                     if ( c === null ) {
                         then( new ParseException() );
                     } else if ( c === "|" ) {
-                        then( null, Symbol.make( soFar ) );
+                        then( null, Symbol_st.make( soFar ) );
                     } else {
                         done = false;
                         soFar += c;
@@ -1261,20 +1263,20 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                     } else {
                         var matches;
                         if ( /^-?[01-9]+\/[01-9]+$/.test( soFar ) )
-                            then( null, Rational.parse( soFar ) );
+                            then( null, Rational_st.parse( soFar ) );
                         else if ( /^-?[01-9]+$/.test( soFar ) )
-                            then( null, Rational.make1(
+                            then( null, Rational_st.make1(
                                 parseInt( soFar, 10 ) ) );
                         else if (
                             /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?$/.
                                 test( soFar ) )
-                            then( null, Real.parse( soFar ) );
+                            then( null, Real_st.parse( soFar ) );
                         else if ( soFar === "+inf.0" )
-                            then( null, Real.positiveInfinity() );
+                            then( null, Real_st.positiveInfinity() );
                         else if ( soFar === "-inf.0" )
-                            then( null, Real.negativeInfinity() );
+                            then( null, Real_st.negativeInfinity() );
                         else if ( soFar === "+nan.0" )
-                            then( null, Real.nan() );
+                            then( null, Real_st.nan() );
                         else if ( soFar === "+i" )
                             then( null, new Complex( 0, 1 ) );
                         else if ( soFar === "-i" )
@@ -1283,12 +1285,12 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                             /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
                                 exec( soFar ) )
                             then( null, new Complex(
-                                Real.parse( matches[ 1 ] ).value(),
-                                Real.parse( matches[ 2 ] +
+                                Real_st.parse( matches[ 1 ] ).value(),
+                                Real_st.parse( matches[ 2 ] +
                                     (matches[ 3 ] || "1") ).value()
                             ) );
                         else
-                            then( null, Symbol.make( soFar ) );
+                            then( null, Symbol_st.make( soFar ) );
                     }
                 } ) )
                 thisSync = false;
@@ -1303,12 +1305,12 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                     
                     if ( e ) return void then( e );
                     if ( parts.length === 0 )
-                        then( null, ArcString.make( "" ) );
+                        then( null, ArcString_st.make( "" ) );
                     else if ( parts.length === 1 )
                         then( null, parts[ 0 ] );
                     else
-                        then( null, Pair.buildFrom1(
-                            [ Symbol.make( "string" ) ].concat(
+                        then( null, Pair_st.buildFrom1(
+                            [ Symbol_st.make( "string" ) ].concat(
                                 parts ) ) );
                 } ) )
                 thisSync = false;
@@ -1316,7 +1318,7 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
         function doSymbol() {
             if ( !finishPipedSymbol( "", function ( e, name ) {
                     if ( e ) return void then( e );
-                    then( null, Symbol.make( name ) );
+                    then( null, Symbol_st.make( name ) );
                 } ) )
                 thisSync = false;
         }
@@ -1331,8 +1333,9 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                                 if ( e ) return void then( e );
                                 if ( /[^a-zA-Z]/.test( e ) )
                                     return void then( null,
-                                        ArcCharacter.makeFromCharCode(
-                                            e.charCodeAt( 0 ) ) );
+                                        ArcCharacter_st.
+                                            makeFromCharCode(
+                                                e.charCodeAt( 0 ) ) );
                                 if (
                                     !finishNamedCharacter( c, then ) )
                                     thisSync = false;
@@ -1350,8 +1353,8 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
                     if ( o === null )
                         then( new ParseException() );
                     else
-                        then( null, Pair.buildFrom1(
-                            [ Symbol.mkSym( quoteName ), o ] ) );
+                        then( null, Pair_st.buildFrom1(
+                            [ Symbol_st.mkSym( quoteName ), o ] ) );
                 } ) )
                 thisSync = false;
         }
@@ -1376,9 +1379,9 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
             if ( !finishList( [], ")", function ( e, list ) {
                     if ( e ) return void then( e );
                     if ( list.length === 0 ) {
-                        then( null, ArcObject.EMPTY_LIST );
+                        then( null, ArcObject_st.EMPTY_LIST );
                     } else {
-                        try { var result = Pair.parse( list ); }
+                        try { var result = Pair_st.parse( list ); }
                         catch ( e ) { return void then( e ); };
                         then( null, result );
                     }
@@ -1388,10 +1391,11 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
         function doBracket() {
             if ( !finishList( [], "]", function ( e, list ) {
                     if ( e ) return void then( e );
-                    then( null, Pair.buildFrom1( [
-                        Symbol.mkSym( "fn" ),
-                        Pair.buildFrom1( [ Symbol.mkSym( "_" ) ] ),
-                        Pair.buildFrom1( list ) ] ) );
+                    then( null, Pair_st.buildFrom1( [
+                        Symbol_st.mkSym( "fn" ),
+                        Pair_st.buildFrom1(
+                            [ Symbol_st.mkSym( "_" ) ] ),
+                        Pair_st.buildFrom1( list ) ] ) );
                 } ) )
                 thisSync = false;
         }
@@ -1436,7 +1440,6 @@ ArcParser.readObjectAsync = function ( input, then, opt_sync ) {
 // PORT NOTE: In Java, this was protected.
 /** @constructor */
 function Symbol( name, parseableName ) {
-    ArcObject.call( this );
     this.name_ = name;
     this.parseableName_ = parseableName;
     // PORT TODO: Find an equivalent for this Java.
@@ -1445,6 +1448,7 @@ function Symbol( name, parseableName ) {
     this.value_ = null;
     this.coerceFrom_ = null;
 }
+var Symbol_st = {};
 
 Symbol.prototype = new ArcObject();
 Symbol.prototype.className = "Symbol";
@@ -1453,8 +1457,8 @@ Symbol.prototype.addInstructions = function ( i ) {
     i.push( new FreeSym( this ) );
 };
 
-Symbol.mkSym = function ( name ) {
-    var result = Symbol.make( name );
+Symbol_st.mkSym = function ( name ) {
+    var result = Symbol_st.make( name );
     if ( !(result instanceof Symbol) )
         throw new ArcError(
             "can't make symbol from \"" + name + "\"" );
@@ -1462,19 +1466,19 @@ Symbol.mkSym = function ( name ) {
         return result;
 };
 
-Symbol.make = function ( name ) {
+Symbol_st.make = function ( name ) {
     if ( name === "t" )
-        return ArcObject.T;
+        return ArcObject_st.T;
     else if ( name === "nil" )
-        return ArcObject.NIL;
-    else if ( Symbol.requiresPiping_.test( name )
-        || ArcParser.isNonSymAtom( name )
+        return ArcObject_st.NIL;
+    else if ( Symbol_st.requiresPiping_.test( name )
+        || ArcParser_st.isNonSymAtom( name )
         || name === "." )
-        return Symbol.nu( name, "|" + name + "|" );
-    else if ( Symbol.hasEscapedPiping_.test( name ) )
-        return Symbol.nu( name.replace( /\\\|/g, "|" ), name );
+        return Symbol_st.nu( name, "|" + name + "|" );
+    else if ( Symbol_st.hasEscapedPiping_.test( name ) )
+        return Symbol_st.nu( name.replace( /\\\|/g, "|" ), name );
     else
-        return Symbol.nu( name, name );
+        return Symbol_st.nu( name, name );
 };
 
 Symbol.prototype.disp = function () {
@@ -1485,17 +1489,17 @@ Symbol.prototype.toString = function () {
     return this.parseableName_;
 };
 
-Symbol.nu = function ( s, parseableName ) {
-    if ( Symbol.map_.has( s ) )
-        return Symbol.map_.get( s );
+Symbol_st.nu = function ( s, parseableName ) {
+    if ( Symbol_st.map_.has( s ) )
+        return Symbol_st.map_.get( s );
     
     var result = new Symbol( s, parseableName );
-    Symbol.map_.put( s, result );
+    Symbol_st.map_.put( s, result );
     return result;
 };
 
-Symbol.parse = function ( s ) {
-    return Symbol.make( s.substring( 1, s.length - 1 ) );
+Symbol_st.parse = function ( s ) {
+    return Symbol_st.make( s.substring( 1, s.length - 1 ) );
 };
 
 Symbol.prototype.name = function () {
@@ -1510,7 +1514,7 @@ Symbol.prototype.compareTo = function ( right ) {
 };
 
 Symbol.prototype.type = function () {
-    return Symbol.TYPE;
+    return Symbol_st.TYPE;
 };
 
 Symbol.prototype.unwrap = function () {
@@ -1525,7 +1529,7 @@ Symbol.prototype.equals = function ( object ) {
     return this === object;
 };
 
-Symbol.is = function ( s, o ) {
+Symbol_st.is = function ( s, o ) {
     return o instanceof Symbol && o.name() === s;
 };
 
@@ -1548,7 +1552,7 @@ Symbol.prototype.bound = function () {
     return this.value_ !== null;
 };
 
-Symbol.cast = function ( argument, caller ) {
+Symbol_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof Symbol) )
@@ -1571,18 +1575,31 @@ Symbol.prototype.getCoercion = function ( from ) {
     return this.coerceFrom_[ from ] || null;
 };
 
-Symbol.map_ = new StringMap().init();
-Symbol.requiresPiping_ = /.*(["'; \t\n\)\(]|([^\\]|^)\|).*/;
-Symbol.hasEscapedPiping_ = /.*\\\|/;
+Symbol_st.map_ = new StringMap().init();
+Symbol_st.requiresPiping_ = /.*(["'; \t\n\)\(]|([^\\]|^)\|).*/;
+Symbol_st.hasEscapedPiping_ = /.*\\\|/;
 
-Symbol.TYPE = Symbol.mkSym( "sym" );
-Symbol.DOT = Symbol.mkSym( "." );
-Symbol.BANG = Symbol.mkSym( "!" );
+Symbol_st.TYPE = Symbol_st.mkSym( "sym" );
+Symbol_st.DOT = Symbol_st.mkSym( "." );
+Symbol_st.BANG = Symbol_st.mkSym( "!" );
 
 
 /** @constructor */
-function Pair( car, cdr ) {
-    ArcObject.call( this );
+function Pair() {
+}
+var Pair_st = {};
+
+Pair.prototype = new ArcObject();
+Pair.prototype.className = "Pair";
+
+// PORT NOTE: This didn't exist in Java. (It was part of a
+// constructor.)
+Pair.prototype.init0 = function () {
+    this.car_ = this.cdr_ = null;
+    return this;
+};
+
+Pair.prototype.init2 = function ( car, cdr ) {
     if ( car === null )
         throw new ArcError(
             "Can't create Pair with null car: use NIL instead" );
@@ -1591,23 +1608,11 @@ function Pair( car, cdr ) {
             "Can't create Pair with null cdr: use NIL instead" );
     this.car_ = car;
     this.cdr_ = cdr;
-}
-
-// PORT NOTE: We've changed all uses of the zero-argument Pair() to
-// Pair.of(). It turns out the only time we use it is port-specific
-// too.
-// PORT NOTE: In Java, this was another constructor.
-Pair.of = function () {
-    var result = new Pair( void 0, void 0 );
-    result.real_ = result.imaginary_ = null;
-    return result;
+    return this;
 };
 
-Pair.prototype = new ArcObject();
-Pair.prototype.className = "Pair";
-
 Pair.prototype.invoke = function ( vm, args ) {
-    var index = ArcNumber.cast( args.car(), this );
+    var index = ArcNumber_st.cast( args.car(), this );
     vm.pushA( this.nth( index.toInt() ).car() );
 };
 
@@ -1625,7 +1630,7 @@ Pair.prototype.cdr = function () {
 
 Pair.prototype.mustBeNil = function () {
     if ( this.car_ !== null )
-        throw new ArcObject.NotNil();
+        throw new ArcObject_st.NotNil();
 };
 
 Pair.prototype.isNotPair = function () {
@@ -1637,7 +1642,7 @@ Pair.prototype.scar = function ( newCar ) {
 };
 
 Pair.prototype.sref = function ( value, idx ) {
-    var index = Rational.cast( idx, this );
+    var index = Rational_st.cast( idx, this );
     var n = index.toInt();
     return this.nth( n ).scar( value );
 };
@@ -1650,7 +1655,7 @@ Pair.prototype.toString = function () {
     if ( this.isSpecial() ) {
         var s = this.car();
         // PORT NOTE: This local variable didn't exist in Java.
-        var prefix = Pair.specials_[ s.name() ];
+        var prefix = Pair_st.specials_[ s.name() ];
         // PORT NOTE: This local variable didn't exist in Java.
         var cdr = this.cdr();
         // PORT NOTE: This was a cast in Java.
@@ -1663,10 +1668,10 @@ Pair.prototype.toString = function () {
 };
 
 Pair.prototype.internalToString_ = function () {
-    return Pair.internalToString_( this );
+    return Pair_st.internalToString_( this );
 };
 
-Pair.internalToString_ = function ( o ) {
+Pair_st.internalToString_ = function ( o ) {
     var result = [];
     while ( !o.isNotPair() ) {
         result.push( o.car() );
@@ -1684,22 +1689,22 @@ Pair.prototype.setCdr = function ( cdr ) {
     this.cdr_ = cdr;
 };
 
-Pair.parse = function ( items ) {
+Pair_st.parse = function ( items ) {
     if ( items === null || items.length === 0 )
-        return ArcObject.NIL;
+        return ArcObject_st.NIL;
     
-    if ( items[ 0 ] === Symbol.DOT )
-        return Pair.illegalDot_( items );
+    if ( items[ 0 ] === Symbol_st.DOT )
+        return Pair_st.illegalDot_( items );
     
-    return new Pair(
-        items[ 0 ], Pair.internalParse_( items.slice( 1 ) ) );
+    return new Pair().init2(
+        items[ 0 ], Pair_st.internalParse_( items.slice( 1 ) ) );
 };
 
-Pair.internalParse_ = function ( items ) {
+Pair_st.internalParse_ = function ( items ) {
     if ( items.length === 0 )
-        return ArcObject.NIL;
+        return ArcObject_st.NIL;
     
-    if ( items[ 0 ] === Symbol.DOT ) {
+    if ( items[ 0 ] === Symbol_st.DOT ) {
         if ( items.length === 2 ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var result = items[ 1 ];
@@ -1708,7 +1713,7 @@ Pair.internalParse_ = function ( items ) {
                 throw new TypeError();
             return result;
         } else {
-            return Pair.illegalDot_( items );
+            return Pair_st.illegalDot_( items );
         }
     }
     
@@ -1717,14 +1722,15 @@ Pair.internalParse_ = function ( items ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(car instanceof ArcObject) )
         throw new TypeError();
-    return new Pair( car, Pair.internalParse_( items.slice( 1 ) ) );
+    return new Pair().init2(
+        car, Pair_st.internalParse_( items.slice( 1 ) ) );
 };
 
-Pair.illegalDot_ = function ( items ) {
+Pair_st.illegalDot_ = function ( items ) {
     throw new ArcError( "Error: illegal use of \".\" in " + items );
 };
 
-Pair.buildFrom_ = function ( items, last, n ) {
+Pair_st.buildFrom_ = function ( items, last, n ) {
     if ( n === items.length ) {
         return last;
     } else {
@@ -1733,24 +1739,25 @@ Pair.buildFrom_ = function ( items, last, n ) {
         // PORT NOTE: This was a cast in Java.
         if ( !(car instanceof ArcObject) )
             throw new TypeError();
-        return new Pair( car, Pair.buildFrom_( items, last, n + 1 ) );
+        return new Pair().init2(
+            car, Pair_st.buildFrom_( items, last, n + 1 ) );
     }
 };
 
 // PORT NOTE: We've renamed all uses of buildFrom(), and we've
 // replaced all varargs uses with passing Arrays.
-Pair.buildFrom2 = function ( items, last ) {
+Pair_st.buildFrom2 = function ( items, last ) {
     if ( items === null || items.length === 0 )
         return last;
-    return Pair.buildFrom_( items, last, 0 );
+    return Pair_st.buildFrom_( items, last, 0 );
 };
 
-Pair.buildFrom1 = function ( items ) {
-    return Pair.buildFrom2( items, ArcObject.NIL );
+Pair_st.buildFrom1 = function ( items ) {
+    return Pair_st.buildFrom2( items, ArcObject_st.NIL );
 };
 
 Pair.prototype.type = function () {
-    return Pair.TYPE;
+    return Pair_st.TYPE;
 };
 
 Pair.prototype.len = function () {
@@ -1758,10 +1765,10 @@ Pair.prototype.len = function () {
 };
 
 Pair.prototype.improperLen = function () {
-    return Pair.improperLen( this );
+    return Pair_st.improperLen( this );
 };
 
-Pair.improperLen = function ( o ) {
+Pair_st.improperLen = function ( o ) {
     var count = 0;
     while ( !o.isNotPair() ) {
         count++;
@@ -1834,21 +1841,21 @@ Pair.prototype.hashCode = function () {
 Pair.prototype.nth = function ( index ) {
     try {
         // PORT NOTE: This local variable didn't exist in Java.
-        var result = Pair.nth_( this, index );
+        var result = Pair_st.nth_( this, index );
         // PORT NOTE: This was a cast in Java.
         if ( !(result instanceof Pair) )
             throw new TypeError();
         return result;
-    } catch ( oob ) { if ( !(oob instanceof Pair.OOB) ) throw e;
+    } catch ( oob ) { if ( !(oob instanceof Pair_st.OOB) ) throw e;
         throw new ArcError(
             "Error: index " + index + " too large for list " + this );
     }
 };
 
-Pair.nth_ = function ( p, index ) {
+Pair_st.nth_ = function ( p, index ) {
     while ( 0 < index ) {
         if ( p.cdr() instanceof Nil )
-            throw new Pair.OOB();
+            throw new Pair_st.OOB();
         p = p.cdr();
         index--;
     }
@@ -1870,14 +1877,14 @@ Pair.prototype.profileName = function () {
 // PORT TODO: Figure out a way to do this inheritance and also get a
 // real stack trace.
 /** @constructor */
-Pair.OOB = function () {
+Pair_st.OOB = function () {
     Error.call( this );
 };
-Pair.OOB.prototype = new Error();
+Pair_st.OOB.prototype = new Error();
 
 Pair.prototype.isSpecial = function () {
     return this.car() instanceof Symbol &&
-        this.car().name() in Pair.specials_ &&
+        this.car().name() in Pair_st.specials_ &&
         this.cdr() instanceof Pair &&
         this.cdr().size() === 1;
 };
@@ -1885,12 +1892,12 @@ Pair.prototype.isSpecial = function () {
 Pair.prototype.copy = function () {
     if ( this instanceof Nil )
         return this;
-    return new Pair( this.car(), this.cdr().copy() );
+    return new Pair().init2( this.car(), this.cdr().copy() );
 };
 
 Pair.prototype.unwrap = function () {
     var result = [];
-    Pair.unwrapList_( result, this );
+    Pair_st.unwrapList_( result, this );
     return result;
 };
 
@@ -1899,7 +1906,7 @@ Pair.prototype.isSame = function ( other ) {
         (this instanceof Nil && other instanceof Nil);
 };
 
-Pair.unwrapList_ = function ( result, list ) {
+Pair_st.unwrapList_ = function ( result, list ) {
     if ( list instanceof Nil )
         return;
     result.push( list.car().unwrap() );
@@ -1908,7 +1915,7 @@ Pair.unwrapList_ = function ( result, list ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(cdr instanceof Pair) )
         throw new TypeError();
-    Pair.unwrapList_( result, cdr );
+    Pair_st.unwrapList_( result, cdr );
 };
 
 Pair.prototype.toArray = function () {
@@ -1932,7 +1939,7 @@ Pair.prototype.toArray_ = function ( result, i ) {
     }
 };
 
-Pair.cast = function ( argument, caller ) {
+Pair_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof Pair) )
@@ -1948,9 +1955,9 @@ Pair.cast = function ( argument, caller ) {
 Pair.prototype.mustBePairOrNil = function () {
 };
 
-Pair.append = function ( pair, value ) {
+Pair_st.append = function ( pair, value ) {
     if ( pair === null ) {
-        return new Pair( value, ArcObject.NIL );
+        return new Pair().init2( value, ArcObject_st.NIL );
     } else {
         var test = pair;
         while ( !(test.cdr_ instanceof Nil) ) {
@@ -1959,7 +1966,7 @@ Pair.append = function ( pair, value ) {
             if ( !(test instanceof Pair) )
                 throw new TypeError();
         }
-        test.cdr_ = new Pair( value, ArcObject.NIL );
+        test.cdr_ = new Pair().init2( value, ArcObject_st.NIL );
     }
     return pair;
 };
@@ -1969,7 +1976,7 @@ Pair.prototype.add = function ( other ) {
         var list = [];
         this.copyTo( list );
         other.copyTo( list );
-        return Pair.buildFrom1( list );
+        return Pair_st.buildFrom1( list );
     } else {
         throw new ArcError(
             "+ : expects cons, got " + other.type() + " " + other );
@@ -1994,26 +2001,26 @@ Pair.prototype.visit = function ( v ) {
 };
 
 Pair.prototype.isProper = function () {
-    return Pair.isProper( this );
+    return Pair_st.isProper( this );
 };
 
-Pair.isProper = function ( pair ) {
+Pair_st.isProper = function ( pair ) {
     while ( !pair.isNotPair() )
         pair = pair.cdr();
     return pair instanceof Nil;
 };
 
 Pair.prototype.isProper = function () {
-    return Pair.isProper( this );
+    return Pair_st.isProper( this );
 };
 
 /** @constructor */
-Pair.NotPair = function () {
+Pair_st.NotPair = function () {
 };
 
-Pair.TYPE = Symbol.mkSym( "cons" );
+Pair_st.TYPE = Symbol_st.mkSym( "cons" );
 
-Pair.specials_ = {
+Pair_st.specials_ = {
     "quasiquote": "`",
     "quote": "'",
     "unquote": ",",
@@ -2023,17 +2030,16 @@ Pair.specials_ = {
 
 /** @constructor */
 function Nil( rep ) {
-    // PORT NOTE: This is for inheritance from Pair.
-    this.car_ = this.cdr_ = null;
-    
+    this.init0();
     this.rep_ = rep;
 }
+var Nil_st = {};
 
-Nil.prototype = Pair.of();
+Nil.prototype = new Pair();
 Nil.prototype.className = "Nil";
 
 Nil.prototype.addInstructions = function ( i ) {
-    i.push( new Literal( Nil.NIL ) );
+    i.push( new Literal( Nil_st.NIL ) );
 };
 
 Nil.prototype.invoke = function ( vm, args ) {
@@ -2097,7 +2103,7 @@ Nil.prototype.copyTo = function ( c ) {
 };
 
 Nil.prototype.type = function () {
-    return Nil.TYPE;
+    return Nil_st.TYPE;
 };
 
 Nil.prototype.hashCode = function () {
@@ -2137,17 +2143,18 @@ Nil.prototype.longerThan = function ( i ) {
     return i < 0;
 };
 
-Nil.TYPE = Symbol.TYPE;
-Nil.NIL = new Nil( "nil" );
-Nil.EMPTY_LIST = new Nil( "()" );
+Nil_st.TYPE = Symbol_st.TYPE;
+Nil_st.NIL = new Nil( "nil" );
+Nil_st.EMPTY_LIST = new Nil( "()" );
 
 
 // PORT NOTE: This was private in Java.
 /** @constructor */
 function Truth() {
     Symbol.call( this, this.name_, this.parseableName_ );
-    if ( Truth.T !== void 0 ) throw new Error();
+    if ( Truth_st.T !== void 0 ) throw new Error();
 }
+var Truth_st = {};
 
 Truth.prototype = new Symbol( "t", "t" );
 Truth.prototype.className = "Truth";
@@ -2157,7 +2164,7 @@ Truth.prototype.literal = function () {
 };
 
 Truth.prototype.addInstructions = function ( i ) {
-    i.push( new Literal( Truth.T ) );
+    i.push( new Literal( Truth_st.T ) );
 };
 
 Truth.prototype.toString = function () {
@@ -2169,11 +2176,11 @@ Truth.prototype.compareTo = function ( right ) {
 };
 
 Truth.prototype.type = function () {
-    return Symbol.TYPE;
+    return Symbol_st.TYPE;
 };
 
-Truth.valueOf = function ( b ) {
-    return b ? Truth.T : ArcObject.NIL;
+Truth_st.valueOf = function ( b ) {
+    return b ? Truth_st.T : ArcObject_st.NIL;
 };
 
 Truth.prototype.hashCode = function () {
@@ -2200,13 +2207,12 @@ Truth.prototype.value = function ( other ) {
     return this;
 };
 
-Truth.T = new Truth();
+Truth_st.T = new Truth();
 
 
 // PORT NOTE: This was originally abstract.
 /** @constructor */
 function Instruction() {
-    ArcObject.call( this );
     this.owner_ = null;
 }
 
@@ -2220,7 +2226,7 @@ Instruction.prototype.implementsAsync = false;
 Instruction.prototype.className = "Instruction";
 
 Instruction.prototype.type = function () {
-    return Symbol.mkSym( "instruction" );
+    return Symbol_st.mkSym( "instruction" );
 };
 
 // PORT TODO: Find all uses of Instruction.toString( LexicalClosure ),
@@ -2259,25 +2265,26 @@ Instruction.prototype.owner = function () {
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-ArcObject.ConvertError = function ( orig, ap, owner ) {
+ArcObject_st.ConvertError = function ( orig, ap, owner ) {
     Instruction.call( this );
     this.orig_ = orig;
     this.ap_ = ap;
     this.belongsTo( owner );
 };
 
-ArcObject.ConvertError.prototype = new Instruction();
-ArcObject.ConvertError.prototype.implementsOnError = true;
-ArcObject.ConvertError.prototype.className = "ArcObject.ConvertError";
+ArcObject_st.ConvertError.prototype = new Instruction();
+ArcObject_st.ConvertError.prototype.implementsOnError = true;
+ArcObject_st.ConvertError.prototype.className =
+    "ArcObject.ConvertError";
 
 // ASYNC PORT NOTE: This method of the OnError interface didn't exist
 // in Java. The point is to let certain errors propagate without
 // losing their stack traces.
-ArcObject.ConvertError.prototype.catches = function ( error ) {
+ArcObject_st.ConvertError.prototype.catches = function ( error ) {
     return error instanceof Error;
 };
 
-ArcObject.ConvertError.prototype.operate = function ( vm ) {
+ArcObject_st.ConvertError.prototype.operate = function ( vm ) {
     var error = vm.error();
     if ( error === null )
         return;
@@ -2289,10 +2296,10 @@ ArcObject.ConvertError.prototype.operate = function ( vm ) {
         this.orig_ + ": " + error, error );
 };
 
-ArcObject.TYPE_DISPATCHER_TABLE = Symbol.mkSym( "call*" );
-ArcObject.NIL = Nil.NIL;
-ArcObject.EMPTY_LIST = Nil.EMPTY_LIST;
-ArcObject.T = Truth.T;
+ArcObject_st.TYPE_DISPATCHER_TABLE = Symbol_st.mkSym( "call*" );
+ArcObject_st.NIL = Nil_st.NIL;
+ArcObject_st.EMPTY_LIST = Nil_st.EMPTY_LIST;
+ArcObject_st.T = Truth_st.T;
 
 
 // ===================================================================
@@ -2304,7 +2311,6 @@ ArcObject.T = Truth.T;
 // PORT NOTE: This was originally abstract.
 /** @constructor */
 function LiteralObject() {
-    ArcObject.call( this );
 }
 
 LiteralObject.prototype = new ArcObject();
@@ -2331,34 +2337,34 @@ LiteralObject.prototype.profileName = function () {
 
 /** @constructor */
 function ArcCharacter( value ) {
-    LiteralObject.call( this );
     this.value_ = value;
-    ArcCharacter.chars_[ value ] = this;
+    ArcCharacter_st.chars_[ value ] = this;
 }
+var ArcCharacter_st = {};
 
 ArcCharacter.prototype = new LiteralObject();
 ArcCharacter.prototype.className = "ArcCharacter";
 
 // PORT NOTE: We've made sure all uses of .make were renamed.
-ArcCharacter.makeFromCharCode = function ( ch ) {
-    return ArcCharacter.chars_[ ch ] === void 0 ?
-        new ArcCharacter( ch ) : ArcCharacter.chars_[ ch ];
+ArcCharacter_st.makeFromCharCode = function ( ch ) {
+    return ArcCharacter_st.chars_[ ch ] === void 0 ?
+        new ArcCharacter( ch ) : ArcCharacter_st.chars_[ ch ];
 };
 
-ArcCharacter.makeFromString = function ( representation ) {
+ArcCharacter_st.makeFromString = function ( representation ) {
     if ( representation.length === 3 )
-        return ArcCharacter.makeFromCharCode(
+        return ArcCharacter_st.makeFromCharCode(
             representation.charCodeAt( 2 ) );
     if ( /^#\\U/i.test( representation ) )
-        return ArcCharacter.makeFromCharCode(
+        return ArcCharacter_st.makeFromCharCode(
             parseInt( representation.substring( 3 ), 16 ) );
     
-    for ( var i = 0; i < ArcCharacter.named_.length; i++ )
-        if ( ArcCharacter.named_[ i ].is_( representation ) )
-            return ArcCharacter.named_[ i ];
+    for ( var i = 0; i < ArcCharacter_st.named_.length; i++ )
+        if ( ArcCharacter_st.named_[ i ].is_( representation ) )
+            return ArcCharacter_st.named_[ i ];
     
     try {
-        var intValue = ArcCharacter.parseInt_( representation );
+        var intValue = ArcCharacter_st.parseInt_( representation );
         return make( intValue );
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
         throw new ArcError(
@@ -2366,7 +2372,7 @@ ArcCharacter.makeFromString = function ( representation ) {
     }
 };
 
-ArcCharacter.parseInt_ = function ( representation ) {
+ArcCharacter_st.parseInt_ = function ( representation ) {
     return parseInt( representation.substring( 2 ), 8 );
 };
 
@@ -2390,7 +2396,7 @@ ArcCharacter.prototype.compareTo = function ( right ) {
 };
 
 ArcCharacter.prototype.type = function () {
-    return ArcCharacter.TYPE;
+    return ArcCharacter_st.TYPE;
 };
 
 ArcCharacter.prototype.unwrap = function () {
@@ -2417,7 +2423,7 @@ ArcCharacter.prototype.equals = function ( other ) {
             other.value_ === this.value_);
 };
 
-ArcCharacter.cast = function ( argument, caller ) {
+ArcCharacter_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof ArcCharacter) )
@@ -2430,80 +2436,80 @@ ArcCharacter.cast = function ( argument, caller ) {
     }
 };
 
-ArcCharacter.TYPE = Symbol.mkSym( "char" );
-ArcCharacter.chars_ = new Array( 65536 );
+ArcCharacter_st.TYPE = Symbol_st.mkSym( "char" );
+ArcCharacter_st.chars_ = new Array( 65536 );
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-ArcCharacter.Anon_NULL_ = function () {
+ArcCharacter_st.Anon_NULL_ = function () {
     ArcCharacter.call( this, 0 );
 };
-ArcCharacter.Anon_NULL_.prototype = new ArcCharacter( 0 );
-ArcCharacter.Anon_NULL_.prototype.className =
+ArcCharacter_st.Anon_NULL_.prototype = new ArcCharacter( 0 );
+ArcCharacter_st.Anon_NULL_.prototype.className =
     "ArcCharacter.Anon_NULL_";
-ArcCharacter.Anon_NULL_.prototype.toString = function () {
+ArcCharacter_st.Anon_NULL_.prototype.toString = function () {
     return "#\\null";
 };
-ArcCharacter.NULL = new ArcCharacter.Anon_NULL_();
+ArcCharacter_st.NULL = new ArcCharacter_st.Anon_NULL_();
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-ArcCharacter.Anon_named_1_ = function () {
+ArcCharacter_st.Anon_named_1_ = function () {
     ArcCharacter.call( this, "\n".charCodeAt( 0 ) );
 };
-ArcCharacter.Anon_named_1_.prototype =
+ArcCharacter_st.Anon_named_1_.prototype =
     new ArcCharacter( "\n".charCodeAt( 0 ) );
-ArcCharacter.Anon_named_1_.prototype.className =
+ArcCharacter_st.Anon_named_1_.prototype.className =
     "ArcCharacter.Anon_named_1_";
-ArcCharacter.Anon_named_1_.prototype.toString = function () {
+ArcCharacter_st.Anon_named_1_.prototype.toString = function () {
     return "#\\newline";
 };
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-ArcCharacter.Anon_named_2_ = function () {
+ArcCharacter_st.Anon_named_2_ = function () {
     ArcCharacter.call( this, "\t".charCodeAt( 0 ) );
 };
-ArcCharacter.Anon_named_2_.prototype =
+ArcCharacter_st.Anon_named_2_.prototype =
     new ArcCharacter( "\t".charCodeAt( 0 ) );
-ArcCharacter.Anon_named_2_.prototype.className =
+ArcCharacter_st.Anon_named_2_.prototype.className =
     "ArcCharacter.Anon_named_2_";
-ArcCharacter.Anon_named_2_.prototype.toString = function () {
+ArcCharacter_st.Anon_named_2_.prototype.toString = function () {
     return "#\\tab";
 };
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-ArcCharacter.Anon_named_3_ = function () {
+ArcCharacter_st.Anon_named_3_ = function () {
     ArcCharacter.call( this, "\r".charCodeAt( 0 ) );
 };
-ArcCharacter.Anon_named_3_.prototype =
+ArcCharacter_st.Anon_named_3_.prototype =
     new ArcCharacter( "\r".charCodeAt( 0 ) );
-ArcCharacter.Anon_named_3_.prototype.className =
+ArcCharacter_st.Anon_named_3_.prototype.className =
     "ArcCharacter.Anon_named_3_";
-ArcCharacter.Anon_named_3_.prototype.toString = function () {
+ArcCharacter_st.Anon_named_3_.prototype.toString = function () {
     return "#\\return";
 };
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-ArcCharacter.Anon_named_4_ = function () {
+ArcCharacter_st.Anon_named_4_ = function () {
     ArcCharacter.call( this, " ".charCodeAt( 0 ) );
 };
-ArcCharacter.Anon_named_4_.prototype =
+ArcCharacter_st.Anon_named_4_.prototype =
     new ArcCharacter( " ".charCodeAt( 0 ) );
-ArcCharacter.Anon_named_4_.prototype.className =
+ArcCharacter_st.Anon_named_4_.prototype.className =
     "ArcCharacter.Anon_named_4_";
-ArcCharacter.Anon_named_4_.prototype.toString = function () {
+ArcCharacter_st.Anon_named_4_.prototype.toString = function () {
     return "#\\space";
 };
 
-ArcCharacter.named_ = [
-    ArcCharacter.NULL,
-    new ArcCharacter.Anon_named_1_(),
-    new ArcCharacter.Anon_named_2_(),
-    new ArcCharacter.Anon_named_3_(),
-    new ArcCharacter.Anon_named_4_()
+ArcCharacter_st.named_ = [
+    ArcCharacter_st.NULL,
+    new ArcCharacter_st.Anon_named_1_(),
+    new ArcCharacter_st.Anon_named_2_(),
+    new ArcCharacter_st.Anon_named_3_(),
+    new ArcCharacter_st.Anon_named_4_()
 ];
 
 
@@ -2515,17 +2521,17 @@ ArcCharacter.named_ = [
 
 /** @constructor */
 function ArcString( value ) {
-    LiteralObject.call( this );
     this.value_ = value;
 }
+var ArcString_st = {};
 
 ArcString.prototype = new LiteralObject();
 ArcString.prototype.className = "ArcString";
 
 ArcString.prototype.invoke = function ( vm, args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var string = this;
-    var index = Rational.cast( args.car(), this );
+    var index = Rational_st.cast( args.car(), this );
     if ( !index.isInteger() )
         throw new ArcError(
             "string-ref: expects exact integer: got " + index );
@@ -2535,7 +2541,7 @@ ArcString.prototype.invoke = function ( vm, args ) {
             "string-ref: index " + i + " out of range " +
             "[0, " + (string.value_.length - 1) + "] for string " +
             this.toString() );
-    vm.pushA( ArcCharacter.makeFromCharCode(
+    vm.pushA( ArcCharacter_st.makeFromCharCode(
         string.value_.charCodeAt( i ) ) );
 };
 
@@ -2580,7 +2586,7 @@ ArcString.prototype.len = function () {
 };
 
 ArcString.prototype.scar = function ( character ) {
-    var newCar = ArcCharacter.cast( character, this );
+    var newCar = ArcCharacter_st.cast( character, this );
     var sb = [ newCar.disp() ];
     sb.push( this.value().substring( 1 ) );
     this.setValue( sb.join( "" ) );
@@ -2588,21 +2594,21 @@ ArcString.prototype.scar = function ( character ) {
 };
 
 ArcString.prototype.sref = function ( value, index ) {
-    var v = ArcCharacter.cast( value, ArcCharacter );
-    var i = Rational.cast( index, this );
+    var v = ArcCharacter_st.cast( value, ArcCharacter );
+    var i = Rational_st.cast( index, this );
     this.srefChar( i, v );
     return value;
 };
 
 ArcString.prototype.type = function () {
-    return ArcString.TYPE;
+    return ArcString_st.TYPE;
 };
 
 ArcString.prototype.unwrap = function () {
     return this.value();
 };
 
-ArcString.make = function ( element ) {
+ArcString_st.make = function ( element ) {
     return new ArcString( element );
 };
 
@@ -2648,11 +2654,11 @@ ArcString.prototype.add = function ( other ) {
         if ( !(otherType instanceof Symbol) )
             throw new TypeError();
         // PORT NOTE: This local variable didn't exist in Java.
-        var coercion = Typing.STRING.getCoercion( otherType );
+        var coercion = Typing_st.STRING.getCoercion( otherType );
         // PORT NOTE: This was a cast in Java.
         // PORT TODO: See if this is guaranteed to be a Coercion
         // already.
-        if ( !(coercion instanceof Typing.Coercion) )
+        if ( !(coercion instanceof Typing_st.Coercion) )
             throw new TypeError();
         // PORT NOTE: This local variable didn't exist in Java.
         var asString = coercion.coerce1( other );
@@ -2661,10 +2667,10 @@ ArcString.prototype.add = function ( other ) {
             throw new TypeError();
         s.push( asString.value() );
     }
-    return ArcString.make( s.join( "" ) );
+    return ArcString_st.make( s.join( "" ) );
 };
 
-ArcString.cast = function ( argument, caller ) {
+ArcString_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof ArcString) )
@@ -2677,7 +2683,7 @@ ArcString.cast = function ( argument, caller ) {
     }
 };
 
-ArcString.TYPE = Symbol.mkSym( "string" );
+ArcString_st.TYPE = Symbol_st.mkSym( "string" );
 
 
 // ===================================================================
@@ -2690,24 +2696,24 @@ ArcString.TYPE = Symbol.mkSym( "string" );
 // are no uses of it.
 /** @constructor */
 function ArcException( e, operating, stackTrace ) {
-    LiteralObject.call( this );
     this.operating_ = operating;
     this.original_ = e;
     this.stackTrace_ = stackTrace;
 }
+var ArcException_st = {};
 
 ArcException.prototype = new LiteralObject();
 ArcException.prototype.className = "ArcException";
 
 ArcException.prototype.type = function () {
-    return ArcException.TYPE;
+    return ArcException_st.TYPE;
 };
 
 ArcException.prototype.message = function () {
     if ( this.original_ !== null )
-        return ArcString.make( this.original_.message );
+        return ArcString_st.make( this.original_.message );
     else
-        return ArcException.NO_MESSAGE_;
+        return ArcException_st.NO_MESSAGE_;
 };
 
 ArcException.prototype.toString = function () {
@@ -2718,7 +2724,7 @@ ArcException.prototype.getOriginal = function () {
     return this.original_;
 };
 
-ArcException.cast = function ( argument, caller ) {
+ArcException_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof ArcException) )
@@ -2739,8 +2745,8 @@ ArcException.prototype.getOperating = function () {
     return this.operating_;
 };
 
-ArcException.TYPE = Symbol.mkSym( "exn" );
-ArcException.NO_MESSAGE_ = ArcString.make( "no message" );
+ArcException_st.TYPE = Symbol_st.mkSym( "exn" );
+ArcException_st.NO_MESSAGE_ = ArcString_st.make( "no message" );
 
 
 // ===================================================================
@@ -2752,8 +2758,8 @@ ArcException.NO_MESSAGE_ = ArcString.make( "no message" );
 // PORT NOTE: This was originally abstract.
 /** @constructor */
 function ArcNumber() {
-    LiteralObject.call( this );
 }
+var ArcNumber_st = {};
 
 ArcNumber.prototype = new LiteralObject();
 ArcNumber.prototype.className = "ArcNumber";
@@ -2792,14 +2798,15 @@ ArcNumber.prototype.compareTo = function ( right ) {
 };
 
 ArcNumber.prototype.type = function () {
-    return this.isInteger() ? ArcNumber.INT_TYPE : ArcNumber.NUM_TYPE;
+    return this.isInteger() ?
+        ArcNumber_st.INT_TYPE : ArcNumber_st.NUM_TYPE;
 };
 
 ArcNumber.prototype.isSame = function ( other ) {
     return this.equals( other );
 };
 
-ArcNumber.cast = function ( argument, caller ) {
+ArcNumber_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof ArcNumber) )
@@ -2818,8 +2825,8 @@ ArcNumber.prototype.mod = function ( other ) {
         this.className + "(" + this + ")" );
 };
 
-ArcNumber.INT_TYPE = Symbol.mkSym( "int" );
-ArcNumber.NUM_TYPE = Symbol.mkSym( "num" );
+ArcNumber_st.INT_TYPE = Symbol_st.mkSym( "int" );
+ArcNumber_st.NUM_TYPE = Symbol_st.mkSym( "num" );
 
 
 // ===================================================================
@@ -2830,9 +2837,9 @@ ArcNumber.NUM_TYPE = Symbol.mkSym( "num" );
 
 /** @constructor */
 function ArcThreadLocal() {
-    LiteralObject.call( this );
     this.value_ = null;
 }
+var ArcThreadLocal_st = {};
 
 ArcThreadLocal.prototype = new LiteralObject();
 ArcThreadLocal.prototype.className = "ArcThreadLocal";
@@ -2846,10 +2853,10 @@ ArcThreadLocal.prototype.get = function () {
 };
 
 ArcThreadLocal.prototype.type = function () {
-    return ArcThreadLocal.TYPE;
+    return ArcThreadLocal_st.TYPE;
 };
 
-ArcThreadLocal.cast = function ( argument, caller ) {
+ArcThreadLocal_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof ArcThreadLocal) )
@@ -2862,7 +2869,7 @@ ArcThreadLocal.cast = function ( argument, caller ) {
     }
 };
 
-ArcThreadLocal.TYPE = Symbol.mkSym( "thread-local" );
+ArcThreadLocal_st.TYPE = Symbol_st.mkSym( "thread-local" );
 
 
 // ===================================================================
@@ -2875,16 +2882,16 @@ ArcThreadLocal.TYPE = Symbol.mkSym( "thread-local" );
 // ArcNumbers instead of primitives.
 /** @constructor */
 function Complex( real, imaginary ) {
-    ArcNumber.call( this );
     this.real_ = real;
     this.imaginary_ = imaginary;
 }
+var Complex_st = {};
 
 Complex.prototype = new ArcNumber();
 Complex.prototype.className = "Complex";
 
 // PORT NOTE: The Java version used ComplexParser here.
-Complex.parse = function ( number ) {
+Complex_st.parse = function ( number ) {
     var matches;
     if ( soFar === "+i" )
         return new Complex( 0, 1 );
@@ -2894,8 +2901,8 @@ Complex.parse = function ( number ) {
         /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
             exec( soFar ) )
         return new Complex(
-            Real.parse( matches[ 1 ] ).value(),
-            Real.parse(
+            Real_st.parse( matches[ 1 ] ).value(),
+            Real_st.parse(
                 matches[ 2 ] + (matches[ 3 ] || "1") ).
                 value() );
     else
@@ -2924,7 +2931,7 @@ Complex.prototype.toString = function () {
         new Real( this.imaginary_ ).toString() + "i";
 };
 
-Complex.cast = function ( argument, caller ) {
+Complex_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof Complex) )
@@ -3054,7 +3061,7 @@ Complex.prototype.expt = function ( exponent ) {
 };
 
 Complex.prototype.sqrt = function () {
-    return this.expt( Real.make( 0.5 ) );
+    return this.expt( Real_st.make( 0.5 ) );
 };
 
 Complex.prototype.exp = function () {
@@ -3074,7 +3081,7 @@ Complex.prototype.compareTo = function ( right ) {
         "compared" );
 };
 
-Complex.make = function ( o ) {
+Complex_st.make = function ( o ) {
     if ( o instanceof Complex )
         return o;
     else if ( o instanceof ArcNumber )
@@ -3092,7 +3099,7 @@ Complex.prototype.isSame = function ( other ) {
             other.toDouble() === this.real_;
 };
 
-Complex.ZERO = new Complex( 0, 0 );
+Complex_st.ZERO = new Complex( 0, 0 );
 
 
 // ===================================================================
@@ -3109,34 +3116,34 @@ Complex.ZERO = new Complex( 0, 0 );
 // Get it fixed in the original.
 /** @constructor */
 function Rational( numerator, denominator ) {
-    ArcNumber.call( this );
     if ( denominator === 0 && numerator !== 0 )
         throw new ArcError( "/: division by zero" );
     var gcd = this.gcd_( numerator, denominator );
     this.numerator_ = numerator / gcd;
     this.denominator_ = denominator / gcd;
 }
+var Rational_st = {};
 
 Rational.prototype = new ArcNumber();
 Rational.prototype.className = "Rational";
 
-Rational.parse = function ( rep ) {
+Rational_st.parse = function ( rep ) {
     var parts = rep.split( "/" );
-    return Rational.make2(
+    return Rational_st.make2(
         parseInt( parts[ 0 ], 10 ), parseInt( parts[ 1 ], 10 ) );
 };
 
-Rational.parseHex = function ( rep ) {
+Rational_st.parseHex = function ( rep ) {
     rep = rep.substring( 2 );
     return new Rational( parseInt( rep, 16 ), 1 );
 };
 
 // PORT NOTE: We've renamed all uses of Rational.make().
-Rational.make1 = function ( result ) {
+Rational_st.make1 = function ( result ) {
     return new Rational( result, 1 );
 };
 
-Rational.make2 = function ( a, b ) {
+Rational_st.make2 = function ( a, b ) {
     return new Rational( a, b );
 };
 
@@ -3179,7 +3186,7 @@ Rational.prototype.mod = function ( other ) {
     var result = this.numerator_ % divisor;
     if ( result < 0 )
         result += divisor;
-    return Rational.make1( result );
+    return Rational_st.make1( result );
 };
 
 Rational.prototype.times = function ( other ) {
@@ -3193,11 +3200,11 @@ Rational.prototype.plus = function ( other ) {
         this.numerator_ * other.denominator_ +
         other.numerator_ * this.denominator_;
     var div = this.denominator_ * other.denominator_;
-    return Rational.make2( num, div );
+    return Rational_st.make2( num, div );
 };
 
 Rational.prototype.negate = function () {
-    return Rational.make2( -this.numerator_, this.denominator_ );
+    return Rational_st.make2( -this.numerator_, this.denominator_ );
 };
 
 Rational.prototype.invert = function () {
@@ -3233,7 +3240,7 @@ Rational.prototype.sameValue_ = function ( other ) {
         this.denominator_ === other.denominator_;
 };
 
-Rational.cast = function ( argument, caller ) {
+Rational_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof Rational) )
@@ -3254,9 +3261,9 @@ Rational.prototype.round = function () {
         // PORT NOTE: In Java, this was just integer division.
         var r = this.numerator_ / this.denominator_;
         r = r < 0 ? Math.ceil( r ) : Math.floor( r );
-        return Rational.make1( r + (r % 2 === 1 ? 1 : 0) );
+        return Rational_st.make1( r + (r % 2 === 1 ? 1 : 0) );
     } else {
-        return Rational.make1(
+        return Rational_st.make1(
             Math.round( this.numerator_ / this.denominator_ ) );
     }
 };
@@ -3265,7 +3272,7 @@ Rational.prototype.roundJava = function () {
     if ( this.denominator_ === 1 ) {
         return this;
     } else {
-        return Rational.make1(
+        return Rational_st.make1(
             Math.round( this.numerator_ / this.denominator_ ) );
     }
 };
@@ -3273,19 +3280,19 @@ Rational.prototype.roundJava = function () {
 Rational.prototype.stringify = function ( base ) {
     var num = this.numerator_.toString( base.toInt() );
     if ( this.isInteger() ) {
-        return ArcString.make( num );
+        return ArcString_st.make( num );
     } else {
         var den = this.denominator_.toString( base.toInt() );
-        return ArcString.make( num + "/" + den );
+        return ArcString_st.make( num + "/" + den );
     }
 };
 
 Rational.prototype.sqrt = function () {
     var d = Math.sqrt( this.numerator_ / this.denominator_ );
     if ( Math.floor( d ) === d )
-        return Rational.make1( d );
+        return Rational_st.make1( d );
     else
-        return Real.make( d );
+        return Real_st.make( d );
 };
 
 Rational.prototype.multiply = function ( other ) {
@@ -3314,9 +3321,9 @@ Rational.prototype.add = function ( other ) {
             other );
 };
 
-Rational.ZERO = Rational.make1( 0 );
-Rational.ONE = Rational.make1( 1 );
-Rational.TEN = Rational.make1( 10 );
+Rational_st.ZERO = Rational_st.make1( 0 );
+Rational_st.ONE = Rational_st.make1( 1 );
+Rational_st.TEN = Rational_st.make1( 10 );
 
 
 // ===================================================================
@@ -3327,30 +3334,30 @@ Rational.TEN = Rational.make1( 10 );
 
 /** @constructor */
 function Real( value ) {
-    ArcNumber.call( this );
     this.value_ = value;
 }
+var Real_st = {};
 
 Real.prototype = new ArcNumber();
 Real.prototype.className = "Real";
 
-Real.positiveInfinity = function () {
+Real_st.positiveInfinity = function () {
     return new Real( 1 / 0 );
 };
 
-Real.negativeInfinity = function () {
+Real_st.negativeInfinity = function () {
     return new Real( -1 / 0 );
 };
 
-Real.nan = function () {
+Real_st.nan = function () {
     return new Real( 0 / 0 );
 };
 
-Real.parse = function ( rep ) {
-    return Real.make( parseFloat( rep ) );
+Real_st.parse = function ( rep ) {
+    return Real_st.make( parseFloat( rep ) );
 };
 
-Real.make = function ( v ) {
+Real_st.make = function ( v ) {
     return new Real( v );
 };
 
@@ -3377,7 +3384,7 @@ Real.prototype.unwrap = function () {
 };
 
 Real.prototype.type = function () {
-    return ArcNumber.NUM_TYPE;
+    return ArcNumber_st.NUM_TYPE;
 };
 
 Real.prototype.value = function () {
@@ -3400,7 +3407,7 @@ Real.prototype.toInt = function () {
 };
 
 Real.prototype.negate = function () {
-    return Real.make( -this.value_ );
+    return Real_st.make( -this.value_ );
 };
 
 Real.prototype.hashCode = function () {
@@ -3420,29 +3427,29 @@ Real.prototype.round = function () {
     var r = Math.round( this.value_ );
     if ( Math.abs( this.value_ - r ) === 0.5 && r % 2 == 1 ) {
         if ( r < this.value_ )
-            return Rational.make1( r + 1 );
+            return Rational_st.make1( r + 1 );
         else
-            return Rational.make1( r - 1 );
+            return Rational_st.make1( r - 1 );
     } else {
-        return Rational.make1( r );
+        return Rational_st.make1( r );
     }
 };
 
 Real.prototype.roundJava = function () {
-    return Rational.make1( Math.round( this.value_ ) );
+    return Rational_st.make1( Math.round( this.value_ ) );
 };
 
 Real.prototype.plus = function ( r ) {
-    return Real.make( this.value_ + r.toDouble() );
+    return Real_st.make( this.value_ + r.toDouble() );
 };
 
 Real.prototype.sqrt = function () {
-    return Real.make( Math.sqrt( this.value_ ) );
+    return Real_st.make( Math.sqrt( this.value_ ) );
 };
 
 // PORT NOTE: We've renamed all uses of Real.multiply( ArcNumber ).
 Real.prototype.multiplyNumber = function ( other ) {
-    return Real.make( this.value_ * other.toDouble() );
+    return Real_st.make( this.value_ * other.toDouble() );
 };
 
 Real.prototype.multiply = function ( other ) {
@@ -3478,22 +3485,23 @@ Real.prototype.add = function ( other ) {
 
 /** @constructor */
 function Tagged( type, rep ) {
-    LiteralObject.call( this );
     this.type_ = type;
     this.rep_ = rep;
 }
+var Tagged_st = {};
 
 Tagged.prototype = new LiteralObject();
 Tagged.prototype.className = "Tagged";
 
 Tagged.prototype.invoke = function ( vm, args ) {
     // PORT NOTE: This local variable didn't exist in Java.
-    var typeDispatcherTable = ArcObject.TYPE_DISPATCHER_TABLE.value();
+    var typeDispatcherTable =
+        ArcObject_st.TYPE_DISPATCHER_TABLE.value();
     // PORT NOTE: This was a cast in Java.
     if ( !(typeDispatcherTable instanceof Hash) )
         throw new TypeError();
     return typeDispatcherTable.value( this.type_ ).invoke(
-        vm, new Pair( this.rep_, args ) );
+        vm, new Pair().init2( this.rep_, args ) );
 };
 
 Tagged.prototype.getType = function () {
@@ -3512,17 +3520,17 @@ Tagged.prototype.type = function () {
     return this.type_;
 };
 
-Tagged.hasTag = function ( o, s ) {
+Tagged_st.hasTag = function ( o, s ) {
     return o instanceof Tagged && o.getType().toString() === s;
 };
 
-Tagged.ifTagged = function ( o, tag ) {
-    if ( Tagged.hasTag( o, tag ) )
+Tagged_st.ifTagged = function ( o, tag ) {
+    if ( Tagged_st.hasTag( o, tag ) )
         return o.getRep();
     return null;
 };
 
-Tagged.rep = function ( o ) {
+Tagged_st.rep = function ( o ) {
     return o instanceof Tagged ? o.rep_ : o;
 };
 
@@ -3536,7 +3544,7 @@ Tagged.prototype.defaultToString = function () {
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 Tagged.prototype.stringify_ = function () {
-    var writer = Tagged.TAGGED_WRITE_FN_;
+    var writer = Tagged_st.TAGGED_WRITE_FN_;
     if ( !writer.bound() )
         return this.defaultToString();
     
@@ -3549,7 +3557,7 @@ Tagged.prototype.stringify_ = function () {
         return this.defaultToString();
     
     var vm = new VM();
-    fn.invoke( vm, Pair.buildFrom1( [ rep ] ) );
+    fn.invoke( vm, Pair_st.buildFrom1( [ rep ] ) );
     // PORT TODO: Find an equivalent for this Java.
 //    return (String) JavaObject.unwrap( vm.thread(), String.class );
     // ASYNC PORT NOTE: This error text didn't exist in Java.
@@ -3561,12 +3569,12 @@ Tagged.prototype.stringify_ = function () {
         throw new ArcError(
             "An asynchronous operation was attempted during a " +
             "toString()." );
-    return "" + JsObject.unwrap( ourResult );
+    return "" + JsObject_st.unwrap( ourResult );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
 //Tagged.prototype.stringify_ = function () {
-//    var writer = Tagged.TAGGED_WRITE_FN_;
+//    var writer = Tagged_st.TAGGED_WRITE_FN_;
 //    if ( !writer.bound() )
 //        return this.defaultToString();
 //    
@@ -3579,13 +3587,13 @@ Tagged.prototype.stringify_ = function () {
 //        return this.defaultToString();
 //    
 //    var vm = new VM();
-//    fn.invoke( vm, Pair.buildFrom1( [ rep ] ) );
+//    fn.invoke( vm, Pair_st.buildFrom1( [ rep ] ) );
 //    // PORT TODO: Find an equivalent for this Java.
 ////    return (String) JavaObject.unwrap( vm.thread(), String.class );
-//    return "" + JsObject.unwrap( vm.thread() );
+//    return "" + JsObject_st.unwrap( vm.thread() );
 //};
 
-Tagged.cast = function ( argument, caller ) {
+Tagged_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof Tagged) )
@@ -3598,7 +3606,7 @@ Tagged.cast = function ( argument, caller ) {
     }
 };
 
-Tagged.TAGGED_WRITE_FN_ = Symbol.mkSym( "tagged-writers" );
+Tagged_st.TAGGED_WRITE_FN_ = Symbol_st.mkSym( "tagged-writers" );
 
 
 // ===================================================================
@@ -3615,9 +3623,9 @@ Tagged.TAGGED_WRITE_FN_ = Symbol.mkSym( "tagged-writers" );
 
 /** @constructor */
 function JsObject( object ) {
-    LiteralObject.call( this );
     this.object_ = object;
 }
+var JsObject_st = {};
 
 JsObject.prototype = new LiteralObject();
 JsObject.prototype.className = "JsObject";
@@ -3649,7 +3657,7 @@ JsObject.prototype.className = "JsObject";
 
 // PORT TODO: See if porting things by spirit, like this, would help.
 /*
-JsObject.getClassInstance = function ( className ) {
+JsObject_st.getClassInstance = function ( className ) {
     if ( /\.\.|^\.|\.$/.test( className ) )
         throw new SyntaxError();
     className = className.split( /\./g );
@@ -3670,11 +3678,12 @@ JsObject.getClassInstance = function ( className ) {
 
 // PORT NOTE: We've renamed all uses of JsObject.invoke().
 JsObject.prototype.invokeJs = function ( methodName, args ) {
-    return JsObject.invokeMethod_( this.object_, methodName, args );
+    return JsObject_st.invokeMethod_(
+        this.object_, methodName, args );
 };
 
 JsObject.prototype.type = function () {
-    return JsObject.TYPE;
+    return JsObject_st.TYPE;
 };
 
 JsObject.prototype.unwrap = function () {
@@ -3685,7 +3694,7 @@ JsObject.prototype.toString = function () {
     return "" + this.object_;
 };
 
-JsObject.cast = function ( argument, caller ) {
+JsObject_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof JsObject) )
@@ -3698,7 +3707,7 @@ JsObject.cast = function ( argument, caller ) {
     }
 };
 
-JsObject.invokeMethod_ = function ( target, methodName, args ) {
+JsObject_st.invokeMethod_ = function ( target, methodName, args ) {
     // PORT TODO: In Java, certain errors were caught here, and some
     // were converted to ArcErrors. See what the equivalent would be
     // here.
@@ -3707,37 +3716,37 @@ JsObject.invokeMethod_ = function ( target, methodName, args ) {
         "[object Function]" )
         throw new ArcError(
             "Field " + methodName + " is not a method on " + target );
-    return method.apply( target, JsObject.unwrapList1_( args ) );
+    return method.apply( target, JsObject_st.unwrapList1_( args ) );
 };
 
-JsObject.unwrapList1_ = function ( args ) {
+JsObject_st.unwrapList1_ = function ( args ) {
     var result = [];
-    JsObject.unwrapList2_( result, args );
+    JsObject_st.unwrapList2_( result, args );
     return result;
 };
 
-JsObject.unwrapList2_ = function ( result, args ) {
-    result.push( JsObject.unwrap( args.car() ) );
+JsObject_st.unwrapList2_ = function ( result, args ) {
+    result.push( JsObject_st.unwrap( args.car() ) );
     if ( !(args.cdr() instanceof Nil) ) {
         // PORT NOTE: This local variable didn't exist in Java.
         var cdr = args.cdr();
         // PORT NOTE: This was a cast in Java.
         if ( !(cdr instanceof Pair) )
             throw new TypeError();
-        JsObject.unwrapList2_( result, cdr );
+        JsObject_st.unwrapList2_( result, cdr );
     }
 };
 
-JsObject.unwrap = function ( arcObject ) {
+JsObject_st.unwrap = function ( arcObject ) {
     return arcObject.unwrap();
 };
 
 // PORT NOTE: This may be slightly different from Java Rainbow's
 // version. In particular, we don't have cases for ArcCharacter,
 // InputStream, OutputStream, or Map like Java Rainbow does.
-JsObject.wrap = function ( o ) {
+JsObject_st.wrap = function ( o ) {
     if ( o === null ) {
-        return ArcObject.NIL;
+        return ArcObject_st.NIL;
     } else if ( o instanceof ArcObject ) {
         return o;
     }
@@ -3746,29 +3755,29 @@ JsObject.wrap = function ( o ) {
     if ( type === "[object Number]" ) {
         o *= 1;
         return o === Math.floor( o ) ?
-            Rational.make1( o ) : Real.make( o );
+            Rational_st.make1( o ) : Real_st.make( o );
     } else if ( type === "[object String]" ) {
-        return ArcString.make( "" + o );
+        return ArcString_st.make( "" + o );
     } else if ( type === "[object Array]"
         || type === "[object Arguments]" ) {
-        return JsObject.wrapList_( o );
+        return JsObject_st.wrapList_( o );
     } else if ( type === "[object Boolean]" ) {
         if ( !!o ) {
-            return ArcObject.T;
+            return ArcObject_st.T;
         } else {
-            return ArcObject.NIL;
+            return ArcObject_st.NIL;
         }
     } else {
         return new JsObject( o );
     }
 };
 
-JsObject.wrapList_ = function ( objects ) {
+JsObject_st.wrapList_ = function ( objects ) {
     var result = new Array( ~~objects.length );
     for ( var i = 0; i < objects.length; i++ ) {
-        result[ i ] = JsObject.wrap( objects[ i ] );
+        result[ i ] = JsObject_st.wrap( objects[ i ] );
     }
-    return Pair.buildFrom1( result );
+    return Pair_st.buildFrom1( result );
 };
 
 JsObject.prototype.close = function () {
@@ -3778,7 +3787,8 @@ JsObject.prototype.close = function () {
     throw new ArcError( "close: unexpected object: " + this );
 };
 
-JsObject.TYPE = Symbol.mkSym( "java-object" );
+// PORT TODO: See if this should be "js-object" instead.
+JsObject_st.TYPE = Symbol_st.mkSym( "java-object" );
 
 
 // ===================================================================
@@ -3792,28 +3802,28 @@ JsObject.TYPE = Symbol.mkSym( "java-object" );
 
 /** @constructor */
 function Hash() {
-    LiteralObject.call( this );
-    this.name_ = ArcObject.NIL;
+    this.name_ = ArcObject_st.NIL;
     this.map_ = new StringMap().init();
     this.firstEntry_ = null;
     this.lastEntry_ = null;
-    this.naming_ = new Hash.DontName();
+    this.naming_ = new Hash_st.DontName();
     this.len_ = 0;
 }
+var Hash_st = {};
 
 Hash.prototype = new LiteralObject();
 Hash.prototype.className = "Hash";
 
 Hash.prototype.unassigned = function ( name ) {
     if ( this.name_ === name ) {
-        this.name_ = ArcObject.NIL;
-        this.naming_ = new Hash.DontName();
+        this.name_ = ArcObject_st.NIL;
+        this.naming_ = new Hash_st.DontName();
     }
 };
 
 Hash.prototype.assigned = function ( name ) {
     this.name_ = name;
-    this.naming_ = new Hash.DoName( this );
+    this.naming_ = new Hash_st.DoName( this );
 };
 
 Hash.prototype.assignedName = function () {
@@ -3832,11 +3842,11 @@ Hash.prototype.toList = function () {
     var pairs = [];
     for ( var k = this.firstEntry_; k !== null; k = k.next ) {
         var o = k.key;
-        var keyValue =
-            new Pair( o, new Pair( this.value( o ), ArcObject.NIL ) );
+        var keyValue = new Pair().init2( o,
+            new Pair().init2( this.value( o ), ArcObject_st.NIL ) );
         pairs.push( keyValue );
     }
-    return Pair.buildFrom2( pairs, ArcObject.EMPTY_LIST );
+    return Pair_st.buildFrom2( pairs, ArcObject_st.EMPTY_LIST );
 };
 
 Hash.prototype.len = function () {
@@ -3905,13 +3915,13 @@ Hash.prototype.value = function ( key ) {
     var hash = key.hashCode();
     var list = this.map_.get( hash );
     if ( !list )
-        return ArcObject.NIL;
+        return ArcObject_st.NIL;
     for ( var i = 0, len = list.length; i < len; i++ ) {
         var entry = list[ i ];
         if ( key.equals( entry.key ) )
             return entry.value;
     }
-    return ArcObject.NIL;
+    return ArcObject_st.NIL;
 };
 
 Hash.prototype.compareTo = function ( right ) {
@@ -3919,7 +3929,7 @@ Hash.prototype.compareTo = function ( right ) {
 };
 
 Hash.prototype.type = function () {
-    return Hash.TYPE;
+    return Hash_st.TYPE;
 };
 
 // PORT NOTE: There is no Hash equivalent in JavaScript, so we're
@@ -3929,7 +3939,7 @@ Hash.prototype.size = function () {
     return this.len_;
 };
 
-Hash.cast = function ( argument, caller ) {
+Hash_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof Hash) )
@@ -3944,41 +3954,39 @@ Hash.cast = function ( argument, caller ) {
 
 // PORT NOTE: This was an interface in Java.
 /** @constructor */
-Hash.Naming = function () {
+Hash_st.Naming = function () {
 };
 
-Hash.Naming.prototype.name = void 0;
-Hash.Naming.prototype.unname = void 0;
+Hash_st.Naming.prototype.name = void 0;
+Hash_st.Naming.prototype.unname = void 0;
 
 // PORT NOTE: This was an inner class in Java.
 /** @constructor */
-Hash.DoName = function ( this_Hash ) {
-    Hash.Naming.call( this );
+Hash_st.DoName = function ( this_Hash ) {
     this.this_Hash_ = this_Hash;
 };
 
-Hash.DoName.prototype = new Hash.Naming();
+Hash_st.DoName.prototype = new Hash_st.Naming();
 
-Hash.DoName.prototype.name = function ( o, name ) {
-    o.assigned( new Pair( name, this.this_Hash_ ) );
+Hash_st.DoName.prototype.name = function ( o, name ) {
+    o.assigned( new Pair().init2( name, this.this_Hash_ ) );
 };
 
-Hash.DoName.prototype.unname = function ( o, name ) {
-    o.unassigned( new Pair( name, this.this_Hash_ ) );
+Hash_st.DoName.prototype.unname = function ( o, name ) {
+    o.unassigned( new Pair().init2( name, this.this_Hash_ ) );
 };
 
 // PORT NOTE: This was an inner class in Java.
 /** @constructor */
-Hash.DontName = function () {
-    Hash.Naming.call( this );
+Hash_st.DontName = function () {
 };
 
-Hash.DontName.prototype = new Hash.Naming();
+Hash_st.DontName.prototype = new Hash_st.Naming();
 
-Hash.DontName.prototype.name = function ( o, name ) {};
-Hash.DontName.prototype.unname = function ( o, name ) {};
+Hash_st.DontName.prototype.name = function ( o, name ) {};
+Hash_st.DontName.prototype.unname = function ( o, name ) {};
 
-Hash.TYPE = Symbol.mkSym( "table" );
+Hash_st.TYPE = Symbol_st.mkSym( "table" );
 
 
 // ===================================================================
@@ -3990,9 +3998,7 @@ Hash.TYPE = Symbol.mkSym( "table" );
 
 /** @constructor */
 function VM() {
-    ArcObject.call( this );
-    
-    this.threadId = VM.threadCount_++;
+    this.threadId = VM_st.threadCount_++;
     
     this.args = new Array( 100 );
     this.ap = -1;
@@ -4008,7 +4014,7 @@ function VM() {
     // PORT NOTE: The error field was public in Java, but there's also
     // an error method.
     this.error_ = null;
-    this.interceptor_ = VMInterceptor.NULL;
+    this.interceptor_ = VMInterceptor_st.NULL;
     // PORT NOTE: The dead field was public in Java, but there's also
     // a dead method.
     this.dead_ = false;
@@ -4019,6 +4025,7 @@ function VM() {
     
     this.operating_ = null;
 }
+var VM_st = {};
 
 VM.prototype = new ArcObject();
 VM.prototype.className = "VM";
@@ -4221,18 +4228,20 @@ VM.prototype.popFrame = function () {
 VM.prototype.pushFrame = function ( i ) {
     if ( this.ipThreshold <= this.ip
         && this.peekI() instanceof Nil ) {
-        this.ins[ this.ip ] = new Pair( i, ArcObject.NIL );
+        this.ins[ this.ip ] = new Pair().init2( i, ArcObject_st.NIL );
     } else {
         this.ip++;
         // PORT NOTE: In Java, this was handled by catching
         // ArrayIndexOutOfBoundsException.
         if ( 0 <= this.ip && this.ip < this.ins.length ) {
-            this.ins[ this.ip ] = new Pair( i, ArcObject.NIL );
+            this.ins[ this.ip ] =
+                new Pair().init2( i, ArcObject_st.NIL );
         } else {
             this.newInstructionArray_( this.ins.length * 2 );
             this.newClosureArray_( this.lcs.length * 2 );
             this.newParamsArray_( this.params.length * 2 );
-            this.ins[ this.ip ] = new Pair( i, ArcObject.NIL );
+            this.ins[ this.ip ] =
+                new Pair().init2( i, ArcObject_st.NIL );
         }
     }
 };
@@ -4353,10 +4362,10 @@ VM.prototype.popA = function () {
 };
 
 VM.prototype.popArgs = function ( argCount ) {
-    var result = ArcObject.EMPTY_LIST;
+    var result = ArcObject_st.EMPTY_LIST;
     for ( var i = 0; i < argCount; i++ ) {
         var arg = this.args[ this.ap - i ];
-        result = new Pair( arg, result );
+        result = new Pair().init2( arg, result );
     }
     this.ap -= argCount;
     return result;
@@ -4408,7 +4417,7 @@ VM.prototype.clearError = function () {
     this.error_ = null;
 };
 
-// TODO: Rename all uses of VM.ap() and VM.ap( int ).
+// PORT TODO: Rename all uses of VM.ap() and VM.ap( int ).
 VM.prototype.getAp = function () {
     return this.ap;
 };
@@ -4423,7 +4432,7 @@ VM.prototype.setInterceptor = function ( interceptor ) {
 };
 
 VM.prototype.type = function () {
-    return VM.TYPE;
+    return VM_st.TYPE;
 };
 
 VM.prototype.copy = function () {
@@ -4510,8 +4519,8 @@ VM.prototype.nextInstruction = function () {
     return this.ins[ this.ip ].car();
 };
 
-VM.TYPE = Symbol.mkSym( "thread" );
-VM.threadCount_ = 0;
+VM_st.TYPE = Symbol_st.mkSym( "thread" );
+VM_st.threadCount_ = 0;
 
 
 // ===================================================================
@@ -4522,9 +4531,8 @@ VM.threadCount_ = 0;
 
 /** @constructor */
 function ListBuilder() {
-    ArcObject.call( this );
     this.list_ = [];
-    this.last_ = ArcObject.NIL;
+    this.last_ = ArcObject_st.NIL;
 }
 
 ListBuilder.prototype = new ArcObject();
@@ -4543,11 +4551,11 @@ ListBuilder.prototype.last = function ( o ) {
 };
 
 ListBuilder.prototype.list = function () {
-    return Pair.buildFrom2( this.list_, this.last_ );
+    return Pair_st.buildFrom2( this.list_, this.last_ );
 };
 
 ListBuilder.prototype.type = function () {
-    return Symbol.mkSym( "list-builder" );
+    return Symbol_st.mkSym( "list-builder" );
 };
 
 ListBuilder.prototype.toString = function () {
@@ -4673,7 +4681,7 @@ Catch.prototype.operate = function ( vm ) {
     
     vm.clearError();
     vm.setAp( this.ap_ );
-    this.onerr_.invoke( vm, Pair.buildFrom1( [ error ] ) );
+    this.onerr_.invoke( vm, Pair_st.buildFrom1( [ error ] ) );
 };
 
 Catch.prototype.toString = function () {
@@ -4722,7 +4730,7 @@ FinallyInvoke.prototype.implementsFinally = true;
 FinallyInvoke.prototype.className = "FinallyInvoke";
 
 FinallyInvoke.prototype.operate = function ( vm ) {
-    this.after_.invoke( vm, ArcObject.NIL );
+    this.after_.invoke( vm, ArcObject_st.NIL );
 };
 
 FinallyInvoke.prototype.toString = function () {
@@ -5006,24 +5014,25 @@ function Assign_Lex( name ) {
     Instruction.call( this );
     this.name = name;
 }
+var Assign_Lex_st = {};
 
 Assign_Lex.prototype = new Instruction();
 Assign_Lex.prototype.className = "Assign_Lex";
 
-Assign_Lex.addInstructions = function ( i, name, expr, last ) {
+Assign_Lex_st.addInstructions = function ( i, name, expr, last ) {
     if ( expr instanceof BoundSymbol )
-        Assign_Lex_Lex.addInstructions( i, name, expr, last );
+        Assign_Lex_Lex_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof StackSymbol )
-        Assign_Lex_Stack.addInstructions( i, name, expr, last );
+        Assign_Lex_Stack_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof Symbol )
-        Assign_Lex_Free.addInstructions( i, name, expr, last );
+        Assign_Lex_Free_st.addInstructions( i, name, expr, last );
     else if ( expr.literal() )
-        Assign_Lex_Literal.addInstructions( i, name, expr, last );
+        Assign_Lex_Literal_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof Quotation )
-        Assign_Lex_Literal.addInstructions(
+        Assign_Lex_Literal_st.addInstructions(
             i, name, expr.quoted(), last );
     else
-        Assign_Lex_Other.addInstructions( i, name, expr, last );
+        Assign_Lex_Other_st.addInstructions( i, name, expr, last );
 };
 
 
@@ -5037,6 +5046,7 @@ function Assign_Lex_Free( name, symbol ) {
     Assign_Lex.call( this, name );
     this.value = symbol;
 }
+var Assign_Lex_Free_st = {};
 
 Assign_Lex_Free.prototype = new Assign_Lex();
 Assign_Lex_Free.prototype.className = "Assign_Lex_Free";
@@ -5047,11 +5057,13 @@ Assign_Lex_Free.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Lex_Free.addInstructions = function ( i, name, symbol, last ) {
+Assign_Lex_Free_st.addInstructions = function (
+    i, name, symbol, last ) {
+    
     if ( last )
         i.push( new Assign_Lex_Free( name, symbol ) );
     else
-        i.push( new Assign_Lex_Free.Intermediate( name, symbol ) );
+        i.push( new Assign_Lex_Free_st.Intermediate( name, symbol ) );
 };
 
 Assign_Lex_Free.prototype.toString = function () {
@@ -5059,15 +5071,15 @@ Assign_Lex_Free.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Lex_Free.Intermediate = function ( name, value ) {
+Assign_Lex_Free_st.Intermediate = function ( name, value ) {
     Assign_Lex_Free.call( this, name, value );
 };
 
-Assign_Lex_Free.Intermediate.prototype = new Assign_Lex_Free();
-Assign_Lex_Free.Intermediate.prototype.className =
+Assign_Lex_Free_st.Intermediate.prototype = new Assign_Lex_Free();
+Assign_Lex_Free_st.Intermediate.prototype.className =
     "Assign_Lex_Free.Intermediate";
 
-Assign_Lex_Free.Intermediate.prototype.operate = function ( vm ) {
+Assign_Lex_Free_st.Intermediate.prototype.operate = function ( vm ) {
     this.name.setSymbolValue( vm.lc(), this.value.value() );
 };
 
@@ -5082,6 +5094,7 @@ function Assign_Lex_Lex( name, value ) {
     Assign_Lex.call( this, name );
     this.value = value;
 }
+var Assign_Lex_Lex_st = {};
 
 Assign_Lex_Lex.prototype = new Assign_Lex();
 Assign_Lex_Lex.prototype.className = "Assign_Lex_Lex";
@@ -5092,11 +5105,13 @@ Assign_Lex_Lex.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Lex_Lex.addInstructions = function ( i, name, value, last ) {
+Assign_Lex_Lex_st.addInstructions = function (
+    i, name, value, last ) {
+    
     if ( last )
         i.push( new Assign_Lex_Lex( name, value ) );
     else
-        i.push( new Assign_Lex_Lex.Intermediate( name, value ) );
+        i.push( new Assign_Lex_Lex_st.Intermediate( name, value ) );
 };
 
 Assign_Lex_Lex.prototype.toString = function () {
@@ -5110,15 +5125,15 @@ Assign_Lex_Lex.prototype.toStringWithLc = function ( lc ) {
 };
 
 /** @constructor */
-Assign_Lex_Lex.Intermediate = function ( name, value ) {
+Assign_Lex_Lex_st.Intermediate = function ( name, value ) {
     Assign_Lex_Lex.call( this, name, value );
 };
 
-Assign_Lex_Lex.Intermediate.prototype = new Assign_Lex_Lex();
-Assign_Lex_Lex.Intermediate.prototype.className =
+Assign_Lex_Lex_st.Intermediate.prototype = new Assign_Lex_Lex();
+Assign_Lex_Lex_st.Intermediate.prototype.className =
     "Assign_Lex_Lex.Intermediate";
 
-Assign_Lex_Lex.Intermediate.prototype.operate = function ( vm ) {
+Assign_Lex_Lex_st.Intermediate.prototype.operate = function ( vm ) {
     this.name.setSymbolValue(
         vm.lc(), this.value.interpret( vm.lc() ) );
 };
@@ -5134,6 +5149,7 @@ function Assign_Lex_Literal( name, expr ) {
     Assign_Lex.call( this, name );
     this.expr = expr;
 }
+var Assign_Lex_Literal_st = {};
 
 Assign_Lex_Literal.prototype = new Assign_Lex();
 Assign_Lex_Literal.prototype.className = "Assign_Lex_Literal";
@@ -5143,13 +5159,14 @@ Assign_Lex_Literal.prototype.operate = function ( vm ) {
     vm.pushA( this.expr );
 };
 
-Assign_Lex_Literal.addInstructions = function (
+Assign_Lex_Literal_st.addInstructions = function (
     i, name, expr, last ) {
     
     if ( last )
         i.push( new Assign_Lex_Literal( name, expr ) );
     else
-        i.push( new Assign_Lex_Literal.Intermediate( name, expr ) );
+        i.push(
+            new Assign_Lex_Literal_st.Intermediate( name, expr ) );
 };
 
 Assign_Lex_Literal.prototype.toString = function () {
@@ -5157,15 +5174,18 @@ Assign_Lex_Literal.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Lex_Literal.Intermediate = function ( name, value ) {
+Assign_Lex_Literal_st.Intermediate = function ( name, value ) {
     Assign_Lex_Literal.call( this, name, value );
 };
 
-Assign_Lex_Literal.Intermediate.prototype = new Assign_Lex_Literal();
-Assign_Lex_Literal.Intermediate.prototype.className =
+Assign_Lex_Literal_st.Intermediate.prototype =
+    new Assign_Lex_Literal();
+Assign_Lex_Literal_st.Intermediate.prototype.className =
     "Assign_Lex_Literal.Intermediate";
 
-Assign_Lex_Literal.Intermediate.prototype.operate = function ( vm ) {
+Assign_Lex_Literal_st.Intermediate.prototype.operate = function (
+    vm ) {
+    
     this.name.setSymbolValue( vm.lc(), this.expr );
 };
 
@@ -5179,6 +5199,7 @@ Assign_Lex_Literal.Intermediate.prototype.operate = function ( vm ) {
 function Assign_Lex_Other( name ) {
     Assign_Lex.call( this, name );
 }
+var Assign_Lex_Other_st = {};
 
 Assign_Lex_Other.prototype = new Assign_Lex();
 Assign_Lex_Other.prototype.className = "Assign_Lex_Other";
@@ -5196,24 +5217,26 @@ Assign_Lex_Other.prototype.toStringWithLc = function ( lc ) {
         this.name.interpret( lc ) + ")";
 };
 
-Assign_Lex_Other.addInstructions = function ( i, name, expr, last ) {
+Assign_Lex_Other_st.addInstructions = function (
+    i, name, expr, last ) {
+    
     expr.addInstructions( i );
     if ( last )
         i.push( new Assign_Lex_Other( name ) );
     else
-        i.push( new Assign_Lex_Other.Intermediate( name ) );
+        i.push( new Assign_Lex_Other_st.Intermediate( name ) );
 };
 
 /** @constructor */
-Assign_Lex_Other.Intermediate = function ( name ) {
+Assign_Lex_Other_st.Intermediate = function ( name ) {
     Assign_Lex_Other.call( this, name );
 };
 
-Assign_Lex_Other.Intermediate.prototype = new Assign_Lex_Other();
-Assign_Lex_Other.Intermediate.prototype.className =
+Assign_Lex_Other_st.Intermediate.prototype = new Assign_Lex_Other();
+Assign_Lex_Other_st.Intermediate.prototype.className =
     "Assign_Lex_Other.Intermediate";
 
-Assign_Lex_Other.Intermediate.prototype.operate = function ( vm ) {
+Assign_Lex_Other_st.Intermediate.prototype.operate = function ( vm ) {
     this.name.setSymbolValue( vm.lc(), vm.popA() );
 };
 
@@ -5228,6 +5251,7 @@ function Assign_Lex_Stack( name, value ) {
     Assign_Lex.call( this, name );
     this.value = value;
 }
+var Assign_Lex_Stack_st = {};
 
 Assign_Lex_Stack.prototype = new Assign_Lex();
 Assign_Lex_Stack.prototype.className = "Assign_Lex_Stack";
@@ -5238,11 +5262,13 @@ Assign_Lex_Stack.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Lex_Stack.addInstructions = function ( i, name, value, last ) {
+Assign_Lex_Stack_st.addInstructions = function (
+    i, name, value, last ) {
+    
     if ( last )
         i.push( new Assign_Lex_Stack( name, value ) );
     else
-        i.push( new Assign_Lex_Stack.Intermediate( name, value ) );
+        i.push( new Assign_Lex_Stack_st.Intermediate( name, value ) );
 };
 
 Assign_Lex_Stack.prototype.toString = function () {
@@ -5256,15 +5282,15 @@ Assign_Lex_Stack.prototype.toStringWithLc = function ( lc ) {
 };
 
 /** @constructor */
-Assign_Lex_Stack.Intermediate = function ( name, value ) {
+Assign_Lex_Stack_st.Intermediate = function ( name, value ) {
     Assign_Lex_Stack.call( this, name, value );
 };
 
-Assign_Lex_Stack.Intermediate.prototype = new Assign_Lex_Stack();
-Assign_Lex_Stack.Intermediate.prototype.className =
+Assign_Lex_Stack_st.Intermediate.prototype = new Assign_Lex_Stack();
+Assign_Lex_Stack_st.Intermediate.prototype.className =
     "Assign_Lex_Stack.Intermediate";
 
-Assign_Lex_Stack.Intermediate.prototype.operate = function ( vm ) {
+Assign_Lex_Stack_st.Intermediate.prototype.operate = function ( vm ) {
     this.name.setSymbolValue( vm.lc(), this.value.get( vm ) );
 };
 
@@ -5282,24 +5308,25 @@ function Assign_Free( name ) {
     Instruction.call( this );
     this.name = name;
 }
+var Assign_Free_st = {};
 
 Assign_Free.prototype = new Instruction();
 Assign_Free.prototype.className = "Assign_Free";
 
-Assign_Free.addInstructions = function ( i, name, expr, last ) {
+Assign_Free_st.addInstructions = function ( i, name, expr, last ) {
     if ( expr instanceof BoundSymbol )
-        Assign_Free_Lex.addInstructions( i, name, expr, last );
+        Assign_Free_Lex_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof StackSymbol )
-        Assign_Free_Stack.addInstructions( i, name, expr, last );
+        Assign_Free_Stack_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof Symbol )
-        Assign_Free_Free.addInstructions( i, name, expr, last );
+        Assign_Free_Free_st.addInstructions( i, name, expr, last );
     else if ( expr.literal() )
-        Assign_Free_Literal.addInstructions( i, name, expr, last );
+        Assign_Free_Literal_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof Quotation )
-        Assign_Free_Literal.addInstructions(
+        Assign_Free_Literal_st.addInstructions(
             i, name, expr.quoted(), last );
     else
-        Assign_Free_Other.addInstructions( i, name, expr, last );
+        Assign_Free_Other_st.addInstructions( i, name, expr, last );
 };
 
 
@@ -5313,6 +5340,7 @@ function Assign_Free_Free( name, symbol ) {
     Assign_Free.call( this, name );
     this.value = symbol;
 }
+var Assign_Free_Free_st = {};
 
 Assign_Free_Free.prototype = new Assign_Free();
 Assign_Free_Free.prototype.className = "Assign_Free_Free";
@@ -5323,11 +5351,13 @@ Assign_Free_Free.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Free_Free.addInstructions = function ( i, name, value, last ) {
+Assign_Free_Free_st.addInstructions = function (
+    i, name, value, last ) {
+    
     if ( last )
         i.push( new Assign_Free_Free( name, value ) );
     else
-        i.push( new Assign_Free_Free.Intermediate( name, value ) );
+        i.push( new Assign_Free_Free_st.Intermediate( name, value ) );
 };
 
 Assign_Free_Free.prototype.toString = function () {
@@ -5335,15 +5365,15 @@ Assign_Free_Free.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Free_Free.Intermediate = function ( name, value ) {
+Assign_Free_Free_st.Intermediate = function ( name, value ) {
     Assign_Free_Free.call( this, name, value );
 };
 
-Assign_Free_Free.Intermediate.prototype = new Assign_Free_Free();
-Assign_Free_Free.Intermediate.prototype.className =
+Assign_Free_Free_st.Intermediate.prototype = new Assign_Free_Free();
+Assign_Free_Free_st.Intermediate.prototype.className =
     "Assign_Free_Free.Intermediate";
 
-Assign_Free_Free.Intermediate.prototype.operate = function ( vm ) {
+Assign_Free_Free_st.Intermediate.prototype.operate = function ( vm ) {
     this.name.setValue( this.value.value() );
 };
 
@@ -5358,6 +5388,7 @@ function Assign_Free_Lex( name, value ) {
     Assign_Free.call( this, name );
     this.value = value;
 }
+var Assign_Free_Lex_st = {};
 
 Assign_Free_Lex.prototype = new Assign_Free();
 Assign_Free_Lex.prototype.className = "Assign_Free_Lex";
@@ -5368,11 +5399,13 @@ Assign_Free_Lex.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Free_Lex.addInstructions = function ( i, name, value, last ) {
+Assign_Free_Lex_st.addInstructions = function (
+    i, name, value, last ) {
+    
     if ( last )
         i.push( new Assign_Free_Lex( name, value ) );
     else
-        i.push( new Assign_Free_Lex.Intermediate( name, value ) );
+        i.push( new Assign_Free_Lex_st.Intermediate( name, value ) );
 };
 
 Assign_Free_Lex.prototype.toString = function () {
@@ -5380,15 +5413,15 @@ Assign_Free_Lex.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Free_Lex.Intermediate = function ( name, value ) {
+Assign_Free_Lex_st.Intermediate = function ( name, value ) {
     Assign_Free_Lex.call( this, name, value );
 };
 
-Assign_Free_Lex.Intermediate.prototype = new Assign_Free_Lex();
-Assign_Free_Lex.Intermediate.prototype.className =
+Assign_Free_Lex_st.Intermediate.prototype = new Assign_Free_Lex();
+Assign_Free_Lex_st.Intermediate.prototype.className =
     "Assign_Free_Lex.Intermediate";
 
-Assign_Free_Lex.Intermediate.prototype.operate = function ( vm ) {
+Assign_Free_Lex_st.Intermediate.prototype.operate = function ( vm ) {
     this.name.setValue( this.value.interpret( vm.lc() ) );
 };
 
@@ -5403,6 +5436,7 @@ function Assign_Free_Literal( name, expr ) {
     Assign_Free.call( this, name );
     this.expr = expr;
 }
+var Assign_Free_Literal_st = {};
 
 Assign_Free_Literal.prototype = new Assign_Free();
 Assign_Free_Literal.prototype.className = "Assign_Free_Literal";
@@ -5412,13 +5446,14 @@ Assign_Free_Literal.prototype.operate = function ( vm ) {
     vm.pushA( this.expr );
 };
 
-Assign_Free_Literal.addInstructions = function (
+Assign_Free_Literal_st.addInstructions = function (
     i, name, expr, last ) {
     
     if ( last )
         i.push( new Assign_Free_Literal( name, expr ) );
     else
-        i.push( new Assign_Free_Literal.Intermediate( name, expr ) );
+        i.push(
+            new Assign_Free_Literal_st.Intermediate( name, expr ) );
 };
 
 Assign_Free_Literal.prototype.toString = function () {
@@ -5427,16 +5462,18 @@ Assign_Free_Literal.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Free_Literal.Intermediate = function ( name, expr ) {
+Assign_Free_Literal_st.Intermediate = function ( name, expr ) {
     Assign_Free_Literal.call( this, name, expr );
 };
 
-Assign_Free_Literal.Intermediate.prototype =
+Assign_Free_Literal_st.Intermediate.prototype =
     new Assign_Free_Literal();
-Assign_Free_Literal.Intermediate.prototype.className =
+Assign_Free_Literal_st.Intermediate.prototype.className =
     "Assign_Free_Literal.Intermediate";
 
-Assign_Free_Literal.Intermediate.prototype.operate = function ( vm ) {
+Assign_Free_Literal_st.Intermediate.prototype.operate = function (
+    vm ) {
+    
     this.name.setValue( this.expr );
 };
 
@@ -5450,6 +5487,7 @@ Assign_Free_Literal.Intermediate.prototype.operate = function ( vm ) {
 function Assign_Free_Other( name ) {
     Assign_Free.call( this, name );
 }
+var Assign_Free_Other_st = {};
 
 Assign_Free_Other.prototype = new Assign_Free();
 Assign_Free_Other.prototype.className = "Assign_Free_Other";
@@ -5467,24 +5505,28 @@ Assign_Free_Other.prototype.toStringWithLc = function ( lc ) {
         this.symValue( name ) + ")";
 };
 
-Assign_Free_Other.addInstructions = function ( i, name, expr, last ) {
+Assign_Free_Other_st.addInstructions = function (
+    i, name, expr, last ) {
+    
     expr.addInstructions( i );
     if ( last )
         i.push( new Assign_Free_Other( name ) );
     else
-        i.push( new Assign_Free_Other.Intermediate( name ) );
+        i.push( new Assign_Free_Other_st.Intermediate( name ) );
 };
 
 /** @constructor */
-Assign_Free_Other.Intermediate = function ( name ) {
+Assign_Free_Other_st.Intermediate = function ( name ) {
     Assign_Free_Other.call( this, name );
 };
 
-Assign_Free_Other.Intermediate.prototype = new Assign_Free_Other();
-Assign_Free_Other.Intermediate.prototype.className =
+Assign_Free_Other_st.Intermediate.prototype = new Assign_Free_Other();
+Assign_Free_Other_st.Intermediate.prototype.className =
     "Assign_Free_Other.Intermediate";
 
-Assign_Free_Other.Intermediate.prototype.operate = function ( vm ) {
+Assign_Free_Other_st.Intermediate.prototype.operate = function (
+    vm ) {
+    
     this.name.setValue( vm.popA() );
 };
 
@@ -5499,6 +5541,7 @@ function Assign_Free_Stack( name, value ) {
     Assign_Free.call( this, name );
     this.value = value;
 }
+var Assign_Free_Stack_st = {};
 
 Assign_Free_Stack.prototype = new Assign_Free();
 Assign_Free_Stack.prototype.className = "Assign_Free_Stack";
@@ -5509,13 +5552,14 @@ Assign_Free_Stack.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Free_Stack.addInstructions = function (
+Assign_Free_Stack_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
         i.push( new Assign_Free_Stack( name, value ) );
     else
-        i.push( new Assign_Free_Stack.Intermediate( name, value ) );
+        i.push(
+            new Assign_Free_Stack_st.Intermediate( name, value ) );
 };
 
 Assign_Free_Stack.prototype.toString = function () {
@@ -5523,15 +5567,17 @@ Assign_Free_Stack.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Free_Stack.Intermediate = function ( name, value ) {
+Assign_Free_Stack_st.Intermediate = function ( name, value ) {
     Assign_Free_Stack.call( this, name, value );
 };
 
-Assign_Free_Stack.Intermediate.prototype = new Assign_Free_Stack();
-Assign_Free_Stack.Intermediate.prototype.className =
+Assign_Free_Stack_st.Intermediate.prototype = new Assign_Free_Stack();
+Assign_Free_Stack_st.Intermediate.prototype.className =
     "Assign_Free_Stack.Intermediate";
 
-Assign_Free_Stack.Intermediate.prototype.operate = function ( vm ) {
+Assign_Free_Stack_st.Intermediate.prototype.operate = function (
+    vm ) {
+    
     this.name.setValue( this.value.get( vm ) );
 };
 
@@ -5549,24 +5595,26 @@ function Assign_Stack( name ) {
     Instruction.call( this );
     this.name = name;
 }
+var Assign_Stack_st = {};
 
 Assign_Stack.prototype = new Instruction();
 Assign_Stack.prototype.className = "Assign_Stack";
 
-Assign_Stack.addInstructions = function ( i, name, expr, last ) {
+Assign_Stack_st.addInstructions = function ( i, name, expr, last ) {
     if ( expr instanceof BoundSymbol )
-        Assign_Stack_Lex.addInstructions( i, name, expr, last );
+        Assign_Stack_Lex_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof StackSymbol )
-        Assign_Stack_Stack.addInstructions( i, name, expr, last );
+        Assign_Stack_Stack_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof Symbol )
-        Assign_Stack_Free.addInstructions( i, name, expr, last );
+        Assign_Stack_Free_st.addInstructions( i, name, expr, last );
     else if ( expr.literal() )
-        Assign_Stack_Literal.addInstructions( i, name, expr, last );
+        Assign_Stack_Literal_st.addInstructions(
+            i, name, expr, last );
     else if ( expr instanceof Quotation )
-        Assign_Stack_Literal.addInstructions(
+        Assign_Stack_Literal_st.addInstructions(
             i, name, expr.quoted(), last );
     else
-        Assign_Stack_Other.addInstructions( i, name, expr, last );
+        Assign_Stack_Other_st.addInstructions( i, name, expr, last );
 };
 
 
@@ -5580,6 +5628,7 @@ function Assign_Stack_Free( name, symbol ) {
     Assign_Stack.call( this, name );
     this.value = symbol;
 }
+var Assign_Stack_Free_st = {};
 
 Assign_Stack_Free.prototype = new Assign_Stack();
 Assign_Stack_Free.prototype.className = "Assign_Stack_Free";
@@ -5590,13 +5639,14 @@ Assign_Stack_Free.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Stack_Free.addInstructions = function (
+Assign_Stack_Free_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
         i.push( new Assign_Stack_Free( name, value ) );
     else
-        i.push( new Assign_Stack_Free.Intermediate( name, value ) );
+        i.push(
+            new Assign_Stack_Free_st.Intermediate( name, value ) );
 };
 
 Assign_Stack_Free.prototype.toString = function () {
@@ -5604,15 +5654,15 @@ Assign_Stack_Free.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Stack_Free.Intermediate = function ( name, value ) {
+Assign_Stack_Free_st.Intermediate = function ( name, value ) {
     Assign_Stack_Free.call( this, name, value );
 };
 
-Assign_Stack_Free.Intermediate.prototype = new Assign_Stack_Free();
-Assign_Stack_Free.Intermediate.prototype.className =
+Assign_Stack_Free_st.Intermediate.prototype = new Assign_Stack_Free();
+Assign_Stack_Free_st.Intermediate.prototype.className =
     "Assign_Stack_Free.Intermediate";
 
-Assign_Stack_Free.Intermediate.prototype.operate = function ( vm ) {
+Assign_Stack_Free_st.Intermediate.prototype.operate = function ( vm ) {
     this.name.set( vm, this.value.value() );
 };
 
@@ -5627,6 +5677,7 @@ function Assign_Stack_Lex( name, value ) {
     Assign_Stack.call( this, name );
     this.value = value;
 }
+var Assign_Stack_Lex_st = {};
 
 Assign_Stack_Lex.prototype = new Assign_Stack();
 Assign_Stack_Lex.prototype.className = "Assign_Stack_Lex";
@@ -5637,11 +5688,13 @@ Assign_Stack_Lex.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Stack_Lex.addInstructions = function ( i, name, value, last ) {
+Assign_Stack_Lex_st.addInstructions = function (
+    i, name, value, last ) {
+    
     if ( last )
         i.push( new Assign_Stack_Lex( name, value ) );
     else
-        i.push( new Assign_Stack_Lex.Intermediate( name, value ) );
+        i.push( new Assign_Stack_Lex_st.Intermediate( name, value ) );
 };
 
 Assign_Stack_Lex.prototype.toString = function () {
@@ -5649,15 +5702,15 @@ Assign_Stack_Lex.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Stack_Lex.Intermediate = function ( name, value ) {
+Assign_Stack_Lex_st.Intermediate = function ( name, value ) {
     Assign_Stack_Lex.call( this, name, value );
 };
 
-Assign_Stack_Lex.Intermediate.prototype = new Assign_Stack_Lex();
-Assign_Stack_Lex.Intermediate.prototype.className =
+Assign_Stack_Lex_st.Intermediate.prototype = new Assign_Stack_Lex();
+Assign_Stack_Lex_st.Intermediate.prototype.className =
     "Assign_Stack_Lex.Intermediate";
 
-Assign_Stack_Lex.Intermediate.prototype.operate = function ( vm ) {
+Assign_Stack_Lex_st.Intermediate.prototype.operate = function ( vm ) {
     this.name.set( vm, this.value.interpret( vm.lc() ) );
 };
 
@@ -5672,6 +5725,7 @@ function Assign_Stack_Literal( name, value ) {
     Assign_Stack.call( this, name );
     this.value = value;
 }
+var Assign_Stack_Literal_st = {};
 
 Assign_Stack_Literal.prototype = new Assign_Stack();
 Assign_Stack_Literal.prototype.className = "Assign_Stack_Literal";
@@ -5681,14 +5735,14 @@ Assign_Stack_Literal.prototype.operate = function ( vm ) {
     vm.pushA( this.value );
 };
 
-Assign_Stack_Literal.addInstructions = function (
+Assign_Stack_Literal_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
         i.push( new Assign_Stack_Literal( name, value ) );
     else
         i.push(
-            new Assign_Stack_Literal.Intermediate( name, value ) );
+            new Assign_Stack_Literal_st.Intermediate( name, value ) );
 };
 
 Assign_Stack_Literal.prototype.toString = function () {
@@ -5696,16 +5750,16 @@ Assign_Stack_Literal.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Stack_Literal.Intermediate = function ( name, value ) {
+Assign_Stack_Literal_st.Intermediate = function ( name, value ) {
     Assign_Stack_Literal.call( this, name, value );
 };
 
-Assign_Stack_Literal.Intermediate.prototype =
+Assign_Stack_Literal_st.Intermediate.prototype =
     new Assign_Stack_Literal();
-Assign_Stack_Literal.Intermediate.prototype.className =
+Assign_Stack_Literal_st.Intermediate.prototype.className =
     "Assign_Stack_Literal.Intermediate";
 
-Assign_Stack_Literal.Intermediate.prototype.operate = function (
+Assign_Stack_Literal_st.Intermediate.prototype.operate = function (
     vm ) {
     
     this.name.set( vm, this.value );
@@ -5721,6 +5775,7 @@ Assign_Stack_Literal.Intermediate.prototype.operate = function (
 function Assign_Stack_Other( name ) {
     Assign_Stack.call( this, name );
 }
+var Assign_Stack_Other_st = {};
 
 Assign_Stack_Other.prototype = new Assign_Stack();
 Assign_Stack_Other.prototype.className = "Assign_Stack_Other";
@@ -5733,26 +5788,29 @@ Assign_Stack_Other.prototype.toString = function () {
     return "(assign-stack " + this.name + ")";
 };
 
-Assign_Stack_Other.addInstructions = function (
+Assign_Stack_Other_st.addInstructions = function (
     i, name, expr, last ) {
     
     expr.addInstructions( i );
     if ( last )
         i.push( new Assign_Stack_Other( name ) );
     else
-        i.push( new Assign_Stack_Other.Intermediate( name ) );
+        i.push( new Assign_Stack_Other_st.Intermediate( name ) );
 };
 
 /** @constructor */
-Assign_Stack_Other.Intermediate = function ( name ) {
+Assign_Stack_Other_st.Intermediate = function ( name ) {
     Assign_Stack_Other.call( this, name );
 };
 
-Assign_Stack_Other.Intermediate.prototype = new Assign_Stack_Other();
-Assign_Stack_Other.Intermediate.prototype.className =
+Assign_Stack_Other_st.Intermediate.prototype =
+    new Assign_Stack_Other();
+Assign_Stack_Other_st.Intermediate.prototype.className =
     "Assign_Stack_Other.Intermediate";
 
-Assign_Stack_Other.Intermediate.prototype.operate = function ( vm ) {
+Assign_Stack_Other_st.Intermediate.prototype.operate = function (
+    vm ) {
+    
     this.name.set( vm, vm.popA() );
 };
 
@@ -5767,6 +5825,7 @@ function Assign_Stack_Stack( name, value ) {
     Assign_Stack.call( this, name );
     this.value = value;
 }
+var Assign_Stack_Stack_st = {};
 
 Assign_Stack_Stack.prototype = new Assign_Stack();
 Assign_Stack_Stack.prototype.className = "Assign_Stack_Stack";
@@ -5777,13 +5836,14 @@ Assign_Stack_Stack.prototype.operate = function ( vm ) {
     vm.pushA( v );
 };
 
-Assign_Stack_Stack.addInstructions = function (
+Assign_Stack_Stack_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
         i.push( new Assign_Stack_Stack( name, value ) );
     else
-        i.push( new Assign_Stack_Stack.Intermediate( name, value ) );
+        i.push(
+            new Assign_Stack_Stack_st.Intermediate( name, value ) );
 };
 
 Assign_Stack_Stack.prototype.toString = function () {
@@ -5791,15 +5851,18 @@ Assign_Stack_Stack.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Stack_Stack.Intermediate = function ( name, value ) {
+Assign_Stack_Stack_st.Intermediate = function ( name, value ) {
     Assign_Stack_Stack.call( this, name, value );
 };
 
-Assign_Stack_Stack.Intermediate.prototype = new Assign_Stack_Stack();
-Assign_Stack_Stack.Intermediate.prototype.className =
+Assign_Stack_Stack_st.Intermediate.prototype =
+    new Assign_Stack_Stack();
+Assign_Stack_Stack_st.Intermediate.prototype.className =
     "Assign_Stack_Stack.Intermediate";
 
-Assign_Stack_Stack.Intermediate.prototype.operate = function ( vm ) {
+Assign_Stack_Stack_st.Intermediate.prototype.operate = function (
+    vm ) {
+    
     this.name.set( vm, this.value.get( vm ) );
 };
 
@@ -5814,18 +5877,19 @@ Assign_Stack_Stack.Intermediate.prototype.operate = function ( vm ) {
 function Cond( thenExpr, elseExpr, sig ) {
     Instruction.call( this );
     this.thenExpr_ = thenExpr;
-    this.thenInstructions_ = Cond.instructionsFor( thenExpr );
+    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
     this.elseExpr_ = elseExpr;
-    this.elseInstructions_ = Cond.instructionsFor( elseExpr );
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
 }
+var Cond_st = {};
 
 Cond.prototype = new Instruction();
 Cond.prototype.className = "Cond";
 
-Cond.instructionsFor = function ( expr ) {
+Cond_st.instructionsFor = function ( expr ) {
     var list = [];
     expr.addInstructions( list );
-    return Pair.buildFrom1( list );
+    return Pair_st.buildFrom1( list );
 };
 
 Cond.prototype.operate = function ( vm ) {
@@ -5858,8 +5922,10 @@ function If_bound_bound_literal( ifExpr, thenExpr, elseExpr ) {
     this.thenExpr_ = thenExpr;
     this.elseExpr_ = elseExpr;
 }
+var If_bound_bound_literal_st = {};
+var If_bound_bound_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_bound_bound_literal" ] = If_bound_bound_literal;
+    "If_bound_bound_literal" ] = If_bound_bound_literal_stForClasses;
 
 If_bound_bound_literal.prototype = new Instruction();
 If_bound_bound_literal.prototype.className = "If_bound_bound_literal";
@@ -5871,7 +5937,7 @@ If_bound_bound_literal.prototype.operate = function ( vm ) {
         vm.pushA( this.thenExpr_.interpret( vm.lc() ) );
 };
 
-If_bound_bound_literal[ "addInstructions" ] = function (
+If_bound_bound_literal_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -5887,7 +5953,7 @@ If_bound_bound_literal[ "addInstructions" ] = function (
         if ( elseExpr.ifExpression instanceof Nil )
             ifExpr.addInstructions( i );
         else
-            i.push( new If_bound_bound_literal.Or(
+            i.push( new If_bound_bound_literal_st.Or(
                 ifExpr, elseExpr.ifExpression ) );
     } else {
         i.push( new If_bound_bound_literal(
@@ -5901,17 +5967,17 @@ If_bound_bound_literal.prototype.toString = function () {
 };
 
 /** @constructor */
-If_bound_bound_literal.Or = function ( a, elseExpr ) {
+If_bound_bound_literal_st.Or = function ( a, elseExpr ) {
     Instruction.call( this );
     this.a_ = a;
     this.elseExpr_ = elseExpr;
 };
 
-If_bound_bound_literal.Or.prototype = new Instruction();
-If_bound_bound_literal.Or.prototype.className =
+If_bound_bound_literal_st.Or.prototype = new Instruction();
+If_bound_bound_literal_st.Or.prototype.className =
     "If_bound_bound_literal.Or";
 
-If_bound_bound_literal.Or.prototype.operate = function ( vm ) {
+If_bound_bound_literal_st.Or.prototype.operate = function ( vm ) {
     var cond = this.a_.interpret( vm.lc() );
     if ( cond instanceof Nil )
         vm.pushA( this.elseExpr_ );
@@ -5919,7 +5985,7 @@ If_bound_bound_literal.Or.prototype.operate = function ( vm ) {
         vm.pushA( cond );
 };
 
-If_bound_bound_literal.Or.prototype.toString = function () {
+If_bound_bound_literal_st.Or.prototype.toString = function () {
     return "(if[bbl$or] " + a + " " + a + " " + elseExpr + ")";
 };
 
@@ -5935,11 +6001,13 @@ function If_bound_bound_other( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
     this.thenExpr_ = thenExpr;
-    this.elseInstructions_ = Cond.instructionsFor( elseExpr );
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
     this.elseExpr_ = elseExpr;
 }
+var If_bound_bound_other_st = {};
+var If_bound_bound_other_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_bound_bound_other" ] = If_bound_bound_other;
+    "If_bound_bound_other" ] = If_bound_bound_other_stForClasses;
 
 If_bound_bound_other.prototype = new Instruction();
 If_bound_bound_other.prototype.className = "If_bound_bound_other";
@@ -5951,7 +6019,7 @@ If_bound_bound_other.prototype.operate = function ( vm ) {
         vm.pushA( this.thenExpr_.interpret( vm.lc() ) );
 };
 
-If_bound_bound_other[ "addInstructions" ] = function (
+If_bound_bound_other_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -5961,7 +6029,7 @@ If_bound_bound_other[ "addInstructions" ] = function (
     if ( !(thenExpr instanceof BoundSymbol) )
         throw new TypeError();
     if ( ifExpr.isSameBoundSymbol( thenExpr ) ) {
-        i.push( new If_bound_bound_other.Or( ifExpr, elseExpr ) );
+        i.push( new If_bound_bound_other_st.Or( ifExpr, elseExpr ) );
     } else {
         i.push( new If_bound_bound_other(
             ifExpr, thenExpr, elseExpr ) );
@@ -5979,18 +6047,18 @@ If_bound_bound_other.prototype.toString = function () {
 };
 
 /** @constructor */
-If_bound_bound_other.Or = function ( a, elseExpr ) {
+If_bound_bound_other_st.Or = function ( a, elseExpr ) {
     Instruction.call( this );
     this.a_ = a;
-    this.elseInstructions_ = Cond.instructionsFor( elseExpr );
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
     this.elseExpr_ = elseExpr;
 };
 
-If_bound_bound_other.Or.prototype = new Instruction();
-If_bound_bound_other.Or.prototype.className =
+If_bound_bound_other_st.Or.prototype = new Instruction();
+If_bound_bound_other_st.Or.prototype.className =
     "If_bound_bound_other.Or";
 
-If_bound_bound_other.Or.prototype.operate = function ( vm ) {
+If_bound_bound_other_st.Or.prototype.operate = function ( vm ) {
     var cond = this.a_.interpret( vm.lc() );
     if ( cond instanceof Nil )
         vm.pushConditional( this.elseInstructions_ );
@@ -5998,12 +6066,12 @@ If_bound_bound_other.Or.prototype.operate = function ( vm ) {
         vm.pushA( cond );
 };
 
-If_bound_bound_other.Or.prototype.visit = function ( v ) {
+If_bound_bound_other_st.Or.prototype.visit = function ( v ) {
     Instruction.prototype.visit.call( this, v );
     this.elseInstructions_.visit( v );
 };
 
-If_bound_bound_other.Or.prototype.toString = function () {
+If_bound_bound_other_st.Or.prototype.toString = function () {
     return "(if " + a + " " + a + " " + elseExpr + ")";
 };
 
@@ -6021,8 +6089,10 @@ function If_bound_literal_literal( ifExpr, thenExpr, elseExpr ) {
     this.thenExpr_ = thenExpr;
     this.elseExpr_ = elseExpr;
 }
+var If_bound_literal_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_bound_literal_literal" ] = If_bound_literal_literal;
+    "If_bound_literal_literal" ] =
+    If_bound_literal_literal_stForClasses;
 
 If_bound_literal_literal.prototype = new Instruction();
 If_bound_literal_literal.prototype.className =
@@ -6040,8 +6110,8 @@ If_bound_literal_literal.prototype.toString = function () {
         this.elseExpr_ + ")";
 };
 
-If_bound_literal_literal[ "addInstructions" ] = function (
-    i, ifExpr, thenExpr, elseExpr ) {
+If_bound_literal_literal_stForClasses[ "addInstructions" ] =
+    function ( i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
     if ( !(elseExpr instanceof Else) )
@@ -6065,11 +6135,12 @@ function If_bound_other_literal( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
     this.thenExpr_ = thenExpr;
-    this.thenInstructions_ = Cond.instructionsFor( thenExpr );
+    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
     this.elseExpr_ = elseExpr;
 }
+var If_bound_other_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_bound_other_literal" ] = If_bound_other_literal;
+    "If_bound_other_literal" ] = If_bound_other_literal_stForClasses;
 
 If_bound_other_literal.prototype = new Instruction();
 If_bound_other_literal.prototype.className = "If_bound_other_literal";
@@ -6091,7 +6162,7 @@ If_bound_other_literal.prototype.visit = function ( v ) {
     this.thenInstructions_.visit( v );
 };
 
-If_bound_other_literal[ "addInstructions" ] = function (
+If_bound_other_literal_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6116,12 +6187,13 @@ function If_bound_other_other( ifExpr, thenExpr, elseExpr ) {
     Instruction.call( this );
     this.ifExpr_ = ifExpr;
     this.thenExpr_ = thenExpr;
-    this.thenInstructions_ = Cond.instructionsFor( thenExpr );
+    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
     this.elseExpr_ = elseExpr;
-    this.elseInstructions_ = Cond.instructionsFor( elseExpr );
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
 }
+var If_bound_other_other_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_bound_other_other" ] = If_bound_other_other;
+    "If_bound_other_other" ] = If_bound_other_other_stForClasses;
 
 If_bound_other_other.prototype = new Instruction();
 If_bound_other_other.prototype.className = "If_bound_other_other";
@@ -6143,7 +6215,7 @@ If_bound_other_other.prototype.visit = function ( v ) {
     this.thenInstructions_.visit( v );
 };
 
-If_bound_other_other[ "addInstructions" ] = function (
+If_bound_other_other_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6162,12 +6234,13 @@ If_bound_other_other[ "addInstructions" ] = function (
 /** @constructor */
 function If_other_bound_other( thenExpr, elseExpr ) {
     Instruction.call( this );
-    this.elseInstructions_ = Cond.instructionsFor( elseExpr );
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
     this.thenExpr_ = thenExpr;
     this.elseExpr_ = elseExpr;
 }
+var If_other_bound_other_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_other_bound_other" ] = If_other_bound_other;
+    "If_other_bound_other" ] = If_other_bound_other_stForClasses;
 
 If_other_bound_other.prototype = new Instruction();
 If_other_bound_other.prototype.className = "If_other_bound_other";
@@ -6188,7 +6261,7 @@ If_other_bound_other.prototype.visit = function ( v ) {
     this.elseInstructions_.visit( v );
 };
 
-If_other_bound_other[ "addInstructions" ] = function (
+If_other_bound_other_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     ifExpr.addInstructions( i );
@@ -6208,12 +6281,13 @@ If_other_bound_other[ "addInstructions" ] = function (
 /** @constructor */
 function If_other_other_literal( thenExpr, elseExpr ) {
     Instruction.call( this );
-    this.thenInstructions_ = Cond.instructionsFor( thenExpr );
+    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
     this.thenExpr_ = thenExpr;
     this.elseExpr_ = elseExpr;
 }
+var If_other_other_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_other_other_literal" ] = If_other_other_literal;
+    "If_other_other_literal" ] = If_other_other_literal_stForClasses;
 
 If_other_other_literal.prototype = new Instruction();
 If_other_other_literal.prototype.className = "If_other_other_literal";
@@ -6234,7 +6308,7 @@ If_other_other_literal.prototype.visit = function ( v ) {
     this.thenInstructions_.visit( v );
 };
 
-If_other_other_literal[ "addInstructions" ] = function (
+If_other_other_literal_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6258,8 +6332,9 @@ function If_other_stack_literal( thenExpr, elseExpr ) {
     this.thenExpr_ = thenExpr;
     this.elseExpr_ = elseExpr;
 }
+var If_other_stack_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_other_stack_literal" ] = If_other_stack_literal;
+    "If_other_stack_literal" ] = If_other_stack_literal_stForClasses;
 
 If_other_stack_literal.prototype = new Instruction();
 If_other_stack_literal.prototype.className = "If_other_stack_literal";
@@ -6275,7 +6350,7 @@ If_other_stack_literal.prototype.toString = function () {
     return "(if ? " + this.thenExpr_ + " " + this.elseExpr_ + ")";
 };
 
-If_other_stack_literal[ "addInstructions" ] = function (
+If_other_stack_literal_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6300,11 +6375,12 @@ If_other_stack_literal[ "addInstructions" ] = function (
 function If_other_stack_other( thenExpr, elseExpr ) {
     Instruction.call( this );
     this.thenExpr_ = thenExpr;
-    this.elseInstructions_ = Cond.instructionsFor( elseExpr );
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
     this.elseExpr_ = elseExpr;
 }
+var If_other_stack_other_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_other_stack_other" ] = If_other_stack_other;
+    "If_other_stack_other" ] = If_other_stack_other_stForClasses;
 
 If_other_stack_other.prototype = new Instruction();
 If_other_stack_other.prototype.className = "If_other_stack_other";
@@ -6325,7 +6401,7 @@ If_other_stack_other.prototype.visit = function ( v ) {
     this.elseInstructions_.visit( v );
 };
 
-If_other_stack_other[ "addInstructions" ] = function (
+If_other_stack_other_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     ifExpr.addInstructions( i );
@@ -6348,8 +6424,9 @@ function If_stack_literal_free( ifExpr, thenExpr, elseExpr ) {
     this.thenExpr_ = thenExpr;
     this.elseExpr_ = elseExpr;
 }
+var If_stack_literal_free_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_stack_literal_free" ] = If_stack_literal_free;
+    "If_stack_literal_free" ] = If_stack_literal_free_stForClasses;
 
 If_stack_literal_free.prototype = new Instruction();
 If_stack_literal_free.prototype.className = "If_stack_literal_free";
@@ -6366,7 +6443,7 @@ If_stack_literal_free.prototype.toString = function () {
         this.elseExpr_ + ")";
 };
 
-If_stack_literal_free[ "addInstructions" ] = function (
+If_stack_literal_free_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6396,8 +6473,10 @@ function If_stack_stack_literal( ifExpr, thenExpr, elseExpr ) {
     this.thenExpr_ = thenExpr;
     this.elseExpr_ = elseExpr;
 }
+var If_stack_stack_literal_st = {};
+var If_stack_stack_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
-    "If_stack_stack_literal" ] = If_stack_stack_literal;
+    "If_stack_stack_literal" ] = If_stack_stack_literal_stForClasses;
 
 If_stack_stack_literal.prototype = new Instruction();
 If_stack_stack_literal.prototype.className = "If_stack_stack_literal";
@@ -6414,7 +6493,7 @@ If_stack_stack_literal.prototype.toString = function () {
         this.elseExpr_ + ")";
 };
 
-If_stack_stack_literal[ "addInstructions" ] = function (
+If_stack_stack_literal_stForClasses[ "addInstructions" ] = function (
     i, ifExpr, thenExpr, elseExpr ) {
     
     // PORT NOTE: This was a cast and a local variable in Java.
@@ -6430,7 +6509,7 @@ If_stack_stack_literal[ "addInstructions" ] = function (
         if ( elseExpr.ifExpression instanceof Nil )
             ifExpr.addInstructions( i );
         else
-            i.push( new If_stack_stack_literal.Or(
+            i.push( new If_stack_stack_literal_st.Or(
                 ifExpr, elseExpr.ifExpression ) );
     } else {
         i.push( new If_stack_stack_literal(
@@ -6439,17 +6518,17 @@ If_stack_stack_literal[ "addInstructions" ] = function (
 };
 
 /** @constructor */
-If_stack_stack_literal.Or = function ( a, elseExpr ) {
+If_stack_stack_literal_st.Or = function ( a, elseExpr ) {
     Instruction.call( this );
     this.a_ = a;
     this.elseExpr_ = elseExpr;
 };
 
-If_stack_stack_literal.Or.prototype = new Instruction();
-If_stack_stack_literal.Or.prototype.className =
+If_stack_stack_literal_st.Or.prototype = new Instruction();
+If_stack_stack_literal_st.Or.prototype.className =
     "If_stack_stack_literal.Or";
 
-If_stack_stack_literal.Or.prototype.operate = function ( vm ) {
+If_stack_stack_literal_st.Or.prototype.operate = function ( vm ) {
     var cond = this.a_.get( vm );
     if ( cond instanceof Nil )
         vm.pushA( this.elseExpr_ );
@@ -6457,7 +6536,7 @@ If_stack_stack_literal.Or.prototype.operate = function ( vm ) {
         vm.pushA( cond );
 };
 
-If_stack_stack_literal.Or.prototype.toString = function () {
+If_stack_stack_literal_st.Or.prototype.toString = function () {
     return "(if[ssl$or] " + a + " " + a + " " + elseExpr + ")";
 };
 
@@ -6468,81 +6547,81 @@ If_stack_stack_literal.Or.prototype.toString = function () {
 // Needed early: Instruction
 // Needed late: BoundSymbol Symbol
 
-var Invoke_0 = {};
+var Invoke_0_st = {};
 
-Invoke_0.addInstructions = function ( i, fn ) {
+Invoke_0_st.addInstructions = function ( i, fn ) {
     if ( fn instanceof BoundSymbol ) {
-        i.push( new Invoke_0.Lex( fn ) );
+        i.push( new Invoke_0_st.Lex( fn ) );
     } else if ( fn instanceof Symbol ) {
-        i.push( new Invoke_0.Free( fn ) );
+        i.push( new Invoke_0_st.Free( fn ) );
     } else {
         fn.addInstructions( i );
-        i.push( new Invoke_0.Other() );
+        i.push( new Invoke_0_st.Other() );
     }
 };
 
 /** @constructor */
-Invoke_0.Lex = function ( fn ) {
+Invoke_0_st.Lex = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
 };
 
-Invoke_0.Lex.prototype = new Instruction();
-Invoke_0.Lex.prototype.implementsInvoke = true;
-Invoke_0.Lex.prototype.className = "Invoke_0.Lex";
+Invoke_0_st.Lex.prototype = new Instruction();
+Invoke_0_st.Lex.prototype.implementsInvoke = true;
+Invoke_0_st.Lex.prototype.className = "Invoke_0.Lex";
 
-Invoke_0.Lex.prototype.operate = function ( vm ) {
-    this.fn.interpret( vm.lc() ).invoke( vm, ArcObject.NIL );
+Invoke_0_st.Lex.prototype.operate = function ( vm ) {
+    this.fn.interpret( vm.lc() ).invoke( vm, ArcObject_st.NIL );
 };
 
-Invoke_0.Lex.prototype.toString = function () {
+Invoke_0_st.Lex.prototype.toString = function () {
     return "(invoke " + this.fn + ")";
 };
 
-Invoke_0.Lex.prototype.getInvokee = function ( vm ) {
+Invoke_0_st.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
 /** @constructor */
-Invoke_0.Free = function ( fn ) {
+Invoke_0_st.Free = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
 };
 
-Invoke_0.Free.prototype = new Instruction();
-Invoke_0.Free.prototype.implementsInvoke = true;
-Invoke_0.Free.prototype.className = "Invoke_0.Free";
+Invoke_0_st.Free.prototype = new Instruction();
+Invoke_0_st.Free.prototype.implementsInvoke = true;
+Invoke_0_st.Free.prototype.className = "Invoke_0.Free";
 
-Invoke_0.Free.prototype.operate = function ( vm ) {
-    this.fn.value().invoke( vm, ArcObject.NIL );
+Invoke_0_st.Free.prototype.operate = function ( vm ) {
+    this.fn.value().invoke( vm, ArcObject_st.NIL );
 };
 
-Invoke_0.Free.prototype.toString = function () {
+Invoke_0_st.Free.prototype.toString = function () {
     return "(invoke " + this.fn + ")";
 };
 
-Invoke_0.Free.prototype.getInvokee = function ( vm ) {
+Invoke_0_st.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
 /** @constructor */
-Invoke_0.Other = function () {
+Invoke_0_st.Other = function () {
     Instruction.call( this );
 };
 
-Invoke_0.Other.prototype = new Instruction();
-Invoke_0.Other.prototype.implementsInvoke = true;
-Invoke_0.Other.prototype.className = "Invoke_0.Other";
+Invoke_0_st.Other.prototype = new Instruction();
+Invoke_0_st.Other.prototype.implementsInvoke = true;
+Invoke_0_st.Other.prototype.className = "Invoke_0.Other";
 
-Invoke_0.Other.prototype.operate = function ( vm ) {
-    vm.popA().invoke( vm, ArcObject.NIL );
+Invoke_0_st.Other.prototype.operate = function ( vm ) {
+    vm.popA().invoke( vm, ArcObject_st.NIL );
 };
 
-Invoke_0.Other.prototype.toString = function () {
+Invoke_0_st.Other.prototype.toString = function () {
     return "(invoke <0>)";
 };
 
-Invoke_0.Other.prototype.getInvokee = function ( vm ) {
+Invoke_0_st.Other.prototype.getInvokee = function ( vm ) {
     return vm.peekA();
 };
 
@@ -6553,84 +6632,85 @@ Invoke_0.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: Instruction
 // Needed late: BoundSymbol Symbol Pair
 
-var Invoke_1 = {};
+var Invoke_1_st = {};
 
-Invoke_1.addInstructions = function ( i, fn, arg ) {
+Invoke_1_st.addInstructions = function ( i, fn, arg ) {
     arg.addInstructions( i );
     if ( fn instanceof BoundSymbol ) {
-        i.push( new Invoke_1.Lex( fn ) );
+        i.push( new Invoke_1_st.Lex( fn ) );
     } else if ( fn instanceof Symbol ) {
-        i.push( new Invoke_1.Free( fn ) );
+        i.push( new Invoke_1_st.Free( fn ) );
     } else {
         fn.addInstructions( i );
-        i.push( new Invoke_1.Other() );
+        i.push( new Invoke_1_st.Other() );
     }
 };
 
 /** @constructor */
-Invoke_1.Lex = function ( fn ) {
+Invoke_1_st.Lex = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
 };
 
-Invoke_1.Lex.prototype = new Instruction();
-Invoke_1.Lex.prototype.implementsInvoke = true;
-Invoke_1.Lex.prototype.className = "Invoke_1.Lex";
+Invoke_1_st.Lex.prototype = new Instruction();
+Invoke_1_st.Lex.prototype.implementsInvoke = true;
+Invoke_1_st.Lex.prototype.className = "Invoke_1.Lex";
 
-Invoke_1.Lex.prototype.operate = function ( vm ) {
+Invoke_1_st.Lex.prototype.operate = function ( vm ) {
     this.fn.interpret( vm.lc() ).invoke( vm,
-        new Pair( vm.popA(), ArcObject.NIL ) );
+        new Pair().init2( vm.popA(), ArcObject_st.NIL ) );
 };
 
-Invoke_1.Lex.prototype.toString = function () {
+Invoke_1_st.Lex.prototype.toString = function () {
     return "(invoke " + this.fn + " <1>)";
 };
 
-Invoke_1.Lex.prototype.getInvokee = function ( vm ) {
+Invoke_1_st.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
 /** @constructor */
-Invoke_1.Free = function ( fn ) {
+Invoke_1_st.Free = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
 };
 
-Invoke_1.Free.prototype = new Instruction();
-Invoke_1.Free.prototype.implementsInvoke = true;
-Invoke_1.Free.prototype.className = "Invoke_1.Free";
+Invoke_1_st.Free.prototype = new Instruction();
+Invoke_1_st.Free.prototype.implementsInvoke = true;
+Invoke_1_st.Free.prototype.className = "Invoke_1.Free";
 
-Invoke_1.Free.prototype.operate = function ( vm ) {
+Invoke_1_st.Free.prototype.operate = function ( vm ) {
     this.fn.value().invoke( vm,
-        new Pair( vm.popA(), ArcObject.NIL ) );
+        new Pair().init2( vm.popA(), ArcObject_st.NIL ) );
 };
 
-Invoke_1.Free.prototype.toString = function () {
+Invoke_1_st.Free.prototype.toString = function () {
     return "(invoke " + this.fn + " <1>)";
 };
 
-Invoke_1.Free.prototype.getInvokee = function ( vm ) {
+Invoke_1_st.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
 /** @constructor */
-Invoke_1.Other = function () {
+Invoke_1_st.Other = function () {
     Instruction.call( this );
 };
 
-Invoke_1.Other.prototype = new Instruction();
-Invoke_1.Other.prototype.implementsInvoke = true;
-Invoke_1.Other.prototype.className = "Invoke_1.Other";
+Invoke_1_st.Other.prototype = new Instruction();
+Invoke_1_st.Other.prototype.implementsInvoke = true;
+Invoke_1_st.Other.prototype.className = "Invoke_1.Other";
 
-Invoke_1.Other.prototype.operate = function ( vm ) {
-    vm.popA().invoke( vm, new Pair( vm.popA(), ArcObject.NIL ) );
+Invoke_1_st.Other.prototype.operate = function ( vm ) {
+    vm.popA().invoke(
+        vm, new Pair().init2( vm.popA(), ArcObject_st.NIL ) );
 };
 
-Invoke_1.Other.prototype.toString = function () {
+Invoke_1_st.Other.prototype.toString = function () {
     return "(invoke <1>)";
 };
 
-Invoke_1.Other.prototype.getInvokee = function ( vm ) {
+Invoke_1_st.Other.prototype.getInvokee = function ( vm ) {
     return vm.peekA();
 };
 
@@ -6641,108 +6721,108 @@ Invoke_1.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: Instruction
 // Needed late: BoundSymbol Symbol Pair
 
-var Invoke_2 = {};
+var Invoke_2_st = {};
 
-Invoke_2.addInstructions = function ( i, fn, arg1, arg2 ) {
+Invoke_2_st.addInstructions = function ( i, fn, arg1, arg2 ) {
     arg1.addInstructions( i );
     arg2.addInstructions( i );
     if ( fn instanceof BoundSymbol ) {
-        i.push( new Invoke_2.Lex( fn ) );
+        i.push( new Invoke_2_st.Lex( fn ) );
     } else if ( fn instanceof Symbol ) {
-        i.push( new Invoke_2.Free( fn ) );
+        i.push( new Invoke_2_st.Free( fn ) );
     } else {
         fn.addInstructions( i );
-        i.push( new Invoke_2.Other() );
+        i.push( new Invoke_2_st.Other() );
     }
 };
 
 /** @constructor */
-Invoke_2.Lex = function ( fn ) {
+Invoke_2_st.Lex = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
 };
 
-Invoke_2.Lex.prototype = new Instruction();
-Invoke_2.Lex.prototype.implementsInvoke = true;
-Invoke_2.Lex.prototype.className = "Invoke_2.Lex";
+Invoke_2_st.Lex.prototype = new Instruction();
+Invoke_2_st.Lex.prototype.implementsInvoke = true;
+Invoke_2_st.Lex.prototype.className = "Invoke_2.Lex";
 
-Invoke_2.Lex.prototype.operate = function ( vm ) {
+Invoke_2_st.Lex.prototype.operate = function ( vm ) {
     var arg2 = vm.popA();
     var arg1 = vm.popA();
-    this.fn.interpret( vm.lc() ).invoke( vm,
-        new Pair( arg1, new Pair( arg2, ArcObject.NIL ) ) );
+    this.fn.interpret( vm.lc() ).invoke( vm, new Pair().init2(
+        arg1, new Pair().init2( arg2, ArcObject_st.NIL ) ) );
 };
 
-Invoke_2.Lex.prototype.toString = function () {
+Invoke_2_st.Lex.prototype.toString = function () {
     return "(invoke " + this.fn + " <2>)";
 };
 
-Invoke_2.Lex.prototype.toStringWithLc = function ( lc ) {
+Invoke_2_st.Lex.prototype.toStringWithLc = function ( lc ) {
     return "(invoke " + this.fn + " -> " +
         this.fn.interpret( lc ) + " <2>)";
 };
 
-Invoke_2.Lex.prototype.getInvokee = function ( vm ) {
+Invoke_2_st.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
 /** @constructor */
-Invoke_2.Free = function ( fn ) {
+Invoke_2_st.Free = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
 };
 
-Invoke_2.Free.prototype = new Instruction();
-Invoke_2.Free.prototype.implementsInvoke = true;
-Invoke_2.Free.prototype.className = "Invoke_2.Free";
+Invoke_2_st.Free.prototype = new Instruction();
+Invoke_2_st.Free.prototype.implementsInvoke = true;
+Invoke_2_st.Free.prototype.className = "Invoke_2.Free";
 
-Invoke_2.Free.prototype.operate = function ( vm ) {
+Invoke_2_st.Free.prototype.operate = function ( vm ) {
     var arg2 = vm.popA();
     var arg1 = vm.popA();
-    this.fn.value().invoke( vm,
-        new Pair( arg1, new Pair( arg2, ArcObject.NIL ) ) );
+    this.fn.value().invoke( vm, new Pair().init2(
+        arg1, new Pair().init2( arg2, ArcObject_st.NIL ) ) );
 };
 
-Invoke_2.Free.prototype.toString = function () {
+Invoke_2_st.Free.prototype.toString = function () {
     return "(invoke_2:free " + this.fn + " <2>)";
 };
 
-Invoke_2.Free.prototype.toStringWithLc = function ( lc ) {
+Invoke_2_st.Free.prototype.toStringWithLc = function ( lc ) {
     return "(invoke_2:free " + this.fn + " -> " +
         this.fn.value() + " <2>)";
 };
 
-Invoke_2.Free.prototype.getInvokee = function ( vm ) {
+Invoke_2_st.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
 /** @constructor */
-Invoke_2.Other = function () {
+Invoke_2_st.Other = function () {
     Instruction.call( this );
 };
 
-Invoke_2.Other.prototype = new Instruction();
-Invoke_2.Other.prototype.implementsInvoke = true;
-Invoke_2.Other.prototype.className = "Invoke_2.Other";
+Invoke_2_st.Other.prototype = new Instruction();
+Invoke_2_st.Other.prototype.implementsInvoke = true;
+Invoke_2_st.Other.prototype.className = "Invoke_2.Other";
 
-Invoke_2.Other.prototype.operate = function ( vm ) {
+Invoke_2_st.Other.prototype.operate = function ( vm ) {
     var f = vm.popA();
     var arg2 = vm.popA();
     var arg1 = vm.popA();
     // PORT TODO: See if try-catch is a bug.
     try {
-        f.invoke( vm,
-            new Pair( arg1, new Pair( arg2, ArcObject.NIL ) ) );
+        f.invoke( vm, new Pair().init2(
+            arg1, new Pair().init2( arg2, ArcObject_st.NIL ) ) );
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
         printStackTrace( e );
     }
 };
 
-Invoke_2.Other.prototype.toString = function () {
+Invoke_2_st.Other.prototype.toString = function () {
     return "(invoke <2>)";
 };
 
-Invoke_2.Other.prototype.getInvokee = function ( vm ) {
+Invoke_2_st.Other.prototype.getInvokee = function ( vm ) {
     return vm.peekA();
 };
 
@@ -6753,97 +6833,99 @@ Invoke_2.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: Instruction
 // Needed late: BoundSymbol Symbol Pair
 
-var Invoke_3 = {};
+var Invoke_3_st = {};
 
-Invoke_3.addInstructions = function ( i, fn, arg1, arg2, arg3 ) {
+Invoke_3_st.addInstructions = function ( i, fn, arg1, arg2, arg3 ) {
     arg1.addInstructions( i );
     arg2.addInstructions( i );
     arg3.addInstructions( i );
     if ( fn instanceof BoundSymbol ) {
-        i.push( new Invoke_3.Lex( fn ) );
+        i.push( new Invoke_3_st.Lex( fn ) );
     } else if ( fn instanceof Symbol ) {
-        i.push( new Invoke_3.Free( fn ) );
+        i.push( new Invoke_3_st.Free( fn ) );
     } else {
         fn.addInstructions( i );
-        i.push( new Invoke_3.Other() );
+        i.push( new Invoke_3_st.Other() );
     }
 };
 
 /** @constructor */
-Invoke_3.Lex = function ( fn ) {
+Invoke_3_st.Lex = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
 };
 
-Invoke_3.Lex.prototype = new Instruction();
-Invoke_3.Lex.prototype.implementsInvoke = true;
-Invoke_3.Lex.prototype.className = "Invoke_3.Lex";
+Invoke_3_st.Lex.prototype = new Instruction();
+Invoke_3_st.Lex.prototype.implementsInvoke = true;
+Invoke_3_st.Lex.prototype.className = "Invoke_3.Lex";
 
-Invoke_3.Lex.prototype.operate = function ( vm ) {
+Invoke_3_st.Lex.prototype.operate = function ( vm ) {
     var arg3 = vm.popA();
     var arg2 = vm.popA();
     var arg1 = vm.popA();
-    this.fn.interpret( vm.lc() ).invoke( vm, new Pair( arg1,
-        new Pair( arg2, new Pair( arg3, ArcObject.NIL ) ) ) );
+    this.fn.interpret( vm.lc() ).invoke( vm, new Pair().init2( arg1,
+        new Pair().init2( arg2,
+            new Pair().init2( arg3, ArcObject_st.NIL ) ) ) );
 };
 
-Invoke_3.Lex.prototype.toString = function () {
+Invoke_3_st.Lex.prototype.toString = function () {
     return "(invoke " + this.fn + " <3>)";
 };
 
-Invoke_3.Lex.prototype.getInvokee = function ( vm ) {
+Invoke_3_st.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
 /** @constructor */
-Invoke_3.Free = function ( fn ) {
+Invoke_3_st.Free = function ( fn ) {
     Instruction.call( this );
     this.fn = fn;
 };
 
-Invoke_3.Free.prototype = new Instruction();
-Invoke_3.Free.prototype.implementsInvoke = true;
-Invoke_3.Free.prototype.className = "Invoke_3.Free";
+Invoke_3_st.Free.prototype = new Instruction();
+Invoke_3_st.Free.prototype.implementsInvoke = true;
+Invoke_3_st.Free.prototype.className = "Invoke_3.Free";
 
-Invoke_3.Free.prototype.operate = function ( vm ) {
+Invoke_3_st.Free.prototype.operate = function ( vm ) {
     var arg3 = vm.popA();
     var arg2 = vm.popA();
     var arg1 = vm.popA();
-    this.fn.value().invoke( vm, new Pair( arg1,
-        new Pair( arg2, new Pair( arg3, ArcObject.NIL ) ) ) );
+    this.fn.value().invoke( vm, new Pair().init2( arg1,
+        new Pair().init2( arg2,
+            new Pair().init2( arg3, ArcObject_st.NIL ) ) ) );
 };
 
-Invoke_3.Free.prototype.toString = function () {
+Invoke_3_st.Free.prototype.toString = function () {
     return "(invoke_3:free " + this.fn + " <3>)";
 };
 
-Invoke_3.Free.prototype.getInvokee = function ( vm ) {
+Invoke_3_st.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
 /** @constructor */
-Invoke_3.Other = function () {
+Invoke_3_st.Other = function () {
     Instruction.call( this );
 };
 
-Invoke_3.Other.prototype = new Instruction();
-Invoke_3.Other.prototype.implementsInvoke = true;
-Invoke_3.Other.prototype.className = "Invoke_3.Other";
+Invoke_3_st.Other.prototype = new Instruction();
+Invoke_3_st.Other.prototype.implementsInvoke = true;
+Invoke_3_st.Other.prototype.className = "Invoke_3.Other";
 
-Invoke_3.Other.prototype.operate = function ( vm ) {
+Invoke_3_st.Other.prototype.operate = function ( vm ) {
     var f = vm.popA();
     var arg3 = vm.popA();
     var arg2 = vm.popA();
     var arg1 = vm.popA();
-    f.invoke( vm, new Pair( arg1,
-        new Pair( arg2, new Pair( arg3, ArcObject.NIL ) ) ) );
+    f.invoke( vm, new Pair().init2( arg1, new Pair().init2(
+        arg2, new Pair().init2( arg3, ArcObject_st.NIL ) ) ) );
 };
 
-Invoke_3.Other.prototype.toString = function () {
+Invoke_3_st.Other.prototype.toString = function () {
     return "(invoke <3>)";
 };
 
-Invoke_3.Other.prototype.getInvokee = function ( vm ) {
+Invoke_3_st.Other.prototype.getInvokee = function ( vm ) {
     return vm.peekA();
 };
 
@@ -6854,9 +6936,9 @@ Invoke_3.Other.prototype.getInvokee = function ( vm ) {
 // Needed early: Instruction
 // Needed late: Nil Pair BoundSymbol Symbol
 
-var Invoke_N = {};
+var Invoke_N_st = {};
 
-Invoke_N.addInstructions = function ( i, fn, args ) {
+Invoke_N_st.addInstructions = function ( i, fn, args ) {
     var argCount = args.len();
     while ( !(args instanceof Nil) ) {
         args.car().addInstructions( i );
@@ -6866,82 +6948,82 @@ Invoke_N.addInstructions = function ( i, fn, args ) {
             throw new TypeError();
     }
     if ( fn instanceof BoundSymbol ) {
-        i.push( new Invoke_N.Lex( fn, argCount ) );
+        i.push( new Invoke_N_st.Lex( fn, argCount ) );
     } else if ( fn instanceof Symbol ) {
-        i.push( new Invoke_N.Free( fn, argCount ) );
+        i.push( new Invoke_N_st.Free( fn, argCount ) );
     } else {
         fn.addInstructions( i );
-        i.push( new Invoke_N.Other( argCount ) );
+        i.push( new Invoke_N_st.Other( argCount ) );
     }
 };
 
 /** @constructor */
-Invoke_N.Lex = function ( fn, argCount ) {
+Invoke_N_st.Lex = function ( fn, argCount ) {
     Instruction.call( this );
     this.fn = fn;
     this.argCount = argCount;
 };
 
-Invoke_N.Lex.prototype = new Instruction();
-Invoke_N.Lex.prototype.implementsInvoke = true;
-Invoke_N.Lex.prototype.className = "Invoke_N.Lex";
+Invoke_N_st.Lex.prototype = new Instruction();
+Invoke_N_st.Lex.prototype.implementsInvoke = true;
+Invoke_N_st.Lex.prototype.className = "Invoke_N.Lex";
 
-Invoke_N.Lex.prototype.operate = function ( vm ) {
+Invoke_N_st.Lex.prototype.operate = function ( vm ) {
     this.fn.interpret( vm.lc() ).invoke( vm,
         vm.popArgs( this.argCount ) );
 };
 
-Invoke_N.Lex.prototype.toString = function () {
+Invoke_N_st.Lex.prototype.toString = function () {
     return "(invoke " + this.fn + " <" + this.argCount + ">)";
 };
 
-Invoke_N.Lex.prototype.getInvokee = function ( vm ) {
+Invoke_N_st.Lex.prototype.getInvokee = function ( vm ) {
     return this.fn.interpret( vm.lc() );
 };
 
 /** @constructor */
-Invoke_N.Free = function ( fn, argCount ) {
+Invoke_N_st.Free = function ( fn, argCount ) {
     Instruction.call( this );
     this.fn = fn;
     this.argCount = argCount;
 };
 
-Invoke_N.Free.prototype = new Instruction();
-Invoke_N.Free.prototype.implementsInvoke = true;
-Invoke_N.Free.prototype.className = "Invoke_N.Free";
+Invoke_N_st.Free.prototype = new Instruction();
+Invoke_N_st.Free.prototype.implementsInvoke = true;
+Invoke_N_st.Free.prototype.className = "Invoke_N.Free";
 
-Invoke_N.Free.prototype.operate = function ( vm ) {
+Invoke_N_st.Free.prototype.operate = function ( vm ) {
     this.fn.value().invoke( vm, vm.popArgs( this.argCount ) );
 };
 
-Invoke_N.Free.prototype.toString = function () {
+Invoke_N_st.Free.prototype.toString = function () {
     return "(invoke " + this.fn + " <" + this.argCount + ">)";
 };
 
-Invoke_N.Free.prototype.getInvokee = function ( vm ) {
+Invoke_N_st.Free.prototype.getInvokee = function ( vm ) {
     return this.fn.value();
 };
 
 /** @constructor */
-Invoke_N.Other = function ( argCount ) {
+Invoke_N_st.Other = function ( argCount ) {
     Instruction.call( this );
     this.argCount = argCount;
 };
 
-Invoke_N.Other.prototype = new Instruction();
-Invoke_N.Other.prototype.implementsInvoke = true;
-Invoke_N.Other.prototype.className = "Invoke_N.Other";
+Invoke_N_st.Other.prototype = new Instruction();
+Invoke_N_st.Other.prototype.implementsInvoke = true;
+Invoke_N_st.Other.prototype.className = "Invoke_N.Other";
 
-Invoke_N.Other.prototype.operate = function ( vm ) {
+Invoke_N_st.Other.prototype.operate = function ( vm ) {
     var f = vm.popA();
     f.invoke( vm, vm.popArgs( this.argCount ) );
 };
 
-Invoke_N.Other.prototype.toString = function () {
+Invoke_N_st.Other.prototype.toString = function () {
     return "(invoke <" + this.argCount + ">)";
 };
 
-Invoke_N.Other.prototype.getInvokee = function ( vm ) {
+Invoke_N_st.Other.prototype.getInvokee = function ( vm ) {
     return vm.peekA();
 };
 
@@ -6954,7 +7036,6 @@ Invoke_N.Other.prototype.getInvokee = function ( vm ) {
 
 /** @constructor */
 function StackSymbol( name, index ) {
-    ArcObject.call( this );
     this.name = name;
     this.index_ = index;
 }
@@ -6975,7 +7056,7 @@ StackSymbol.prototype.addInstructions = function ( i ) {
 };
 
 StackSymbol.prototype.type = function () {
-    return Symbol.mkSym( "stack-symbol" );
+    return Symbol_st.mkSym( "stack-symbol" );
 };
 
 StackSymbol.prototype.toString = function () {
@@ -7005,16 +7086,16 @@ StackSymbol.prototype.inline3 = function ( p, arg, paramIndex ) {
 
 /** @constructor */
 function BoundSymbol( name, nesting, index ) {
-    ArcObject.call( this );
     this.nesting = nesting;
     this.index = index;
     this.name = name;
 }
+var BoundSymbol_st = {};
 
 BoundSymbol.prototype = new ArcObject();
 BoundSymbol.prototype.className = "BoundSymbol";
 
-BoundSymbol.make = function ( name, nesting, index ) {
+BoundSymbol_st.make = function ( name, nesting, index ) {
     return new BoundSymbol( name, nesting, index );
 };
 
@@ -7036,7 +7117,7 @@ BoundSymbol.prototype.addInstructions = function ( i ) {
 };
 
 BoundSymbol.prototype.type = function () {
-    return BoundSymbol.TYPE;
+    return BoundSymbol_st.TYPE;
 };
 
 BoundSymbol.prototype.toString = function () {
@@ -7050,14 +7131,14 @@ BoundSymbol.prototype.isSameBoundSymbol = function ( other ) {
 
 BoundSymbol.prototype.nest = function ( threshold ) {
     if ( threshold <= this.nesting )
-        return BoundSymbol.make(
+        return BoundSymbol_st.make(
             this.name, this.nesting + 1, this.index );
     else
         return this;
 };
 
 BoundSymbol.prototype.unnest = function () {
-    return BoundSymbol.make(
+    return BoundSymbol_st.make(
         this.name, this.nesting - 1, this.index );
 };
 
@@ -7074,7 +7155,7 @@ BoundSymbol.prototype.inline5 = function (
         return this.unnest();
     } else if ( nesting === this.nesting
         && paramIndex < this.index ) {
-        return BoundSymbol.make(
+        return BoundSymbol_st.make(
             this.name, this.nesting, this.index - 1 );
     } else {
         return this;
@@ -7099,7 +7180,7 @@ BoundSymbol.prototype.replaceBoundSymbols = function (
             index + ", got " + this.index );
 };
 
-BoundSymbol.TYPE = Symbol.mkSym( "bound-symbol" );
+BoundSymbol_st.TYPE = Symbol_st.mkSym( "bound-symbol" );
 
 
 // ===================================================================
@@ -7112,7 +7193,6 @@ BoundSymbol.TYPE = Symbol.mkSym( "bound-symbol" );
 // PORT TODO: Remove all uses of the zero-arg SingleAssignment().
 /** @constructor */
 function SingleAssignment( next ) {
-    ArcObject.call( this );
     this.name = null;
     this.expression = null;
     this.next_ = next;
@@ -7145,13 +7225,13 @@ SingleAssignment.prototype.addInstructions = function ( i ) {
 
 SingleAssignment.prototype.addMyInstructions = function ( i, last ) {
     if ( this.name instanceof BoundSymbol )
-        Assign_Lex.addInstructions(
+        Assign_Lex_st.addInstructions(
             i, this.name, this.expression, last );
     else if ( this.name instanceof StackSymbol )
-        Assign_Stack.addInstructions(
+        Assign_Stack_st.addInstructions(
             i, this.name, this.expression, last );
     else if ( this.name instanceof Symbol )
-        Assign_Free.addInstructions(
+        Assign_Free_st.addInstructions(
             i, this.name, this.expression, last );
     else
         throw new ArcError(
@@ -7159,7 +7239,7 @@ SingleAssignment.prototype.addMyInstructions = function ( i, last ) {
 };
 
 SingleAssignment.prototype.type = function () {
-    return Symbol.mkSym( "assignment" );
+    return Symbol_st.mkSym( "assignment" );
 };
 
 SingleAssignment.prototype.assigns = function ( nesting ) {
@@ -7352,7 +7432,6 @@ LastAssignment.prototype.visit = function ( v ) {
 
 /** @constructor */
 function Assignment() {
-    ArcObject.call( this );
     this.assignment = null;
 }
 
@@ -7360,7 +7439,7 @@ Assignment.prototype = new ArcObject();
 Assignment.prototype.className = "Assignment";
 
 Assignment.prototype.type = function () {
-    return Symbol.mkSym( "assignment" );
+    return Symbol_st.mkSym( "assignment" );
 };
 
 Assignment.prototype.take = function ( o ) {
@@ -7450,7 +7529,6 @@ Assignment.prototype.replaceBoundSymbols = function (
 
 /** @constructor */
 function Else() {
-    ArcObject.call( this );
     this.ifExpression = null;
 }
 
@@ -7459,7 +7537,7 @@ Else.prototype.implementsConditional = true;
 Else.prototype.className = "Else";
 
 Else.prototype.type = function () {
-    return Symbol.mkSym( "else-clause" );
+    return Symbol_st.mkSym( "else-clause" );
 };
 
 Else.prototype.add = function ( c ) {
@@ -7539,7 +7617,7 @@ Else.prototype.visit = function ( v ) {
 };
 
 Else.prototype.sig = function () {
-    return "_" + Invocation.sig( this.ifExpression );
+    return "_" + Invocation_st.sig( this.ifExpression );
 };
 
 
@@ -7551,15 +7629,15 @@ Else.prototype.sig = function () {
 
 /** @constructor */
 function IfClause() {
-    ArcObject.call( this );
     this.first_ = null;
 }
+var IfClause_st = {};
 
 IfClause.prototype = new ArcObject();
 IfClause.prototype.className = "IfClause";
 
 IfClause.prototype.type = function () {
-    return IfClause.TYPE;
+    return IfClause_st.TYPE;
 };
 
 IfClause.prototype.append = function ( c ) {
@@ -7687,7 +7765,7 @@ IfClause.prototype.elseExpression = function () {
     return first.next;
 };
 
-IfClause.TYPE = Symbol.mkSym( "if-clause" );
+IfClause_st.TYPE = Symbol_st.mkSym( "if-clause" );
 
 
 // ===================================================================
@@ -7699,18 +7777,18 @@ IfClause.TYPE = Symbol.mkSym( "if-clause" );
 
 /** @constructor */
 function IfThen() {
-    ArcObject.call( this );
     this.ifExpression = null;
     this.thenExpression = null;
     this.next = null;
 }
+var IfThen_st = {};
 
 IfThen.prototype = new ArcObject();
 IfThen.prototype.implementsConditional = true;
 IfThen.prototype.className = "IfThen";
 
 IfThen.prototype.type = function () {
-    return Symbol.mkSym( "if-then-clause" );
+    return Symbol_st.mkSym( "if-then-clause" );
 };
 
 IfThen.prototype.add = function ( c ) {
@@ -7734,11 +7812,11 @@ IfThen.prototype.addInstructions = function ( i ) {
     var prefix = "rainbow.vm.instructions.cond.optimise.If";
     var classname = prefix + sig;
     try {
-        if ( !(classname in IfThen.handlers) ) {
-            IfThen.loadHandler( classname );
+        if ( !(classname in IfThen_st.handlers) ) {
+            IfThen_st.loadHandler( classname );
             this.addInstructions( i );
         } else {
-            var m = IfThen.handlers[ classname ];
+            var m = IfThen_st.handlers[ classname ];
             if ( m === null )
                 this.defaultAddInstructions( i, sig );
             else
@@ -7751,12 +7829,12 @@ IfThen.prototype.addInstructions = function ( i ) {
     }
 };
 
-IfThen.loadHandler = function ( classname ) {
+IfThen_st.loadHandler = function ( classname ) {
     // PORT NOTE: In Java, these were handled by catching
     // ClassNotFoundExceptions and NoSuchMethodExceptions.
     var C = classes[ classname ];
     if ( C === void 0 ) {
-        IfThen.handlers[ classname ] = null;
+        IfThen_st.handlers[ classname ] = null;
         return;
     }
     // PORT TODO: Figure out a better way to have the Closure Compiler
@@ -7769,7 +7847,7 @@ IfThen.loadHandler = function ( classname ) {
             "couldn't find handler method " +
             "'addInstructions(List,ArcObject,ArcObject,ArcObject) " +
             "on " + classname );
-    IfThen.handlers[ classname ] = m;
+    IfThen_st.handlers[ classname ] = m;
 };
 
 IfThen.prototype.defaultAddInstructions = function ( i, sig ) {
@@ -7923,19 +8001,19 @@ IfThen.prototype.visit = function ( v ) {
 IfThen.prototype.sig = function () {
     var s = "";
     s += "_";
-    s += Invocation.sig( this.ifExpression );
+    s += Invocation_st.sig( this.ifExpression );
     s += "_";
-    s += Invocation.sig( this.thenExpression );
+    s += Invocation_st.sig( this.thenExpression );
     if ( this.next instanceof Else ) {
         s += "_";
-        s += Invocation.sig( this.next.ifExpression );
+        s += Invocation_st.sig( this.next.ifExpression );
     } else {
         s += "_other";
     }
     return s;
 };
 
-IfThen.handlers = {};
+IfThen_st.handlers = {};
 
 
 // ===================================================================
@@ -7946,7 +8024,6 @@ IfThen.handlers = {};
 
 /** @constructor */
 function Quotation( quoted ) {
-    ArcObject.call( this );
     this.quoted_ = quoted;
 }
 
@@ -7962,7 +8039,7 @@ Quotation.prototype.quoted = function () {
 };
 
 Quotation.prototype.type = function () {
-    return Symbol.mkSym( "quotation" );
+    return Symbol_st.mkSym( "quotation" );
 };
 
 Quotation.prototype.interpret = function ( lc ) {
@@ -7983,20 +8060,20 @@ Quotation.prototype.toString = function () {
 
 /** @constructor */
 function Invocation( parts ) {
-    ArcObject.call( this );
     this.parts = parts;
     this.constructors_ = {};
 }
+var Invocation_st = {};
 
 Invocation.prototype = new ArcObject();
 Invocation.prototype.className = "Invocation";
 
 Invocation.prototype.type = function () {
-    return Symbol.mkSym( "if-then-clause" );
+    return Symbol_st.mkSym( "if-then-clause" );
 };
 
 Invocation.prototype.toString = function () {
-    return Decompiler.decompile( this ).toString();
+    return Decompiler_st.decompile( this ).toString();
 };
 
 Invocation.prototype.addInstructions = function ( i ) {
@@ -8026,7 +8103,7 @@ Invocation.prototype.reduce = function () {
                         this + ": " + e, e );
                 }
                 return new Invocation(
-                    new Pair( newfn, this.parts.cdr().cdr() )
+                    new Pair().init2( newfn, this.parts.cdr().cdr() )
                 ).reduce();
             }
         }
@@ -8094,7 +8171,7 @@ Invocation.prototype.sig_ = function () {
     var p = this.parts;
     while ( !(p instanceof Nil) ) {
         s += "_";
-        s += Invocation.sig( p.car() );
+        s += Invocation_st.sig( p.car() );
         p = p.cdr();
         // PORT NOTE: This was a cast in Java.
         if ( !(p instanceof Pair) )
@@ -8103,7 +8180,7 @@ Invocation.prototype.sig_ = function () {
     return s;
 };
 
-Invocation.sig = function ( o ) {
+Invocation_st.sig = function ( o ) {
     if ( o instanceof BoundSymbol )
         return "bound";
     else if ( o instanceof Symbol )
@@ -8121,25 +8198,25 @@ Invocation.sig = function ( o ) {
 Invocation.prototype.defaultAddInstructions = function ( i ) {
     switch ( this.parts.len() ) {
     case 1:
-        Invoke_0.addInstructions( i,
+        Invoke_0_st.addInstructions( i,
             this.parts.car()
         );
         break;
     case 2:
-        Invoke_1.addInstructions( i,
+        Invoke_1_st.addInstructions( i,
             this.parts.car(),
             this.parts.cdr().car()
         );
         break;
     case 3:
-        Invoke_2.addInstructions( i,
+        Invoke_2_st.addInstructions( i,
             this.parts.car(),
             this.parts.cdr().car(),
             this.parts.cdr().cdr().car()
         );
         break;
     case 4:
-        Invoke_3.addInstructions( i,
+        Invoke_3_st.addInstructions( i,
             this.parts.car(),
             this.parts.cdr().car(),
             this.parts.cdr().cdr().car(),
@@ -8153,7 +8230,7 @@ Invocation.prototype.defaultAddInstructions = function ( i ) {
         // PORT NOTE: This was a cast in Java.
         if ( !(args instanceof Pair) )
             throw new TypeError();
-        Invoke_N.addInstructions( i, fn, args );
+        Invoke_N_st.addInstructions( i, fn, args );
         break;
     }
     return true;
@@ -8209,7 +8286,7 @@ Invocation.prototype.inline5 = function (
         if ( !(pt instanceof Pair) )
             throw new TypeError();
     }
-    return new Invocation( Pair.buildFrom1( inlined ) );
+    return new Invocation( Pair_st.buildFrom1( inlined ) );
 };
 
 Invocation.prototype.inline3 = function ( p, arg, paramIndex ) {
@@ -8228,7 +8305,7 @@ Invocation.prototype.inline3 = function ( p, arg, paramIndex ) {
         if ( !(pt instanceof Pair) )
             throw new TypeError();
     }
-    return new Invocation( Pair.buildFrom1( inlined ) );
+    return new Invocation( Pair_st.buildFrom1( inlined ) );
 };
 
 Invocation.prototype.nest = function ( threshold ) {
@@ -8241,7 +8318,7 @@ Invocation.prototype.nest = function ( threshold ) {
         if ( !(pt instanceof Pair) )
             throw new TypeError();
     }
-    return new Invocation( Pair.buildFrom1( inlined ) );
+    return new Invocation( Pair_st.buildFrom1( inlined ) );
 };
 
 Invocation.prototype.replaceBoundSymbols = function (
@@ -8257,7 +8334,7 @@ Invocation.prototype.replaceBoundSymbols = function (
         if ( !(pt instanceof Pair) )
             throw new TypeError();
     }
-    return new Invocation( Pair.buildFrom1( inlined ) );
+    return new Invocation( Pair_st.buildFrom1( inlined ) );
 };
 
 Invocation.prototype.visit = function ( v ) {
@@ -8283,15 +8360,15 @@ Invocation.prototype.visit = function ( v ) {
 
 /** @constructor */
 function QuasiQuotation( target ) {
-    ArcObject.call( this );
     this.target_ = target;
 }
+var QuasiQuotation_st = {};
 
 QuasiQuotation.prototype = new ArcObject();
 QuasiQuotation.prototype.className = "QuasiQuotation";
 
 QuasiQuotation.prototype.type = function () {
-    return Symbol.mkSym( "quasiquotation" );
+    return Symbol_st.mkSym( "quasiquotation" );
 };
 
 // PORT TODO: Rename all uses of addInstructions( List, ArcObject ).
@@ -8312,19 +8389,19 @@ QuasiQuotation.prototype.unquotes = function () {
 QuasiQuotation.prototype.appendUnquotes_ = function (
     l, expr, nesting ) {
     
-    if ( QuasiQuotation.isUnQuote( expr ) ) {
+    if ( QuasiQuotation_st.isUnQuote( expr ) ) {
         if ( nesting === 1 )
             l.push( expr.cdr().car() );
         else
             this.appendUnquotes_( l, expr.cdr().car(), nesting - 1 );
         return;
-    } else if ( QuasiQuotation.isUnQuoteSplicing( expr ) ) {
+    } else if ( QuasiQuotation_st.isUnQuoteSplicing( expr ) ) {
         if ( nesting === 1 )
             l.push( expr.cdr().car() );
         else
             this.appendUnquotes_( l, expr.cdr().car(), nesting - 1 );
         return;
-    } else if ( QuasiQuotation.isQuasiQuote( expr ) ) {
+    } else if ( QuasiQuotation_st.isQuasiQuote( expr ) ) {
         this.appendUnquotes_( l, expr.cdr().car(), nesting + 1 );
         return;
     } else if ( expr.isNotPair() ) {
@@ -8332,19 +8409,19 @@ QuasiQuotation.prototype.appendUnquotes_ = function (
     }
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuotation.isUnQuote( expr )
-            || QuasiQuotation.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation_st.isUnQuote( expr )
+            || QuasiQuotation_st.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
             this.appendUnquotes_( l, expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuotation.isUnQuoteSplicing( current ) )
+            if ( QuasiQuotation_st.isUnQuoteSplicing( current ) )
                 this.appendUnquotes_( l, current, nesting );
-            else if ( QuasiQuotation.isUnQuote( current )
-                || QuasiQuotation.isQuasiQuote( current )
-                || QuasiQuotation.isPair_( current ) )
+            else if ( QuasiQuotation_st.isUnQuote( current )
+                || QuasiQuotation_st.isQuasiQuote( current )
+                || QuasiQuotation_st.isPair_( current ) )
                 this.appendUnquotes_( l, current, nesting );
         }
 };
@@ -8356,29 +8433,29 @@ QuasiQuotation.prototype.addInstructions2 = function ( i, target ) {
 QuasiQuotation.prototype.addInstructions_ = function (
     i, expr, nesting ) {
     
-    if ( QuasiQuotation.isUnQuote( expr ) ) {
+    if ( QuasiQuotation_st.isUnQuote( expr ) ) {
         if ( nesting === 1 ) {
             expr.cdr().car().addInstructions( i );
         } else {
-            i.push( new Literal( QuasiQuoteCompiler.UNQUOTE ) );
+            i.push( new Literal( QuasiQuoteCompiler_st.UNQUOTE ) );
             this.addInstructions_( i, expr.cdr().car(), nesting - 1 );
             i.push( new Listify( 2 ) );
         }
         return;
-    } else if ( QuasiQuotation.isUnQuoteSplicing( expr ) ) {
+    } else if ( QuasiQuotation_st.isUnQuoteSplicing( expr ) ) {
         if ( nesting === 1 ) {
             expr.cdr().car().addInstructions( i );
             i.push( new AppendAll() );
         } else {
-            i.push(
-                new Literal( QuasiQuoteCompiler.UNQUOTE_SPLICING ) );
+            i.push( new Literal(
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING ) );
             this.addInstructions_( i, expr.cdr().car(), nesting - 1 );
             i.push( new Listify( 2 ) );
             i.push( new Append() );
         }
         return;
-    } else if ( QuasiQuotation.isQuasiQuote( expr ) ) {
-        i.push( new Literal( QuasiQuoteCompiler.QUASIQUOTE ) );
+    } else if ( QuasiQuotation_st.isQuasiQuote( expr ) ) {
+        i.push( new Literal( QuasiQuoteCompiler_st.QUASIQUOTE ) );
         this.addInstructions_( i, expr.cdr().car(), nesting + 1 );
         i.push( new Listify( 2 ) );
         return;
@@ -8390,8 +8467,8 @@ QuasiQuotation.prototype.addInstructions_ = function (
     i.push( new NewList() );
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuotation.isUnQuote( expr )
-            || QuasiQuotation.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation_st.isUnQuote( expr )
+            || QuasiQuotation_st.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
             this.addInstructions_( i, expr, nesting );
             expr = expr.cdr().cdr();
@@ -8399,11 +8476,11 @@ QuasiQuotation.prototype.addInstructions_ = function (
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuotation.isUnQuoteSplicing( current ) ) {
+            if ( QuasiQuotation_st.isUnQuoteSplicing( current ) ) {
                 this.addInstructions_( i, current, nesting );
-            } else if ( QuasiQuotation.isUnQuote( current )
-                || QuasiQuotation.isQuasiQuote( current )
-                || QuasiQuotation.isPair_( current ) ) {
+            } else if ( QuasiQuotation_st.isUnQuote( current )
+                || QuasiQuotation_st.isQuasiQuote( current )
+                || QuasiQuotation_st.isPair_( current ) ) {
                 this.addInstructions_( i, current, nesting );
                 i.push( new Append() );
             } else {
@@ -8420,27 +8497,27 @@ QuasiQuotation.prototype.addInstructions_ = function (
     i.push( new FinishList() );
 };
 
-QuasiQuotation.isQQPair = function ( expression, car ) {
+QuasiQuotation_st.isQQPair = function ( expression, car ) {
     return expression instanceof Pair && expression.isCar( car ) &&
         expression.cdr().cdr() instanceof Nil;
 };
 
-QuasiQuotation.isUnQuote = function ( expression ) {
-    return QuasiQuotation.isQQPair(
-        expression, QuasiQuoteCompiler.UNQUOTE );
+QuasiQuotation_st.isUnQuote = function ( expression ) {
+    return QuasiQuotation_st.isQQPair(
+        expression, QuasiQuoteCompiler_st.UNQUOTE );
 };
 
-QuasiQuotation.isUnQuoteSplicing = function ( expression ) {
-    return QuasiQuotation.isQQPair(
-        expression, QuasiQuoteCompiler.UNQUOTE_SPLICING );
+QuasiQuotation_st.isUnQuoteSplicing = function ( expression ) {
+    return QuasiQuotation_st.isQQPair(
+        expression, QuasiQuoteCompiler_st.UNQUOTE_SPLICING );
 };
 
-QuasiQuotation.isQuasiQuote = function ( expression ) {
-    return QuasiQuotation.isQQPair(
-        expression, QuasiQuoteCompiler.QUASIQUOTE );
+QuasiQuotation_st.isQuasiQuote = function ( expression ) {
+    return QuasiQuotation_st.isQQPair(
+        expression, QuasiQuoteCompiler_st.QUASIQUOTE );
 };
 
-QuasiQuotation.isPair_ = function ( expression ) {
+QuasiQuotation_st.isPair_ = function ( expression ) {
     return expression instanceof Pair;
 };
 
@@ -8471,38 +8548,40 @@ QuasiQuotation.prototype.hasClosures = function () {
 QuasiQuotation.prototype.inline5 = function (
     p, arg, unnest, lexicalNesting, paramIndex ) {
     
-    return new QuasiQuotation( QuasiQuotation.inline5_( p, arg,
+    return new QuasiQuotation( QuasiQuotation_st.inline5_( p, arg,
         unnest, lexicalNesting, paramIndex, this.target_, 1 ) );
 };
 
-QuasiQuotation.inline5_ = function (
+QuasiQuotation_st.inline5_ = function (
     p, arg, unnest, lexicalNesting, paramIndex, expr, nesting ) {
     
-    if ( QuasiQuotation.isUnQuote( expr ) ) {
+    if ( QuasiQuotation_st.isUnQuote( expr ) ) {
         if ( nesting === 1 )
-            return Pair.buildFrom1( [ QuasiQuoteCompiler.UNQUOTE,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE,
                 expr.cdr().car().inline5(
                     p, arg, unnest, lexicalNesting, paramIndex ) ] );
         else
-            return Pair.buildFrom1( [ QuasiQuoteCompiler.UNQUOTE,
-                QuasiQuotation.inline5_(
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE,
+                QuasiQuotation_st.inline5_(
                     p, arg, unnest, lexicalNesting, paramIndex,
                     expr.cdr().car(), nesting - 1 ) ] );
-    } else if ( QuasiQuotation.isUnQuoteSplicing( expr ) ) {
+    } else if ( QuasiQuotation_st.isUnQuoteSplicing( expr ) ) {
         if ( nesting === 1 )
-            return Pair.buildFrom1( [
-                QuasiQuoteCompiler.UNQUOTE_SPLICING,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING,
                 expr.cdr().car().inline5(
                     p, arg, unnest, lexicalNesting, paramIndex ) ] );
         else
-            return Pair.buildFrom1( [
-                QuasiQuoteCompiler.UNQUOTE_SPLICING,
-                QuasiQuotation.inline5_(
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING,
+                QuasiQuotation_st.inline5_(
                     p, arg, unnest, lexicalNesting, paramIndex,
                     expr.cdr().car(), nesting - 1 ) ] );
-    } else if ( QuasiQuotation.isQuasiQuote( expr ) ) {
-        return Pair.buildFrom1( [ QuasiQuoteCompiler.QUASIQUOTE,
-            QuasiQuotation.inline5_(
+    } else if ( QuasiQuotation_st.isQuasiQuote( expr ) ) {
+        return Pair_st.buildFrom1( [ QuasiQuoteCompiler_st.QUASIQUOTE,
+            QuasiQuotation_st.inline5_(
                 p, arg, unnest, lexicalNesting, paramIndex,
                 expr.cdr().car(), nesting + 1 ) ] );
     } else if ( expr.isNotPair() ) {
@@ -8510,25 +8589,25 @@ QuasiQuotation.inline5_ = function (
     }
     
     var list = [];
-    var last = ArcObject.NIL;
+    var last = ArcObject_st.NIL;
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuotation.isUnQuote( expr )
-            || QuasiQuotation.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation_st.isUnQuote( expr )
+            || QuasiQuotation_st.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
-            last = QuasiQuotation.inline5_( p, arg, unnest,
+            last = QuasiQuotation_st.inline5_( p, arg, unnest,
                 lexicalNesting, paramIndex, expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuotation.isUnQuoteSplicing( current ) )
-                list.push( QuasiQuotation.inline5_( p, arg, unnest,
+            if ( QuasiQuotation_st.isUnQuoteSplicing( current ) )
+                list.push( QuasiQuotation_st.inline5_( p, arg, unnest,
                     lexicalNesting, paramIndex, current, nesting ) );
-            else if ( QuasiQuotation.isUnQuote( current )
-                || QuasiQuotation.isQuasiQuote( current )
-                || QuasiQuotation.isPair_( current ) )
-                list.push( QuasiQuotation.inline5_( p, arg, unnest,
+            else if ( QuasiQuotation_st.isUnQuote( current )
+                || QuasiQuotation_st.isQuasiQuote( current )
+                || QuasiQuotation_st.isPair_( current ) )
+                list.push( QuasiQuotation_st.inline5_( p, arg, unnest,
                     lexicalNesting, paramIndex, current, nesting ) );
             else
                 list.push( current );
@@ -8537,63 +8616,65 @@ QuasiQuotation.inline5_ = function (
     if ( !(expr instanceof Nil) )
         last = expr;
     
-    return Pair.buildFrom2( list, last );
+    return Pair_st.buildFrom2( list, last );
 };
 
 QuasiQuotation.prototype.inline3 = function ( p, arg, paramIndex ) {
-    return new QuasiQuotation( QuasiQuotation.inline3_( p, arg,
+    return new QuasiQuotation( QuasiQuotation_st.inline3_( p, arg,
         paramIndex, this.target_, 1 ) );
 };
 
-QuasiQuotation.inline3_ = function (
+QuasiQuotation_st.inline3_ = function (
     p, arg, paramIndex, expr, nesting ) {
     
-    if ( QuasiQuotation.isUnQuote( expr ) ) {
+    if ( QuasiQuotation_st.isUnQuote( expr ) ) {
         if ( nesting === 1 )
-            return Pair.buildFrom1( [ QuasiQuoteCompiler.UNQUOTE,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE,
                 expr.cdr().car().inline3( p, arg, paramIndex ) ] );
         else
-            return Pair.buildFrom1( [ QuasiQuoteCompiler.UNQUOTE,
-                QuasiQuotation.inline5_( p, arg, paramIndex,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE,
+                QuasiQuotation_st.inline5_( p, arg, paramIndex,
                     expr.cdr().car(), nesting - 1 ) ] );
-    } else if ( QuasiQuotation.isUnQuoteSplicing( expr ) ) {
+    } else if ( QuasiQuotation_st.isUnQuoteSplicing( expr ) ) {
         if ( nesting === 1 )
-            return Pair.buildFrom1( [
-                QuasiQuoteCompiler.UNQUOTE_SPLICING,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING,
                 expr.cdr().car().inline3( p, arg, paramIndex ) ] );
         else
-            return Pair.buildFrom1( [
-                QuasiQuoteCompiler.UNQUOTE_SPLICING,
-                QuasiQuotation.inline3_( p, arg, paramIndex,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING,
+                QuasiQuotation_st.inline3_( p, arg, paramIndex,
                     expr.cdr().car(), nesting - 1 ) ] );
-    } else if ( QuasiQuotation.isQuasiQuote( expr ) ) {
-        return Pair.buildFrom1( [ QuasiQuoteCompiler.QUASIQUOTE,
-            QuasiQuotation.inline3_( p, arg, paramIndex,
+    } else if ( QuasiQuotation_st.isQuasiQuote( expr ) ) {
+        return Pair_st.buildFrom1( [ QuasiQuoteCompiler_st.QUASIQUOTE,
+            QuasiQuotation_st.inline3_( p, arg, paramIndex,
                 expr.cdr().car(), nesting + 1 ) ] );
     } else if ( expr.isNotPair() ) {
         return expr;
     }
     
     var list = [];
-    var last = ArcObject.NIL;
+    var last = ArcObject_st.NIL;
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuotation.isUnQuote( expr )
-            || QuasiQuotation.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation_st.isUnQuote( expr )
+            || QuasiQuotation_st.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
-            last = QuasiQuotation.inline3_( p, arg, paramIndex,
+            last = QuasiQuotation_st.inline3_( p, arg, paramIndex,
                 expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuotation.isUnQuoteSplicing( current ) )
-                list.push( QuasiQuotation.inline3_( p, arg,
+            if ( QuasiQuotation_st.isUnQuoteSplicing( current ) )
+                list.push( QuasiQuotation_st.inline3_( p, arg,
                     paramIndex, current, nesting ) );
-            else if ( QuasiQuotation.isUnQuote( current )
-                || QuasiQuotation.isQuasiQuote( current )
-                || QuasiQuotation.isPair_( current ) )
-                list.push( QuasiQuotation.inline3_( p, arg,
+            else if ( QuasiQuotation_st.isUnQuote( current )
+                || QuasiQuotation_st.isQuasiQuote( current )
+                || QuasiQuotation_st.isPair_( current ) )
+                list.push( QuasiQuotation_st.inline3_( p, arg,
                     paramIndex, current, nesting ) );
             else
                 list.push( current );
@@ -8602,58 +8683,61 @@ QuasiQuotation.inline3_ = function (
     if ( !(expr instanceof Nil) )
         last = expr;
     
-    return Pair.buildFrom2( list, last );
+    return Pair_st.buildFrom2( list, last );
 };
 
 QuasiQuotation.prototype.nest = function ( threshold ) {
-    return new QuasiQuotation( QuasiQuotation.nest_(
+    return new QuasiQuotation( QuasiQuotation_st.nest_(
         threshold, this.target_, 1 ) );
 };
 
-QuasiQuotation.nest_ = function ( threshold, expr, nesting ) {
-    if ( QuasiQuotation.isUnQuote( expr ) ) {
+QuasiQuotation_st.nest_ = function ( threshold, expr, nesting ) {
+    if ( QuasiQuotation_st.isUnQuote( expr ) ) {
         if ( nesting === 1 )
-            return Pair.buildFrom1( [ QuasiQuoteCompiler.UNQUOTE,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE,
                 expr.cdr().car().nest( threshold ) ] );
         else
-            return Pair.buildFrom1( [ QuasiQuoteCompiler.UNQUOTE,
-                QuasiQuotation.nest_( threshold,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE,
+                QuasiQuotation_st.nest_( threshold,
                     expr.cdr().car(), nesting - 1 ) ] );
-    } else if ( QuasiQuotation.isUnQuoteSplicing( expr ) ) {
+    } else if ( QuasiQuotation_st.isUnQuoteSplicing( expr ) ) {
         if ( nesting === 1 )
-            return Pair.buildFrom1( [
-                QuasiQuoteCompiler.UNQUOTE_SPLICING,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING,
                 expr.cdr().car().nest( threshold ) ] );
         else
-            return Pair.buildFrom1( [
-                QuasiQuoteCompiler.UNQUOTE_SPLICING,
-                QuasiQuotation.nest_( threshold,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING,
+                QuasiQuotation_st.nest_( threshold,
                     expr.cdr().car(), nesting - 1 ) ] );
-    } else if ( QuasiQuotation.isQuasiQuote( expr ) ) {
-        return Pair.buildFrom1( [ QuasiQuoteCompiler.QUASIQUOTE,
-            QuasiQuotation.nest_( threshold,
+    } else if ( QuasiQuotation_st.isQuasiQuote( expr ) ) {
+        return Pair_st.buildFrom1( [ QuasiQuoteCompiler_st.QUASIQUOTE,
+            QuasiQuotation_st.nest_( threshold,
                 expr.cdr().car(), nesting + 1 ) ] );
     } else if ( expr.isNotPair() ) {
         return expr;
     }
     
     var list = [];
-    var last = ArcObject.NIL;
+    var last = ArcObject_st.NIL;
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuotation.isUnQuote( expr )
-            || QuasiQuotation.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation_st.isUnQuote( expr )
+            || QuasiQuotation_st.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
-            last = QuasiQuotation.nest_( threshold, expr, nesting );
+            last =
+                QuasiQuotation_st.nest_( threshold, expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuotation.isUnQuoteSplicing( current )
-                || QuasiQuotation.isUnQuote( current )
-                || QuasiQuotation.isQuasiQuote( current )
-                || QuasiQuotation.isPair_( current ) )
-                list.push( QuasiQuotation.nest_( threshold,
+            if ( QuasiQuotation_st.isUnQuoteSplicing( current )
+                || QuasiQuotation_st.isUnQuote( current )
+                || QuasiQuotation_st.isQuasiQuote( current )
+                || QuasiQuotation_st.isPair_( current ) )
+                list.push( QuasiQuotation_st.nest_( threshold,
                     current, nesting ) );
             else
                 list.push( current );
@@ -8662,65 +8746,69 @@ QuasiQuotation.nest_ = function ( threshold, expr, nesting ) {
     if ( !(expr instanceof Nil) )
         last = expr;
     
-    return Pair.buildFrom2( list, last );
+    return Pair_st.buildFrom2( list, last );
 };
 
 QuasiQuotation.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
-    return new QuasiQuotation( QuasiQuotation.replaceBoundSymbols_(
+    return new QuasiQuotation( QuasiQuotation_st.replaceBoundSymbols_(
         lexicalBindings, this.target_, 1 ) );
 };
 
-QuasiQuotation.replaceBoundSymbols_ = function (
+QuasiQuotation_st.replaceBoundSymbols_ = function (
     lexicalBindings, expr, nesting ) {
     
-    if ( QuasiQuotation.isUnQuote( expr ) ) {
+    if ( QuasiQuotation_st.isUnQuote( expr ) ) {
         if ( nesting === 1 )
-            return Pair.buildFrom1( [ QuasiQuoteCompiler.UNQUOTE,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE,
                 expr.cdr().car().replaceBoundSymbols(
                     lexicalBindings ) ] );
         else
-            return Pair.buildFrom1( [ QuasiQuoteCompiler.UNQUOTE,
-                QuasiQuotation.replaceBoundSymbols_( lexicalBindings,
-                    expr.cdr().car(), nesting - 1 ) ] );
-    } else if ( QuasiQuotation.isUnQuoteSplicing( expr ) ) {
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE,
+                QuasiQuotation_st.replaceBoundSymbols_(
+                    lexicalBindings, expr.cdr().car(), nesting - 1
+                ) ] );
+    } else if ( QuasiQuotation_st.isUnQuoteSplicing( expr ) ) {
         if ( nesting === 1 )
-            return Pair.buildFrom1( [
-                QuasiQuoteCompiler.UNQUOTE_SPLICING,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING,
                 expr.cdr().car().replaceBoundSymbols(
                     lexicalBindings ) ] );
         else
-            return Pair.buildFrom1( [
-                QuasiQuoteCompiler.UNQUOTE_SPLICING,
-                QuasiQuotation.replaceBoundSymbols_( lexicalBindings,
-                    expr.cdr().car(), nesting - 1 ) ] );
-    } else if ( QuasiQuotation.isQuasiQuote( expr ) ) {
-        return Pair.buildFrom1( [ QuasiQuoteCompiler.QUASIQUOTE,
-            QuasiQuotation.replaceBoundSymbols_( lexicalBindings,
+            return Pair_st.buildFrom1( [
+                QuasiQuoteCompiler_st.UNQUOTE_SPLICING,
+                QuasiQuotation_st.replaceBoundSymbols_(
+                    lexicalBindings, expr.cdr().car(), nesting - 1
+                ) ] );
+    } else if ( QuasiQuotation_st.isQuasiQuote( expr ) ) {
+        return Pair_st.buildFrom1( [ QuasiQuoteCompiler_st.QUASIQUOTE,
+            QuasiQuotation_st.replaceBoundSymbols_( lexicalBindings,
                 expr.cdr().car(), nesting + 1 ) ] );
     } else if ( expr.isNotPair() ) {
         return expr;
     }
     
     var list = [];
-    var last = ArcObject.NIL;
+    var last = ArcObject_st.NIL;
     
     while ( !expr.isNotPair() )
-        if ( QuasiQuotation.isUnQuote( expr )
-            || QuasiQuotation.isQuasiQuote( expr ) ) {
+        if ( QuasiQuotation_st.isUnQuote( expr )
+            || QuasiQuotation_st.isQuasiQuote( expr ) ) {
             // catch post-dot unquotes
-            last = QuasiQuotation.replaceBoundSymbols_(
+            last = QuasiQuotation_st.replaceBoundSymbols_(
                 lexicalBindings, expr, nesting );
             expr = expr.cdr().cdr();
         } else {
             var current = expr.car();
             expr = expr.cdr();
-            if ( QuasiQuotation.isUnQuoteSplicing( current )
-                || QuasiQuotation.isUnQuote( current )
-                || QuasiQuotation.isQuasiQuote( current )
-                || QuasiQuotation.isPair_( current ) )
-                list.push( QuasiQuotation.replaceBoundSymbols_(
+            if ( QuasiQuotation_st.isUnQuoteSplicing( current )
+                || QuasiQuotation_st.isUnQuote( current )
+                || QuasiQuotation_st.isQuasiQuote( current )
+                || QuasiQuotation_st.isPair_( current ) )
+                list.push( QuasiQuotation_st.replaceBoundSymbols_(
                     lexicalBindings, current, nesting ) );
             else
                 list.push( current );
@@ -8729,7 +8817,7 @@ QuasiQuotation.replaceBoundSymbols_ = function (
     if ( !(expr instanceof Nil) )
         last = expr;
     
-    return Pair.buildFrom2( list, last );
+    return Pair_st.buildFrom2( list, last );
 };
 
 QuasiQuotation.prototype.visit = function ( v ) {
@@ -8881,8 +8969,7 @@ Visitor.prototype.endSingleAssignment = function ( o ) {
 
 /** @constructor */
 function FunctionOwnershipVisitor( top ) {
-    Visitor.call( this );
-    this.owners_ = new Pair( top, ArcObject.NIL );
+    this.owners_ = new Pair().init2( top, ArcObject_st.NIL );
 }
 
 FunctionOwnershipVisitor.prototype = new Visitor();
@@ -8891,7 +8978,7 @@ FunctionOwnershipVisitor.prototype.acceptInterpretedFunction =
     function ( o ) {
     
     o.belongsTo( this.owners_.car() );
-    this.owners_ = new Pair( o, this.owners_ );
+    this.owners_ = new Pair().init2( o, this.owners_ );
 };
 
 FunctionOwnershipVisitor.prototype.endInterpretedFunction = function (
@@ -8908,7 +8995,6 @@ FunctionOwnershipVisitor.prototype.endInterpretedFunction = function (
 
 /** @constructor */
 function MeasureLexicalReach( top ) {
-    Visitor.call( this );
     this.stack_ = [];
     this.referrers_ = [];
     this.nesting_ = 0;
@@ -8956,7 +9042,6 @@ MeasureLexicalReach.prototype.acceptBoundSymbol = function ( b ) {
 
 /** @constructor */
 function ReferenceCounter( target ) {
-    Visitor.call( this );
     this.stack_ = [];
     this.referrers_ = [];
     this.target_ = target;
@@ -9017,6 +9102,7 @@ function FunctionProfile() {
     this.callerCounts = {};
     this.calleeCounts = {};
 }
+var FunctionProfile_st = {};
 
 FunctionProfile.prototype.addNanoTime = function ( nanos ) {
     this.nanoTime += nanos;
@@ -9029,29 +9115,29 @@ FunctionProfile.prototype.addNanoTime = function ( nanos ) {
 };
 
 FunctionProfile.prototype.toPair = function () {
-    var fn = ArcString.make( this.target.profileName() );
+    var fn = ArcString_st.make( this.target.profileName() );
     if ( this.target instanceof InterpretedFunction )
-        fn = ArcString.make( this.target.localProfileName() );
-    var nanos = Real.make( this.nanoTime / 1000000 );
-    var totalNanos = Real.make( this.totalNanoTime / 1000000 );
-    var invs = Rational.make1( invocationCount );
-    var kidz = ArcObject.NIL;
+        fn = ArcString_st.make( this.target.localProfileName() );
+    var nanos = Real_st.make( this.nanoTime / 1000000 );
+    var totalNanos = Real_st.make( this.totalNanoTime / 1000000 );
+    var invs = Rational_st.make1( invocationCount );
+    var kidz = ArcObject_st.NIL;
     for ( var i = 0, children = this.children, len = children.length;
         i < len; i++ )
-        kidz = new Pair( children[ i ].toPair(), kidz );
-    return Pair.buildFrom1( [ totalNanos, nanos, invs, fn, kidz,
+        kidz = new Pair().init2( children[ i ].toPair(), kidz );
+    return Pair_st.buildFrom1( [ totalNanos, nanos, invs, fn, kidz,
         this.toPair_( this.callerCounts ),
         this.toPair_( this.calleeCounts ) ] );
 };
 
 FunctionProfile.prototype.toPair_ = function ( cc ) {
-    var callers = ArcObject.NIL;
+    var callers = ArcObject_st.NIL;
     for ( var k in cc )
-        callers = new Pair( cc[ k ].toPair(), callers );
+        callers = new Pair().init2( cc[ k ].toPair(), callers );
     return callers;
 };
 
-FunctionProfile.get = function ( map, fn ) {
+FunctionProfile_st.get = function ( map, fn ) {
     var name = fn.profileName();
     var fp = map[ name ];
     if ( fp === void 0 ) {
@@ -9062,7 +9148,7 @@ FunctionProfile.get = function ( map, fn ) {
         if ( fn instanceof InterpretedFunction ) {
             var parent = fn.lexicalOwner();
             if ( parent !== null ) {
-                var pfp = FunctionProfile.get( map, parent );
+                var pfp = FunctionProfile_st.get( map, parent );
                 pfp.children.push( fp );
                 fp.parent = pfp;
             }
@@ -9075,13 +9161,13 @@ FunctionProfile.get = function ( map, fn ) {
 FunctionProfile.prototype.addCaller = function ( invocation ) {
     if ( invocation === null )
         return;
-    InvocationCounter.get( this.callerCounts, invocation ).count++;
+    InvocationCounter_st.get( this.callerCounts, invocation ).count++;
 };
 
 FunctionProfile.prototype.addCallee = function ( invocation ) {
     if ( invocation === null )
         return;
-    InvocationCounter.get( this.calleeCounts, invocation ).count++;
+    InvocationCounter_st.get( this.calleeCounts, invocation ).count++;
 };
 
 
@@ -9096,6 +9182,7 @@ function InvocationCounter( target ) {
     this.count = 0;
     this.key = target.profileName();
 }
+var InvocationCounter_st = {};
 
 InvocationCounter.prototype.inc = function () {
     this.count++;
@@ -9105,11 +9192,11 @@ InvocationCounter.prototype.toPair = function () {
     var n = key;
     if ( this.target instanceof InterpretedFunction )
         n = this.target.localProfileName();
-    return new Pair( ArcString.make( n ),
-        new Pair( Rational.make1( this.count ), ArcObject.NIL ) );
+    return new Pair().init2( ArcString_st.make( n ), new Pair().init2(
+        Rational_st.make1( this.count ), ArcObject_st.NIL ) );
 };
 
-InvocationCounter.get = function ( map, o ) {
+InvocationCounter_st.get = function ( map, o ) {
     var ic = map[ o.profileName() ];
     if ( ic === void 0 ) {
         ic = new InvocationCounter( o );
@@ -9142,11 +9229,13 @@ function ProfileData() {
 /** @constructor */
 function VMInterceptor() {
 }
+var VMInterceptor_st = {};
 
-VMInterceptor.updateNanoTime_ = function ( vm ) {
+VMInterceptor_st.updateNanoTime_ = function ( vm ) {
     var last = vm.profileData.lastInvokee;
     if ( last !== null )
-        FunctionProfile.get( vm.profileData.invocationProfile, last ).
+        FunctionProfile_st.
+            get( vm.profileData.invocationProfile, last ).
             addNanoTime(
                 new Date().getTime() * 1000000 - vm.profileData.now );
 };
@@ -9161,7 +9250,7 @@ VMInterceptor.prototype.end = void 0;
 VMInterceptor.prototype.install = void 0;
 
 // PORT TODO: Stop using window.prompt.
-VMInterceptor.debug = function ( vm ) {
+VMInterceptor_st.debug = function ( vm ) {
     vm.show();
     var command = prompt(
         "q to resume execution, f to skip to the end of this " +
@@ -9169,94 +9258,95 @@ VMInterceptor.debug = function ( vm ) {
     if ( command === null )
         return;
     if ( /^q$/i.test( command ) ) {
-        vm.setInterceptor( VMInterceptor.NULL );
+        vm.setInterceptor( VMInterceptor_st.NULL );
     } else if ( /^f$/i.test( command ) ) {
         vm.debug_target_frame = vm.ip - 1;
-        vm.setInterceptor( VMInterceptor.NEXT_FRAME );
+        vm.setInterceptor( VMInterceptor_st.NEXT_FRAME );
     }
 };
 
 /** @constructor */
-VMInterceptor.NULL_class = function () {
+VMInterceptor_st.NULL_class = function () {
 };
 
-VMInterceptor.NULL_class.prototype = new VMInterceptor();
+VMInterceptor_st.NULL_class.prototype = new VMInterceptor();
 
-VMInterceptor.NULL_class.prototype.check = function ( vm ) {
+VMInterceptor_st.NULL_class.prototype.check = function ( vm ) {
 };
 
-VMInterceptor.NULL_class.prototype.end = function ( vm ) {
+VMInterceptor_st.NULL_class.prototype.end = function ( vm ) {
 };
 
-VMInterceptor.NULL_class.prototype.install = function ( vm ) {
+VMInterceptor_st.NULL_class.prototype.install = function ( vm ) {
 };
 
-VMInterceptor.NULL = new VMInterceptor.NULL_class();
+VMInterceptor_st.NULL = new VMInterceptor_st.NULL_class();
 
 /** @constructor */
-VMInterceptor.DEBUG_class = function () {
+VMInterceptor_st.DEBUG_class = function () {
 };
 
-VMInterceptor.DEBUG_class.prototype = new VMInterceptor();
+VMInterceptor_st.DEBUG_class.prototype = new VMInterceptor();
 
-VMInterceptor.DEBUG_class.prototype.check = function ( vm ) {
-    VMInterceptor.debug( vm );
+VMInterceptor_st.DEBUG_class.prototype.check = function ( vm ) {
+    VMInterceptor_st.debug( vm );
 };
 
-VMInterceptor.DEBUG_class.prototype.end = function ( vm ) {
+VMInterceptor_st.DEBUG_class.prototype.end = function ( vm ) {
     System_out_println( "VM thread finished: returning." );
-    VMInterceptor.debug( vm );
+    VMInterceptor_st.debug( vm );
 };
 
-VMInterceptor.DEBUG_class.prototype.install = function ( vm ) {
+VMInterceptor_st.DEBUG_class.prototype.install = function ( vm ) {
 };
 
-VMInterceptor.DEBUG = new VMInterceptor.DEBUG_class();
+VMInterceptor_st.DEBUG = new VMInterceptor_st.DEBUG_class();
 
 /** @constructor */
-VMInterceptor.KILL_class = function () {
+VMInterceptor_st.KILL_class = function () {
 };
 
-VMInterceptor.KILL_class.prototype = new VMInterceptor();
+VMInterceptor_st.KILL_class.prototype = new VMInterceptor();
 
-VMInterceptor.KILL_class.prototype.check = function ( vm ) {
+VMInterceptor_st.KILL_class.prototype.check = function ( vm ) {
     vm.die();
 };
 
-VMInterceptor.KILL_class.prototype.end = function ( vm ) {
+VMInterceptor_st.KILL_class.prototype.end = function ( vm ) {
 };
 
-VMInterceptor.KILL_class.prototype.install = function ( vm ) {
+VMInterceptor_st.KILL_class.prototype.install = function ( vm ) {
 };
 
-VMInterceptor.KILL = new VMInterceptor.KILL_class();
+VMInterceptor_st.KILL = new VMInterceptor_st.KILL_class();
 
 /** @constructor */
-VMInterceptor.NEXT_FRAME_class = function () {
+VMInterceptor_st.NEXT_FRAME_class = function () {
 };
 
-VMInterceptor.NEXT_FRAME_class.prototype = new VMInterceptor();
+VMInterceptor_st.NEXT_FRAME_class.prototype = new VMInterceptor();
 
-VMInterceptor.NEXT_FRAME_class.prototype.check = function ( vm ) {
+VMInterceptor_st.NEXT_FRAME_class.prototype.check = function ( vm ) {
     if ( vm.ip <= vm.debug_target_frame )
-        vm.setInterceptor( VMInterceptor.DEBUG );
+        vm.setInterceptor( VMInterceptor_st.DEBUG );
 };
 
-VMInterceptor.NEXT_FRAME_class.prototype.end = function ( vm ) {
+VMInterceptor_st.NEXT_FRAME_class.prototype.end = function ( vm ) {
 };
 
-VMInterceptor.NEXT_FRAME_class.prototype.install = function ( vm ) {
+VMInterceptor_st.NEXT_FRAME_class.prototype.install = function (
+    vm ) {
 };
 
-VMInterceptor.NEXT_FRAME = new VMInterceptor.NEXT_FRAME_class();
+VMInterceptor_st.NEXT_FRAME = new VMInterceptor_st.NEXT_FRAME_class();
 
 /** @constructor */
-VMInterceptor.PROFILE_class = function () {
+VMInterceptor_st.PROFILE_class = function () {
 };
 
-VMInterceptor.PROFILE_class.prototype = new VMInterceptor();
+VMInterceptor_st.PROFILE_class.prototype = new VMInterceptor();
 
-VMInterceptor.PROFILE_class.prototype.addInstruction_ = function (
+VMInterceptor_st.PROFILE_class.prototype.addInstruction_ = function (
     i, vm ) {
     
     var c =
@@ -9268,8 +9358,8 @@ VMInterceptor.PROFILE_class.prototype.addInstruction_ = function (
     vm.profileData.instructionProfile[ i.getClass().getName() ] = c;
 };
 
-VMInterceptor.PROFILE_class.prototype.check = function ( vm ) {
-    VMInterceptor.updateNanoTime_( vm );
+VMInterceptor_st.PROFILE_class.prototype.check = function ( vm ) {
+    VMInterceptor_st.updateNanoTime_( vm );
     var thisInstruction = vm.nextInstruction();
     if ( thisInstruction === null )
         return;
@@ -9279,11 +9369,11 @@ VMInterceptor.PROFILE_class.prototype.check = function ( vm ) {
         var fn = thisInstruction.getInvokee( vm );
         if ( fn instanceof Closure )
             fn = fn.fn();
-        var thisProfile = FunctionProfile.get(
+        var thisProfile = FunctionProfile_st.get(
             vm.profileData.invocationProfile, fn );
         var caller = thisInstruction.owner();
         thisProfile.addCaller( caller );
-        FunctionProfile.
+        FunctionProfile_st.
             get( vm.profileData.invocationProfile, caller ).
             addCallee( fn );
         thisProfile.invocationCount++;
@@ -9291,20 +9381,20 @@ VMInterceptor.PROFILE_class.prototype.check = function ( vm ) {
     } else if ( thisInstruction.owner() !== null ) {
         vm.profileData.lastInvokee = thisInstruction.owner();
     } else {
-        vm.profileData.lastInvokee = ArcObject.NIL;
+        vm.profileData.lastInvokee = ArcObject_st.NIL;
     }
     vm.profileData.now = new Date().getTime() * 1000000;
 };
 
-VMInterceptor.PROFILE_class.prototype.end = function ( vm ) {
+VMInterceptor_st.PROFILE_class.prototype.end = function ( vm ) {
 };
 
-VMInterceptor.PROFILE_class.prototype.install = function ( vm ) {
+VMInterceptor_st.PROFILE_class.prototype.install = function ( vm ) {
     vm.profileData = new ProfileData();
     vm.profileData.now = new Date().getTime() * 1000000;
 };
 
-VMInterceptor.PROFILE = new VMInterceptor.PROFILE_class();
+VMInterceptor_st.PROFILE = new VMInterceptor_st.PROFILE_class();
 
 
 // ===================================================================
@@ -9313,25 +9403,25 @@ VMInterceptor.PROFILE = new VMInterceptor.PROFILE_class();
 // Needed early: Instruction
 // Needed late: Assignment ArcString Nil ArcError Compiler
 
-var AssignmentBuilder = {};
+var AssignmentBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-AssignmentBuilder.build = function ( vm, body, lexicalBindings ) {
+AssignmentBuilder_st.build = function ( vm, body, lexicalBindings ) {
     var assignment = new Assignment();
     assignment.prepare( body.len() );
     
     var i = new Literal( assignment );
     // ASYNC PORT TODO: Come up with a better owner for this.
-    i.belongsTo( ArcString.make( "AssignmentBuilder.build" ) );
+    i.belongsTo( ArcString_st.make( "AssignmentBuilder.build" ) );
     vm.pushFrame( i );
     
-    vm.pushFrame( new AssignmentBuilder.BuildAssignment1(
+    vm.pushFrame( new AssignmentBuilder_st.BuildAssignment1(
         assignment, body, lexicalBindings ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-AssignmentBuilder.BuildAssignment1 = function (
+AssignmentBuilder_st.BuildAssignment1 = function (
     assignment, body, lexicalBindings ) {
     
     Instruction.call( this );
@@ -9339,14 +9429,14 @@ AssignmentBuilder.BuildAssignment1 = function (
     this.body_ = body;
     this.lexicalBindings_ = lexicalBindings;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "AssignmentBuilder.build" ) );
+    this.belongsTo( ArcString_st.make( "AssignmentBuilder.build" ) );
 };
 
-AssignmentBuilder.BuildAssignment1.prototype = new Instruction();
-AssignmentBuilder.BuildAssignment1.prototype.className =
+AssignmentBuilder_st.BuildAssignment1.prototype = new Instruction();
+AssignmentBuilder_st.BuildAssignment1.prototype.className =
     "AssignmentBuilder.BuildAssignment1";
 
-AssignmentBuilder.BuildAssignment1.prototype.operate = function (
+AssignmentBuilder_st.BuildAssignment1.prototype.operate = function (
     vm ) {
     
     if ( this.body_ instanceof Nil )
@@ -9354,18 +9444,19 @@ AssignmentBuilder.BuildAssignment1.prototype.operate = function (
     
     try {
         this.body_.mustBePairOrNil();
-    } catch ( e ) { if ( !(e instanceof Pair.NotPair) ) throw e;
+    } catch ( e ) { if ( !(e instanceof Pair_st.NotPair) ) throw e;
         throw new ArcError( "assign: unexpected: " + this.body_ );
     }
     
-    vm.pushFrame( new AssignmentBuilder.BuildAssignment2(
+    vm.pushFrame( new AssignmentBuilder_st.BuildAssignment2(
         this.assignment_, this.body_.cdr(), this.lexicalBindings_ ) );
-    Compiler.compile( vm, this.body_.car(), this.lexicalBindings_ );
+    Compiler_st.compile(
+        vm, this.body_.car(), this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-AssignmentBuilder.BuildAssignment2 = function (
+AssignmentBuilder_st.BuildAssignment2 = function (
     assignment, body, lexicalBindings ) {
     
     Instruction.call( this );
@@ -9373,32 +9464,35 @@ AssignmentBuilder.BuildAssignment2 = function (
     this.body_ = body;
     this.lexicalBindings_ = lexicalBindings;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "AssignmentBuilder.build" ) );
+    this.belongsTo( ArcString_st.make( "AssignmentBuilder.build" ) );
 };
 
-AssignmentBuilder.BuildAssignment2.prototype = new Instruction();
-AssignmentBuilder.BuildAssignment2.prototype.className =
+AssignmentBuilder_st.BuildAssignment2.prototype = new Instruction();
+AssignmentBuilder_st.BuildAssignment2.prototype.className =
     "AssignmentBuilder.BuildAssignment2";
 
-AssignmentBuilder.BuildAssignment2.prototype.operate = function (
+AssignmentBuilder_st.BuildAssignment2.prototype.operate = function (
     vm ) {
     
     this.assignment_.take( vm.popA().reduce() );
-    vm.pushFrame( new AssignmentBuilder.BuildAssignment1(
+    vm.pushFrame( new AssignmentBuilder_st.BuildAssignment1(
         this.assignment_, this.body_, this.lexicalBindings_ ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//AssignmentBuilder.build = function ( vm, body, lexicalBindings ) {
+//AssignmentBuilder_st.build = function (
+//    vm, body, lexicalBindings ) {
+//    
 //    var assignment = new Assignment();
 //    assignment.prepare( body.len() );
 //    while ( !(body instanceof Nil) ) {
 //        try {
 //            body.mustBePairOrNil();
-//        } catch ( e ) { if ( !(e instanceof Pair.NotPair) ) throw e;
+//        } catch ( e ) {
+//            if ( !(e instanceof Pair_st.NotPair) ) throw e;
 //            throw new ArcError( "assign: unexpected: " + body );
 //        }
-//        assignment.take( Compiler.compile(
+//        assignment.take( Compiler_st.compile(
 //            vm, body.car(), lexicalBindings ).reduce() );
 //        body = body.cdr();
 //    }
@@ -9414,30 +9508,30 @@ AssignmentBuilder.BuildAssignment2.prototype.operate = function (
 // QuasiQuoteCompiler QuasiQuotation FunctionBodyBuilder IfBuilder
 // AssignmentBuilder InvocationBuilder Tagged
 
-var Compiler = {};
+var Compiler_st = {};
 
-Compiler.atstrings = ArcObject.NIL;
-Compiler.atStringFunction = Symbol.mkSym( "at-string" );
+Compiler_st.atstrings = ArcObject_st.NIL;
+Compiler_st.atStringFunction = Symbol_st.mkSym( "at-string" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-Compiler.compile = function ( vm, expression, lexicalBindings ) {
+Compiler_st.compile = function ( vm, expression, lexicalBindings ) {
     if ( expression instanceof Nil ) {
         vm.pushA( expression );
     } else if ( expression instanceof ArcString
-        && !(Compiler.atstrings instanceof Nil) ) {
+        && !(Compiler_st.atstrings instanceof Nil) ) {
         vm.pushFrame(
-            new Compiler.FinishAtString( lexicalBindings ) );
-        Compiler.atString_( vm, expression );
-    } else if ( Evaluation.isSpecialSyntax( expression ) ) {
-        Compiler.compile(
-            vm, Evaluation.ssExpand( expression ), lexicalBindings );
+            new Compiler_st.FinishAtString( lexicalBindings ) );
+        Compiler_st.atString_( vm, expression );
+    } else if ( Evaluation_st.isSpecialSyntax( expression ) ) {
+        Compiler_st.compile( vm,
+            Evaluation_st.ssExpand( expression ), lexicalBindings );
     } else if ( expression instanceof Pair ) {
-        Compiler.compilePair( vm, expression, lexicalBindings );
+        Compiler_st.compilePair( vm, expression, lexicalBindings );
     } else if ( expression instanceof Symbol ) {
         for ( var i = 0; i < lexicalBindings.length; i++ )
             if ( expression.name() in lexicalBindings[ i ] )
-                return void vm.pushA( BoundSymbol.make( expression, i,
-                    lexicalBindings[ i ][ expression.name() ] ) );
+                return void vm.pushA( BoundSymbol_st.make( expression,
+                    i, lexicalBindings[ i ][ expression.name() ] ) );
         vm.pushA( expression );
     } else {
         vm.pushA( expression );
@@ -9446,46 +9540,46 @@ Compiler.compile = function ( vm, expression, lexicalBindings ) {
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Compiler.FinishAtString = function ( lexicalBindings ) {
+Compiler_st.FinishAtString = function ( lexicalBindings ) {
     Instruction.call( this );
     this.lexicalBindings_ = lexicalBindings;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "Compiler.compile" ) );
+    this.belongsTo( ArcString_st.make( "Compiler.compile" ) );
 };
 
-Compiler.FinishAtString.prototype = new Instruction();
-Compiler.FinishAtString.prototype.className =
+Compiler_st.FinishAtString.prototype = new Instruction();
+Compiler_st.FinishAtString.prototype.className =
     "Compiler.FinishAtString";
 
-Compiler.FinishAtString.prototype.operate = function ( vm ) {
+Compiler_st.FinishAtString.prototype.operate = function ( vm ) {
     var string = vm.popA();
     if ( string instanceof ArcString )
         vm.pushA( string );
     else
-        Compiler.compile( vm, string, this.lexicalBindings_ );
+        Compiler_st.compile( vm, string, this.lexicalBindings_ );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//Compiler.compile = function ( vm, expression, lexicalBindings ) {
+//Compiler_st.compile = function ( vm, expression, lexicalBindings ) {
 //    if ( expression instanceof Nil ) {
 //        return expression;
 //    } else if ( expression instanceof ArcString
-//        && !(Compiler.atstrings instanceof Nil) ) {
-//        var string = Compiler.atString_( vm, expression );
+//        && !(Compiler_st.atstrings instanceof Nil) ) {
+//        var string = Compiler_st.atString_( vm, expression );
 //        if ( string instanceof ArcString )
 //            return string;
 //        else
-//            return Compiler.compile( vm, string, lexicalBindings );
-//    } else if ( Evaluation.isSpecialSyntax( expression ) ) {
-//        return Compiler.compile(
-//            vm, Evaluation.ssExpand( expression ), lexicalBindings );
+//            return Compiler_st.compile( vm, string, lexicalBindings );
+//    } else if ( Evaluation_st.isSpecialSyntax( expression ) ) {
+//        return Compiler_st.compile( vm,
+//            Evaluation_st.ssExpand( expression ), lexicalBindings );
 //    } else if ( expression instanceof Pair ) {
-//        return Compiler.compilePair(
+//        return Compiler_st.compilePair(
 //            vm, expression, lexicalBindings );
 //    } else if ( expression instanceof Symbol ) {
 //        for ( var i = 0; i < lexicalBindings.length; i++ )
 //            if ( expression.name() in lexicalBindings[ i ] )
-//                return BoundSymbol.make( expression, i,
+//                return BoundSymbol_st.make( expression, i,
 //                    lexicalBindings[ i ][ expression.name() ] );
 //        return expression;
 //    } else {
@@ -9494,37 +9588,41 @@ Compiler.FinishAtString.prototype.operate = function ( vm ) {
 //};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-Compiler.compilePair = function ( vm, expression, lexicalBindings ) {
-    var f = Compiler.getMacro_( expression );
+Compiler_st.compilePair = function (
+    vm, expression, lexicalBindings ) {
+    
+    var f = Compiler_st.getMacro_( expression );
     if ( f !== null ) {
         // PORT NOTE: This local variable didn't exist in Java.
         var cdr = expression.cdr();
         // PORT NOTE: This was a cast in Java.
         if ( !(cdr instanceof Pair) )
             throw new TypeError();
-        vm.pushFrame( new Compiler.ThenCompile( lexicalBindings ) );
+        vm.pushFrame(
+            new Compiler_st.ThenCompile( lexicalBindings ) );
         f.invokeAndWait( vm, cdr );
     } else {
         var fun = expression.car();
-        if ( Symbol.is( "quote", fun ) ) {
+        if ( Symbol_st.is( "quote", fun ) ) {
             vm.pushA( new Quotation( expression.cdr().car() ) );
-        } else if ( fun === QuasiQuoteCompiler.QUASIQUOTE ) {
-            vm.pushFrame( new Compiler.WrapQuasiQuotation() );
-            QuasiQuoteCompiler.compile(
+        } else if ( fun === QuasiQuoteCompiler_st.QUASIQUOTE ) {
+            vm.pushFrame( new Compiler_st.WrapQuasiQuotation() );
+            QuasiQuoteCompiler_st.compile(
                 vm, expression.cdr().car(), lexicalBindings, 1 );
-        } else if ( Symbol.is( "fn", fun ) ) {
+        } else if ( Symbol_st.is( "fn", fun ) ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var cdr = expression.cdr();
             // PORT NOTE: This was a cast in Java.
             if ( !(cdr instanceof Pair) )
                 throw new TypeError();
-            FunctionBodyBuilder.build( vm, cdr, lexicalBindings );
-        } else if ( Symbol.is( "if", fun ) ) {
-            IfBuilder.build( vm, expression.cdr(), lexicalBindings );
-        } else if ( Symbol.is( "assign", fun ) ) {
-            AssignmentBuilder.build(
+            FunctionBodyBuilder_st.build( vm, cdr, lexicalBindings );
+        } else if ( Symbol_st.is( "if", fun ) ) {
+            IfBuilder_st.build(
                 vm, expression.cdr(), lexicalBindings );
-        } else if ( Symbol.is( "compose", fun.xcar() ) ) {
+        } else if ( Symbol_st.is( "assign", fun ) ) {
+            AssignmentBuilder_st.build(
+                vm, expression.cdr(), lexicalBindings );
+        } else if ( Symbol_st.is( "compose", fun.xcar() ) ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var funCdr = fun.cdr();
             // PORT NOTE: This was a cast in Java.
@@ -9535,25 +9633,25 @@ Compiler.compilePair = function ( vm, expression, lexicalBindings ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(expressionCdr instanceof Pair) )
                 throw new TypeError();
-            Compiler.compile( vm,
-                Compiler.decompose_( funCdr, expressionCdr ),
+            Compiler_st.compile( vm,
+                Compiler_st.decompose_( funCdr, expressionCdr ),
                 lexicalBindings );
-        } else if ( Symbol.is( "complement", fun.xcar() ) ) {
+        } else if ( Symbol_st.is( "complement", fun.xcar() ) ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var cdr = expression.cdr();
             // PORT NOTE: This was a cast in Java.
             if ( !(cdr instanceof Pair) )
                 throw new TypeError();
-            Compiler.compile( vm,
-                Compiler.decomplement_( fun.cdr().car(), cdr ),
+            Compiler_st.compile( vm,
+                Compiler_st.decomplement_( fun.cdr().car(), cdr ),
                 lexicalBindings );
-        } else if ( Evaluation.isSpecialSyntax( fun ) ) {
-            Compiler.compile( vm,
-                new Pair(
-                    Evaluation.ssExpand( fun ), expression.cdr() ),
+        } else if ( Evaluation_st.isSpecialSyntax( fun ) ) {
+            Compiler_st.compile( vm,
+                new Pair().init2(
+                    Evaluation_st.ssExpand( fun ), expression.cdr() ),
                 lexicalBindings );
         } else {
-            InvocationBuilder.build(
+            InvocationBuilder_st.build(
                 vm, expression, lexicalBindings );
         }
     }
@@ -9561,39 +9659,41 @@ Compiler.compilePair = function ( vm, expression, lexicalBindings ) {
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Compiler.ThenCompile = function ( lexicalBindings ) {
+Compiler_st.ThenCompile = function ( lexicalBindings ) {
     Instruction.call( this );
     this.lexicalBindings_ = lexicalBindings;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "Compiler.compilePair" ) );
+    this.belongsTo( ArcString_st.make( "Compiler.compilePair" ) );
 };
 
-Compiler.ThenCompile.prototype = new Instruction();
-Compiler.ThenCompile.prototype.className = "Compiler.ThenCompile";
+Compiler_st.ThenCompile.prototype = new Instruction();
+Compiler_st.ThenCompile.prototype.className = "Compiler.ThenCompile";
 
-Compiler.ThenCompile.prototype.operate = function ( vm ) {
-    Compiler.compile( vm, vm.popA(), this.lexicalBindings_ );
+Compiler_st.ThenCompile.prototype.operate = function ( vm ) {
+    Compiler_st.compile( vm, vm.popA(), this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Compiler.WrapQuasiQuotation = function () {
+Compiler_st.WrapQuasiQuotation = function () {
     Instruction.call( this );
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "Compiler.compilePair" ) );
+    this.belongsTo( ArcString_st.make( "Compiler.compilePair" ) );
 };
 
-Compiler.WrapQuasiQuotation.prototype = new Instruction();
-Compiler.WrapQuasiQuotation.prototype.className =
+Compiler_st.WrapQuasiQuotation.prototype = new Instruction();
+Compiler_st.WrapQuasiQuotation.prototype.className =
     "Compiler.WrapQuasiQuotation";
 
-Compiler.WrapQuasiQuotation.prototype.operate = function ( vm ) {
+Compiler_st.WrapQuasiQuotation.prototype.operate = function ( vm ) {
     vm.pushA( new QuasiQuotation( vm.popA() ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//Compiler.compilePair = function ( vm, expression, lexicalBindings ) {
-//    var f = Compiler.getMacro_( expression );
+//Compiler_st.compilePair = function (
+//    vm, expression, lexicalBindings ) {
+//    
+//    var f = Compiler_st.getMacro_( expression );
 //    if ( f !== null ) {
 //        // PORT NOTE: This local variable didn't exist in Java.
 //        var cdr = expression.cdr();
@@ -9601,29 +9701,29 @@ Compiler.WrapQuasiQuotation.prototype.operate = function ( vm ) {
 //        if ( !(cdr instanceof Pair) )
 //            throw new TypeError();
 //        var expanded = f.invokeAndWait( vm, cdr );
-//        return Compiler.compile( vm, expanded, lexicalBindings );
+//        return Compiler_st.compile( vm, expanded, lexicalBindings );
 //    } else {
 //        var fun = expression.car();
-//        if ( Symbol.is( "quote", fun ) ) {
+//        if ( Symbol_st.is( "quote", fun ) ) {
 //            return new Quotation( expression.cdr().car() );
-//        } else if ( fun === QuasiQuoteCompiler.QUASIQUOTE ) {
-//            return new QuasiQuotation( QuasiQuoteCompiler.compile(
+//        } else if ( fun === QuasiQuoteCompiler_st.QUASIQUOTE ) {
+//            return new QuasiQuotation( QuasiQuoteCompiler_st.compile(
 //                vm, expression.cdr().car(), lexicalBindings, 1 ) );
-//        } else if ( Symbol.is( "fn", fun ) ) {
+//        } else if ( Symbol_st.is( "fn", fun ) ) {
 //            // PORT NOTE: This local variable didn't exist in Java.
 //            var cdr = expression.cdr();
 //            // PORT NOTE: This was a cast in Java.
 //            if ( !(cdr instanceof Pair) )
 //                throw new TypeError();
-//            return FunctionBodyBuilder.build(
+//            return FunctionBodyBuilder_st.build(
 //                vm, cdr, lexicalBindings );
-//        } else if ( Symbol.is( "if", fun ) ) {
-//            return IfBuilder.build(
+//        } else if ( Symbol_st.is( "if", fun ) ) {
+//            return IfBuilder_st.build(
 //                vm, expression.cdr(), lexicalBindings );
-//        } else if ( Symbol.is( "assign", fun ) ) {
-//            return AssignmentBuilder.build(
+//        } else if ( Symbol_st.is( "assign", fun ) ) {
+//            return AssignmentBuilder_st.build(
 //                vm, expression.cdr(), lexicalBindings );
-//        } else if ( Symbol.is( "compose", fun.xcar() ) ) {
+//        } else if ( Symbol_st.is( "compose", fun.xcar() ) ) {
 //            // PORT NOTE: This local variable didn't exist in Java.
 //            var funCdr = fun.cdr();
 //            // PORT NOTE: This was a cast in Java.
@@ -9634,69 +9734,71 @@ Compiler.WrapQuasiQuotation.prototype.operate = function ( vm ) {
 //            // PORT NOTE: This was a cast in Java.
 //            if ( !(expressionCdr instanceof Pair) )
 //                throw new TypeError();
-//            return Compiler.compile( vm,
-//                Compiler.decompose_( funCdr, expressionCdr ),
+//            return Compiler_st.compile( vm,
+//                Compiler_st.decompose_( funCdr, expressionCdr ),
 //                lexicalBindings );
-//        } else if ( Symbol.is( "complement", fun.xcar() ) ) {
+//        } else if ( Symbol_st.is( "complement", fun.xcar() ) ) {
 //            // PORT NOTE: This local variable didn't exist in Java.
 //            var cdr = expression.cdr();
 //            // PORT NOTE: This was a cast in Java.
 //            if ( !(cdr instanceof Pair) )
 //                throw new TypeError();
-//            return Compiler.compile( vm,
-//                Compiler.decomplement_( fun.cdr().car(), cdr ),
+//            return Compiler_st.compile( vm,
+//                Compiler_st.decomplement_( fun.cdr().car(), cdr ),
 //                lexicalBindings );
-//        } else if ( Evaluation.isSpecialSyntax( fun ) ) {
-//            return Compiler.compile( vm,
-//                new Pair(
-//                    Evaluation.ssExpand( fun ), expression.cdr() ),
+//        } else if ( Evaluation_st.isSpecialSyntax( fun ) ) {
+//            return Compiler_st.compile( vm,
+//                new Pair().init2( Evaluation_st.ssExpand( fun ),
+//                    expression.cdr() ),
 //                lexicalBindings );
 //        } else {
-//            return InvocationBuilder.build(
+//            return InvocationBuilder_st.build(
 //                vm, expression, lexicalBindings );
 //        }
 //    }
 //};
 
-Compiler.decompose_ = function ( fns, args ) {
+Compiler_st.decompose_ = function ( fns, args ) {
     // PORT NOTE: This local variable didn't exist in Java.
     var car = fns.car();
     if ( fns.cdr() instanceof Nil )
-        return new Pair( car, args );
+        return new Pair().init2( car, args );
     // PORT NOTE: This local variable didn't exist in Java.
     var cdr = fns.cdr();
     // PORT NOTE: This was a cast in Java.
     if ( !(cdr instanceof Pair) )
         throw new TypeError();
-    return new Pair( car,
-        new Pair( Compiler.decompose_( cdr, args ), ArcObject.NIL ) );
+    return new Pair().init2( car, new Pair().init2(
+        Compiler_st.decompose_( cdr, args ), ArcObject_st.NIL ) );
 };
 
-Compiler.decomplement_ = function ( not, args ) {
-    return new Pair( Symbol.mkSym( "no" ),
-        new Pair( new Pair( not, args ), ArcObject.NIL ) );
+Compiler_st.decomplement_ = function ( not, args ) {
+    return new Pair().init2( Symbol_st.mkSym( "no" ),
+        new Pair().init2(
+            new Pair().init2( not, args ), ArcObject_st.NIL ) );
 };
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-Compiler.atString_ = function ( vm, expression ) {
-    if ( !Compiler.atStringFunction.bound() )
+Compiler_st.atString_ = function ( vm, expression ) {
+    if ( !Compiler_st.atStringFunction.bound() )
         return void vm.pushA( expression );
     
-    var fn = Compiler.atStringFunction.value();
-    fn.invokeAndWait( vm, new Pair( expression, ArcObject.NIL ) );
+    var fn = Compiler_st.atStringFunction.value();
+    fn.invokeAndWait(
+        vm, new Pair().init2( expression, ArcObject_st.NIL ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//Compiler.atString_ = function ( vm, expression ) {
-//    if ( !Compiler.atStringFunction.bound() )
+//Compiler_st.atString_ = function ( vm, expression ) {
+//    if ( !Compiler_st.atStringFunction.bound() )
 //        return expression;
 //    
-//    var fn = Compiler.atStringFunction.value();
+//    var fn = Compiler_st.atStringFunction.value();
 //    return fn.invokeAndWait(
-//        vm, new Pair( expression, ArcObject.NIL ) );
+//        vm, new Pair().init2( expression, ArcObject_st.NIL ) );
 //};
 
-Compiler.getMacro_ = function ( maybeMacCall ) {
+Compiler_st.getMacro_ = function ( maybeMacCall ) {
     var first = maybeMacCall.car();
     if ( !(first instanceof Symbol) )
         return null;
@@ -9704,7 +9806,7 @@ Compiler.getMacro_ = function ( maybeMacCall ) {
     if ( !first.bound() )
         return null;
     
-    return Tagged.ifTagged( first.value(), "mac" );
+    return Tagged_st.ifTagged( first.value(), "mac" );
 };
 
 
@@ -9714,10 +9816,12 @@ Compiler.getMacro_ = function ( maybeMacCall ) {
 // Needed late: Nil Pair ArcObject FunctionParameterListBuilder Pair
 // PairExpander ArcError classes SimpleArgs ComplexArgs
 
-var FunctionBodyBuilder = {};
+var FunctionBodyBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-FunctionBodyBuilder.build = function ( vm, args, lexicalBindings ) {
+FunctionBodyBuilder_st.build = function (
+    vm, args, lexicalBindings ) {
+    
     if ( lexicalBindings === null )
         throw new ReferenceError(
             "can't have null lexical bindings!" );
@@ -9727,18 +9831,19 @@ FunctionBodyBuilder.build = function ( vm, args, lexicalBindings ) {
     var parameterList;
     if ( !(parameters instanceof Nil) )
         lexicalBindings = [ myParams ].concat( lexicalBindings );
-    vm.pushFrame( new FunctionBodyBuilder.Intermediate(
+    vm.pushFrame( new FunctionBodyBuilder_st.Intermediate(
         args, lexicalBindings, myParams ) );
     if ( parameters instanceof Nil )
-        vm.pushA( new Pair( ArcObject.NIL, ArcObject.NIL ) );
+        vm.pushA(
+            new Pair().init2( ArcObject_st.NIL, ArcObject_st.NIL ) );
     else
-        FunctionParameterListBuilder.build(
+        FunctionParameterListBuilder_st.build(
             vm, parameters, lexicalBindings );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-FunctionBodyBuilder.Intermediate = function (
+FunctionBodyBuilder_st.Intermediate = function (
     args, lexicalBindings, myParams ) {
     
     Instruction.call( this );
@@ -9746,14 +9851,17 @@ FunctionBodyBuilder.Intermediate = function (
     this.lexicalBindings_ = lexicalBindings;
     this.myParams_ = myParams;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "FunctionBodyBuilder.build" ) );
+    this.belongsTo(
+        ArcString_st.make( "FunctionBodyBuilder.build" ) );
 }
 
-FunctionBodyBuilder.Intermediate.prototype = new Instruction();
-FunctionBodyBuilder.Intermediate.prototype.className =
+FunctionBodyBuilder_st.Intermediate.prototype = new Instruction();
+FunctionBodyBuilder_st.Intermediate.prototype.className =
     "FunctionBodyBuilder.Intermediate";
 
-FunctionBodyBuilder.Intermediate.prototype.operate = function ( vm ) {
+FunctionBodyBuilder_st.Intermediate.prototype.operate = function (
+    vm ) {
+    
     var fpl = vm.popA();
     var complexParams = fpl.car();
     var parameterList = fpl.cdr();
@@ -9762,14 +9870,14 @@ FunctionBodyBuilder.Intermediate.prototype.operate = function ( vm ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(body instanceof Pair) )
         throw new TypeError();
-    vm.pushFrame( new FunctionBodyBuilder.Finish( parameterList,
+    vm.pushFrame( new FunctionBodyBuilder_st.Finish( parameterList,
         this.myParams_, body, complexParams, vm.getAp() ) );
-    PairExpander.expand( vm, body, this.lexicalBindings_ );
+    PairExpander_st.expand( vm, body, this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-FunctionBodyBuilder.Finish = function (
+FunctionBodyBuilder_st.Finish = function (
     parameterList, myParams, body, complexParams, ap ) {
     
     Instruction.call( this );
@@ -9779,22 +9887,23 @@ FunctionBodyBuilder.Finish = function (
     this.complexParams_ = complexParams;
     this.ap_ = ap;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "FunctionBodyBuilder.build" ) );
+    this.belongsTo(
+        ArcString_st.make( "FunctionBodyBuilder.build" ) );
 }
 
-FunctionBodyBuilder.Finish.prototype = new Instruction();
-FunctionBodyBuilder.Finish.prototype.implementsOnError = true;
-FunctionBodyBuilder.Finish.prototype.className =
+FunctionBodyBuilder_st.Finish.prototype = new Instruction();
+FunctionBodyBuilder_st.Finish.prototype.implementsOnError = true;
+FunctionBodyBuilder_st.Finish.prototype.className =
     "FunctionBodyBuilder.Finish";
 
 // ASYNC PORT NOTE: This method of the OnError interface didn't exist
 // in Java. The point is to let certain errors propagate without
 // losing their stack traces.
-FunctionBodyBuilder.Finish.prototype.catches = function ( error ) {
+FunctionBodyBuilder_st.Finish.prototype.catches = function ( error ) {
     return error instanceof Error;
 };
 
-FunctionBodyBuilder.Finish.prototype.operate = function ( vm ) {
+FunctionBodyBuilder_st.Finish.prototype.operate = function ( vm ) {
     var error = vm.error();
     if ( error !== null ) {
         vm.clearError();
@@ -9805,13 +9914,15 @@ FunctionBodyBuilder.Finish.prototype.operate = function ( vm ) {
             this.body_ + ": " + error, error );
     }
     
-    vm.pushA( FunctionBodyBuilder.buildFunctionBody(
+    vm.pushA( FunctionBodyBuilder_st.buildFunctionBody(
         this.parameterList_, this.myParams_, vm.popA(),
         this.complexParams_ ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//FunctionBodyBuilder.build = function ( vm, args, lexicalBindings ) {
+//FunctionBodyBuilder_st.build = function (
+//    vm, args, lexicalBindings ) {
+//    
 //    if ( lexicalBindings === null )
 //        throw new ReferenceError(
 //            "can't have null lexical bindings!" );
@@ -9820,11 +9931,11 @@ FunctionBodyBuilder.Finish.prototype.operate = function ( vm ) {
 //    var complexParams;
 //    var parameterList;
 //    if ( parameters instanceof Nil ) {
-//        complexParams = ArcObject.NIL;
-//        parameterList = ArcObject.NIL;
+//        complexParams = ArcObject_st.NIL;
+//        parameterList = ArcObject_st.NIL;
 //    } else {
 //        lexicalBindings = [ myParams ].concat( lexicalBindings );
-//        var fpl = FunctionParameterListBuilder.build(
+//        var fpl = FunctionParameterListBuilder_st.build(
 //            vm, parameters, lexicalBindings );
 //        complexParams = fpl.car();
 //        parameterList = fpl.cdr();
@@ -9836,26 +9947,26 @@ FunctionBodyBuilder.Finish.prototype.operate = function ( vm ) {
 //        throw new TypeError();
 //    try {
 //        var expandedBody =
-//            PairExpander.expand( vm, body, lexicalBindings );
+//            PairExpander_st.expand( vm, body, lexicalBindings );
 //    } catch ( e ) { if ( !(e instanceof Error) ) throw e;
 //        throw new ArcError(
 //            "building function fn " + parameterList + " " +
 //            body + ": " + e, e );
 //    }
-//    return FunctionBodyBuilder.buildFunctionBody(
+//    return FunctionBodyBuilder_st.buildFunctionBody(
 //        parameterList, myParams, expandedBody, complexParams );
 //};
 
-FunctionBodyBuilder.buildFunctionBody = function (
+FunctionBodyBuilder_st.buildFunctionBody = function (
     parameterList, lexicalBindings, expandedBody, complexParams ) {
     
     var cname = "rainbow.function.interpreted.optimise.Bind" +
-        FunctionBodyBuilder.sig( parameterList, false );
+        FunctionBodyBuilder_st.sig( parameterList, false );
     // PORT NOTE: In Java, this was handled by catching
     // ClassNotFoundException and NoSuchMethodException.
     var Cons = classes[ cname ];
     if ( Cons === void 0 )
-        return FunctionBodyBuilder.defaultFunctionBody_(
+        return FunctionBodyBuilder_st.defaultFunctionBody_(
             parameterList, lexicalBindings, expandedBody,
             complexParams );
     
@@ -9877,12 +9988,12 @@ FunctionBodyBuilder.buildFunctionBody = function (
     }
 };
 
-FunctionBodyBuilder.buildStackFunctionBody = function (
+FunctionBodyBuilder_st.buildStackFunctionBody = function (
     parameterList, lexicalBindings, expandedBody, complexParams ) {
     
-    var sig = FunctionBodyBuilder.sig( parameterList, false );
+    var sig = FunctionBodyBuilder_st.sig( parameterList, false );
     if ( sig === "" )
-        return FunctionBodyBuilder.buildFunctionBody(
+        return FunctionBodyBuilder_st.buildFunctionBody(
             parameterList, lexicalBindings, expandedBody,
             complexParams );
     
@@ -9914,8 +10025,9 @@ FunctionBodyBuilder.buildStackFunctionBody = function (
     }
 };
 
-FunctionBodyBuilder.convertToStackParams = function ( ifn ) {
-    var sig = FunctionBodyBuilder.sig( ifn.parameterList(), false );
+FunctionBodyBuilder_st.convertToStackParams = function ( ifn ) {
+    var sig =
+        FunctionBodyBuilder_st.sig( ifn.parameterList(), false );
     var cname = "rainbow.function.interpreted.optimise.stack.Stack" +
         sig;
     // PORT NOTE: In Java, this was handled by catching
@@ -9944,7 +10056,7 @@ FunctionBodyBuilder.convertToStackParams = function ( ifn ) {
     }
 };
 
-FunctionBodyBuilder.defaultFunctionBody_ = function (
+FunctionBodyBuilder_st.defaultFunctionBody_ = function (
     parameterList, lexicalBindings, expandedBody, complexParams ) {
     
     if ( complexParams instanceof Nil )
@@ -9955,13 +10067,13 @@ FunctionBodyBuilder.defaultFunctionBody_ = function (
             parameterList, lexicalBindings, expandedBody );
 };
 
-FunctionBodyBuilder.sig = function ( parameterList, optionable ) {
+FunctionBodyBuilder_st.sig = function ( parameterList, optionable ) {
     if ( parameterList instanceof Nil )
         return "";
     
     if ( parameterList instanceof Pair ) {
         if ( optionable ) {
-            if ( ComplexArgs.optional( parameterList ) ) {
+            if ( ComplexArgs_st.optional( parameterList ) ) {
                 var expr = parameterList.cdr().cdr().car();
                 if ( expr.literal() )
                     return "_Oliteral";
@@ -9971,14 +10083,16 @@ FunctionBodyBuilder.sig = function ( parameterList, optionable ) {
                     return "_Oother";
             } else {
                 var next = parameterList.car();
-                return "_D" + FunctionBodyBuilder.sig( next, true ) +
-                    FunctionBodyBuilder.sig(
+                return "_D" +
+                    FunctionBodyBuilder_st.sig( next, true ) +
+                    FunctionBodyBuilder_st.sig(
                         parameterList.cdr(), false ) + "_d";
             }
         } else {
-            return FunctionBodyBuilder.sig(
-                parameterList.car(), true ) +
-                FunctionBodyBuilder.sig( parameterList.cdr(), false );
+            return FunctionBodyBuilder_st.sig(
+                    parameterList.car(), true ) +
+                FunctionBodyBuilder_st.sig(
+                    parameterList.cdr(), false );
         }
     } else if ( !optionable ) {
         return "_R";
@@ -9987,18 +10101,20 @@ FunctionBodyBuilder.sig = function ( parameterList, optionable ) {
     }
 };
 
-FunctionBodyBuilder.visit = function (
+FunctionBodyBuilder_st.visit = function (
     v, parameterList, optionable ) {
     
     if ( parameterList instanceof Nil )
         return;
     
     if ( parameterList instanceof Pair ) {
-        if ( optionable && ComplexArgs.optional( parameterList ) ) {
+        if ( optionable
+            && ComplexArgs_st.optional( parameterList ) ) {
             parameterList.cdr().cdr().car().visit( v );
         } else {
-            FunctionBodyBuilder.visit( v, parameterList.car(), true );
-            FunctionBodyBuilder.visit(
+            FunctionBodyBuilder_st.visit(
+                v, parameterList.car(), true );
+            FunctionBodyBuilder_st.visit(
                 v, parameterList.cdr(), false );
         }
     }
@@ -10011,77 +10127,77 @@ FunctionBodyBuilder.visit = function (
 // Needed early: Symbol Instruction
 // Needed late: ArcObject ArcString Pair Nil ComplexArgs ArcError
 
-var FunctionParameterListBuilder = {};
+var FunctionParameterListBuilder_st = {};
 
-FunctionParameterListBuilder.O = Symbol.mkSym( "o" );
-FunctionParameterListBuilder.NIL_ARG = Symbol.mkSym( "#NIL#" );
+FunctionParameterListBuilder_st.O = Symbol_st.mkSym( "o" );
+FunctionParameterListBuilder_st.NIL_ARG = Symbol_st.mkSym( "#NIL#" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-FunctionParameterListBuilder.build = function (
+FunctionParameterListBuilder_st.build = function (
     vm, parameters, lexicalBindings ) {
     
-    FunctionParameterListBuilder.index(
+    FunctionParameterListBuilder_st.index(
         parameters, lexicalBindings[ 0 ], [ 0 ], false );
-    FunctionParameterListBuilder.buildParams_(
+    FunctionParameterListBuilder_st.buildParams_(
         vm, parameters, lexicalBindings );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//FunctionParameterListBuilder.build = function (
+//FunctionParameterListBuilder_st.build = function (
 //    vm, parameters, lexicalBindings ) {
 //    
-//    FunctionParameterListBuilder.index(
+//    FunctionParameterListBuilder_st.index(
 //        parameters, lexicalBindings[ 0 ], [ 0 ], false );
-//    return FunctionParameterListBuilder.buildParams_(
+//    return FunctionParameterListBuilder_st.buildParams_(
 //        vm, parameters, lexicalBindings );
 //};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-FunctionParameterListBuilder.buildParams_ = function (
+FunctionParameterListBuilder_st.buildParams_ = function (
     vm, parameters, lexicalBindings ) {
     
-    var complexParams = { value: ArcObject.NIL };
+    var complexParams = { value: ArcObject_st.NIL };
     var result = [];
     
-    vm.pushFrame( new FunctionParameterListBuilder.ReturnParams(
+    vm.pushFrame( new FunctionParameterListBuilder_st.ReturnParams(
         result, complexParams ) );
-    vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
+    vm.pushFrame( new FunctionParameterListBuilder_st.BuildParams1(
         result, complexParams, parameters, lexicalBindings ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-FunctionParameterListBuilder.ReturnParams = function (
+FunctionParameterListBuilder_st.ReturnParams = function (
     result, complexParams ) {
     
     Instruction.call( this );
     this.result_ = result;
     this.complexParams_ = complexParams;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make(
+    this.belongsTo( ArcString_st.make(
         "FunctionParameterListBuilder.buildParams_" ) );
 };
 
-FunctionParameterListBuilder.ReturnParams.prototype =
+FunctionParameterListBuilder_st.ReturnParams.prototype =
     new Instruction();
-FunctionParameterListBuilder.ReturnParams.prototype.className =
+FunctionParameterListBuilder_st.ReturnParams.prototype.className =
     "FunctionParameterListBuilder.ReturnParams";
 
-FunctionParameterListBuilder.ReturnParams.prototype.operate =
+FunctionParameterListBuilder_st.ReturnParams.prototype.operate =
     function ( vm ) {
     
     if ( this.result_.length === 0 )
-        vm.pushA( FunctionParameterListBuilder.returnParams_(
+        vm.pushA( FunctionParameterListBuilder_st.returnParams_(
             this.complexParams_.value, vm.popA() ) );
     else
-        vm.pushA( FunctionParameterListBuilder.returnParams_(
+        vm.pushA( FunctionParameterListBuilder_st.returnParams_(
             this.complexParams_.value,
-            Pair.buildFrom2( this.result_, vm.popA() ) ) );
+            Pair_st.buildFrom2( this.result_, vm.popA() ) ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-FunctionParameterListBuilder.BuildParams1 = function (
+FunctionParameterListBuilder_st.BuildParams1 = function (
     result, complexParams, parameters, lexicalBindings ) {
     
     Instruction.call( this );
@@ -10090,16 +10206,16 @@ FunctionParameterListBuilder.BuildParams1 = function (
     this.parameters_ = parameters;
     this.lexicalBindings_ = lexicalBindings;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make(
+    this.belongsTo( ArcString_st.make(
         "FunctionParameterListBuilder.buildParams_" ) );
 };
 
-FunctionParameterListBuilder.BuildParams1.prototype =
+FunctionParameterListBuilder_st.BuildParams1.prototype =
     new Instruction();
-FunctionParameterListBuilder.BuildParams1.prototype.className =
+FunctionParameterListBuilder_st.BuildParams1.prototype.className =
     "FunctionParameterListBuilder.BuildParams1";
 
-FunctionParameterListBuilder.BuildParams1.prototype.operate =
+FunctionParameterListBuilder_st.BuildParams1.prototype.operate =
     function ( vm ) {
     
     if ( this.parameters_.isNotPair() ) {
@@ -10113,33 +10229,35 @@ FunctionParameterListBuilder.BuildParams1.prototype.operate =
     var newParameters = this.parameters_.cdr();
     if ( !(first instanceof Pair) ) {
         this.result_.push( first );
-        vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
-            this.result_, this.complexParams_, newParameters,
-            this.lexicalBindings_ ) );
+        vm.pushFrame(
+            new FunctionParameterListBuilder_st.BuildParams1(
+                this.result_, this.complexParams_, newParameters,
+                this.lexicalBindings_ ) );
     } else if ( first instanceof Nil ) {
-        this.result_.push( FunctionParameterListBuilder.NIL_ARG );
-        vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
-            this.result_, this.complexParams_, newParameters,
-            this.lexicalBindings_ ) );
+        this.result_.push( FunctionParameterListBuilder_st.NIL_ARG );
+        vm.pushFrame(
+            new FunctionParameterListBuilder_st.BuildParams1(
+                this.result_, this.complexParams_, newParameters,
+                this.lexicalBindings_ ) );
     } else {
-        this.complexParams_.value = ArcObject.T;
-        if ( ComplexArgs.optional( first ) ) {
+        this.complexParams_.value = ArcObject_st.T;
+        if ( ComplexArgs_st.optional( first ) ) {
             var optionalParamName = first.cdr().car();
             vm.pushFrame(
-                new FunctionParameterListBuilder.BuildParams2a(
+                new FunctionParameterListBuilder_st.BuildParams2a(
                     this.result_, this.complexParams_, newParameters,
                     this.lexicalBindings_, optionalParamName ) );
-            Compiler.compile(
+            Compiler_st.compile(
                 vm, first.cdr().cdr().car(), this.lexicalBindings_ );
         } else {
             vm.pushFrame(
-                new FunctionParameterListBuilder.BuildParams2b(
+                new FunctionParameterListBuilder_st.BuildParams2b(
                     this.result_, this.complexParams_, newParameters,
                     this.lexicalBindings_ ) );
-            FunctionParameterListBuilder.buildParams_(
+            FunctionParameterListBuilder_st.buildParams_(
                 vm, first, this.lexicalBindings_ );
 //            result.push(
-//                FunctionParameterListBuilder.buildParams_(
+//                FunctionParameterListBuilder_st.buildParams_(
 //                    vm, first, this.lexicalBindings_ ).cdr() );
 //            }
         }
@@ -10148,7 +10266,7 @@ FunctionParameterListBuilder.BuildParams1.prototype.operate =
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-FunctionParameterListBuilder.BuildParams2a = function (
+FunctionParameterListBuilder_st.BuildParams2a = function (
     result, complexParams, parameters, lexicalBindings,
     optionalParamName ) {
     
@@ -10159,29 +10277,29 @@ FunctionParameterListBuilder.BuildParams2a = function (
     this.lexicalBindings_ = lexicalBindings;
     this.optionalParamName_ = optionalParamName;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make(
+    this.belongsTo( ArcString_st.make(
         "FunctionParameterListBuilder.buildParams_" ) );
 };
 
-FunctionParameterListBuilder.BuildParams2a.prototype =
+FunctionParameterListBuilder_st.BuildParams2a.prototype =
     new Instruction();
-FunctionParameterListBuilder.BuildParams2a.prototype.className =
+FunctionParameterListBuilder_st.BuildParams2a.prototype.className =
     "FunctionParameterListBuilder.BuildParams2a";
 
-FunctionParameterListBuilder.BuildParams2a.prototype.operate =
+FunctionParameterListBuilder_st.BuildParams2a.prototype.operate =
     function ( vm ) {
     
-    this.result_.push( Pair.buildFrom1( [
-        FunctionParameterListBuilder.O, this.optionalParamName_,
+    this.result_.push( Pair_st.buildFrom1( [
+        FunctionParameterListBuilder_st.O, this.optionalParamName_,
         vm.popA() ] ) );
-    vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
+    vm.pushFrame( new FunctionParameterListBuilder_st.BuildParams1(
         this.result_, this.complexParams_, this.parameters_,
         this.lexicalBindings_ ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-FunctionParameterListBuilder.BuildParams2b = function (
+FunctionParameterListBuilder_st.BuildParams2b = function (
     result, complexParams, parameters, lexicalBindings ) {
     
     Instruction.call( this );
@@ -10190,29 +10308,29 @@ FunctionParameterListBuilder.BuildParams2b = function (
     this.parameters_ = parameters;
     this.lexicalBindings_ = lexicalBindings;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make(
+    this.belongsTo( ArcString_st.make(
         "FunctionParameterListBuilder.buildParams_" ) );
 };
 
-FunctionParameterListBuilder.BuildParams2b.prototype =
+FunctionParameterListBuilder_st.BuildParams2b.prototype =
     new Instruction();
-FunctionParameterListBuilder.BuildParams2b.prototype.className =
+FunctionParameterListBuilder_st.BuildParams2b.prototype.className =
     "FunctionParameterListBuilder.BuildParams2b";
 
-FunctionParameterListBuilder.BuildParams2b.prototype.operate =
+FunctionParameterListBuilder_st.BuildParams2b.prototype.operate =
     function ( vm ) {
     
     this.result_.push( vm.popA().cdr() );
-    vm.pushFrame( new FunctionParameterListBuilder.BuildParams1(
+    vm.pushFrame( new FunctionParameterListBuilder_st.BuildParams1(
         this.result_, this.complexParams_, this.parameters_,
         this.lexicalBindings_ ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//FunctionParameterListBuilder.buildParams_ = function (
+//FunctionParameterListBuilder_st.buildParams_ = function (
 //    vm, parameters, lexicalBindings ) {
 //    
-//    var complexParams = ArcObject.NIL;
+//    var complexParams = ArcObject_st.NIL;
 //    var result = [];
 //    
 //    while ( !parameters.isNotPair() ) {
@@ -10221,68 +10339,71 @@ FunctionParameterListBuilder.BuildParams2b.prototype.operate =
 //        if ( !(first instanceof Pair) ) {
 //            result.push( first );
 //        } else if ( first instanceof Nil ) {
-//            result.push( FunctionParameterListBuilder.NIL_ARG );
+//            result.push( FunctionParameterListBuilder_st.NIL_ARG );
 //        } else {
-//            complexParams = ArcObject.T;
-//            if ( ComplexArgs.optional( first ) ) {
+//            complexParams = ArcObject_st.T;
+//            if ( ComplexArgs_st.optional( first ) ) {
 //                var optionalParamName = first.cdr().car();
-//                var compiledOptionalExpression = Compiler.compile(
+//                var compiledOptionalExpression = Compiler_st.compile(
 //                    vm, first.cdr().cdr().car(), lexicalBindings );
-//                result.push( Pair.buildFrom1( [
-//                    FunctionParameterListBuilder.O, optionalParamName,
+//                result.push( Pair_st.buildFrom1( [
+//                    FunctionParameterListBuilder_st.O,
+//                    optionalParamName,
 //                    compiledOptionalExpression ] ) );
 //            } else {
 //                result.push(
-//                    FunctionParameterListBuilder.buildParams_(
+//                    FunctionParameterListBuilder_st.buildParams_(
 //                        vm, first, lexicalBindings ).cdr() );
 //            }
 //        }
 //    }
 //    
 //    if ( result.length === 0 )
-//        return FunctionParameterListBuilder.returnParams_(
+//        return FunctionParameterListBuilder_st.returnParams_(
 //            complexParams, parameters );
 //    else
-//        return FunctionParameterListBuilder.returnParams_(
-//            complexParams, Pair.buildFrom2( result, parameters ) );
+//        return FunctionParameterListBuilder_st.returnParams_(
+//            complexParams, Pair_st.buildFrom2( result, parameters ) );
 //};
 
-FunctionParameterListBuilder.isComplex = function ( parameters ) {
+FunctionParameterListBuilder_st.isComplex = function ( parameters ) {
     while ( !parameters.isNotPair() ) {
         if ( parameters.car() instanceof Pair )
-            return ArcObject.T;
+            return ArcObject_st.T;
         parameters = parameters.cdr();
     }
-    return ArcObject.NIL;
+    return ArcObject_st.NIL;
 };
 
-FunctionParameterListBuilder.returnParams_ = function (
+FunctionParameterListBuilder_st.returnParams_ = function (
     complexParams, params ) {
     
-    return new Pair( complexParams, params );
+    return new Pair().init2( complexParams, params );
 };
 
-FunctionParameterListBuilder.index = function (
+FunctionParameterListBuilder_st.index = function (
     parameterList, map, i, optionable ) {
     
     if ( parameterList instanceof Nil )
         return;
     
     if ( parameterList instanceof Pair ) {
-        if ( optionable && ComplexArgs.optional( parameterList ) ) {
-            FunctionParameterListBuilder.index(
+        if ( optionable
+            && ComplexArgs_st.optional( parameterList ) ) {
+            FunctionParameterListBuilder_st.index(
                 parameterList.cdr().car(), map, i, true );
         } else {
             var first = parameterList.car();
             if ( first instanceof Nil ) {
-                map[ FunctionParameterListBuilder.NIL_ARG.name() ] =
+                map[
+                    FunctionParameterListBuilder_st.NIL_ARG.name() ] =
                     i[ 0 ];
                 i[ 0 ]++;
             } else {
-                FunctionParameterListBuilder.index(
+                FunctionParameterListBuilder_st.index(
                     first, map, i, true );
             }
-            FunctionParameterListBuilder.index(
+            FunctionParameterListBuilder_st.index(
                 parameterList.cdr(), map, i, false );
         }
     } else {
@@ -10298,27 +10419,27 @@ FunctionParameterListBuilder.index = function (
 };
 
 // PORT TODO: Rename all uses of .curry().
-FunctionParameterListBuilder.curryStack = function (
+FunctionParameterListBuilder_st.curryStack = function (
     params, param, arg, paramIndex ) {
     
-    var last = ArcObject.NIL;
+    var last = ArcObject_st.NIL;
     var list = [];
     while ( !params.isNotPair() ) {
         var curriedParam =
-            FunctionParameterListBuilder.curryStackParam_(
+            FunctionParameterListBuilder_st.curryStackParam_(
                 param, arg, paramIndex, params.car() );
         if ( curriedParam !== null )
             list.push( curriedParam );
         params = params.cdr();
     }
     if ( params instanceof Symbol ) {
-        var rest = FunctionParameterListBuilder.curryStackParam_(
+        var rest = FunctionParameterListBuilder_st.curryStackParam_(
             param, arg, paramIndex, params );
         if ( rest !== null )
             last = rest;
     }
     try {
-        return Pair.buildFrom2( list, last );
+        return Pair_st.buildFrom2( list, last );
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
         throw new ArcError(
             "couldn't curry params " + params + ", got list " +
@@ -10326,27 +10447,27 @@ FunctionParameterListBuilder.curryStack = function (
     }
 };
 
-FunctionParameterListBuilder.curryBound = function (
+FunctionParameterListBuilder_st.curryBound = function (
     params, param, arg, paramIndex ) {
     
-    var last = ArcObject.NIL;
+    var last = ArcObject_st.NIL;
     var list = [];
     while ( !params.isNotPair() ) {
         var curriedParam =
-            FunctionParameterListBuilder.curryBoundParam_(
+            FunctionParameterListBuilder_st.curryBoundParam_(
                 param, arg, paramIndex, params.car() );
         if ( curriedParam !== null )
             list.push( curriedParam );
         params = params.cdr();
     }
     if ( params instanceof Symbol ) {
-        var rest = FunctionParameterListBuilder.curryBoundParam_(
+        var rest = FunctionParameterListBuilder_st.curryBoundParam_(
             param, arg, paramIndex, params );
         if ( rest !== null )
             last = rest;
     }
     try {
-        return Pair.buildFrom2( list, last );
+        return Pair_st.buildFrom2( list, last );
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
         throw new ArcError(
             "couldn't curry params " + params + ", got list " +
@@ -10354,39 +10475,39 @@ FunctionParameterListBuilder.curryBound = function (
     }
 };
 
-FunctionParameterListBuilder.curryStackParam_ = function (
+FunctionParameterListBuilder_st.curryStackParam_ = function (
     param, arg, paramIndex, c ) {
     
     var curriedParam = null;
     if ( c instanceof Symbol && !c.isSame( param.name ) )
         curriedParam = c;
-    else if ( ComplexArgs.optional( c )
+    else if ( ComplexArgs_st.optional( c )
         && !c.cdr().car().isSame( param.name ) )
-        curriedParam = Pair.buildFrom1( [
-            FunctionParameterListBuilder.O,
+        curriedParam = Pair_st.buildFrom1( [
+            FunctionParameterListBuilder_st.O,
             c.cdr().car(),
             c.cdr().cdr().car().inline3( param, arg, paramIndex )
         ] );
-    else if ( !ComplexArgs.optional( c ) && c instanceof Pair )
+    else if ( !ComplexArgs_st.optional( c ) && c instanceof Pair )
         curriedParam = c;
     return curriedParam;
 };
 
-FunctionParameterListBuilder.curryBoundParam_ = function (
+FunctionParameterListBuilder_st.curryBoundParam_ = function (
     param, arg, paramIndex, c ) {
     
     var curriedParam = null;
     if ( c instanceof Symbol && !c.isSame( param.name ) )
         curriedParam = c;
-    else if ( ComplexArgs.optional( c )
+    else if ( ComplexArgs_st.optional( c )
         && !c.cdr().car().isSame( param.name ) )
-        curriedParam = Pair.buildFrom1( [
-            FunctionParameterListBuilder.O,
+        curriedParam = Pair_st.buildFrom1( [
+            FunctionParameterListBuilder_st.O,
             c.cdr().car(),
             c.cdr().cdr().car().inline5(
                 param, arg, false, 0, paramIndex )
         ] );
-    else if ( !ComplexArgs.optional( c ) && c instanceof Pair )
+    else if ( !ComplexArgs_st.optional( c ) && c instanceof Pair )
         curriedParam = c;
     return curriedParam;
 };
@@ -10398,10 +10519,10 @@ FunctionParameterListBuilder.curryBoundParam_ = function (
 // Needed late: IfClause Else IfThen Pair ArcObject Nil ArcError
 // Compiler
 
-var IfBuilder = {};
+var IfBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-IfBuilder.build = function ( vm, body, lexicalBindings ) {
+IfBuilder_st.build = function ( vm, body, lexicalBindings ) {
     var original = body;
     var clause = new IfClause();
     while ( 0 < body.len() )
@@ -10414,7 +10535,8 @@ IfBuilder.build = function ( vm, body, lexicalBindings ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(body instanceof Pair) )
                 throw new TypeError();
-            body.setCdr( new Pair( ArcObject.NIL, ArcObject.NIL ) );
+            body.setCdr( new Pair().init2(
+                ArcObject_st.NIL, ArcObject_st.NIL ) );
             body = body.cdr();
             break;
         default:
@@ -10424,78 +10546,79 @@ IfBuilder.build = function ( vm, body, lexicalBindings ) {
         }
     
     body = original;
-    vm.pushFrame( new IfBuilder.Reduce( clause ) );
+    vm.pushFrame( new IfBuilder_st.Reduce( clause ) );
     vm.pushFrame(
-        new IfBuilder.BuildIf1( clause, body, lexicalBindings ) );
+        new IfBuilder_st.BuildIf1( clause, body, lexicalBindings ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-IfBuilder.Reduce = function ( clause ) {
+IfBuilder_st.Reduce = function ( clause ) {
     Instruction.call( this );
     this.clause_ = clause;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "IfBuilder.build" ) );
+    this.belongsTo( ArcString_st.make( "IfBuilder.build" ) );
 };
 
-IfBuilder.Reduce.prototype = new Instruction();
-IfBuilder.Reduce.prototype.className = "IfBuilder.Reduce";
+IfBuilder_st.Reduce.prototype = new Instruction();
+IfBuilder_st.Reduce.prototype.className = "IfBuilder.Reduce";
 
-IfBuilder.Reduce.prototype.operate = function ( vm ) {
+IfBuilder_st.Reduce.prototype.operate = function ( vm ) {
     vm.pushA( this.clause_.reduce() );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-IfBuilder.BuildIf1 = function ( clause, body, lexicalBindings ) {
+IfBuilder_st.BuildIf1 = function ( clause, body, lexicalBindings ) {
     Instruction.call( this );
     this.clause_ = clause;
     this.body_ = body;
     this.lexicalBindings_ = lexicalBindings;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "IfBuilder.build" ) );
+    this.belongsTo( ArcString_st.make( "IfBuilder.build" ) );
 };
 
-IfBuilder.BuildIf1.prototype = new Instruction();
-IfBuilder.BuildIf1.prototype.className = "IfBuilder.BuildIf1";
+IfBuilder_st.BuildIf1.prototype = new Instruction();
+IfBuilder_st.BuildIf1.prototype.className = "IfBuilder.BuildIf1";
 
-IfBuilder.BuildIf1.prototype.operate = function ( vm ) {
+IfBuilder_st.BuildIf1.prototype.operate = function ( vm ) {
     if ( this.body_ instanceof Nil )
         return;
     
     try {
         this.body_.mustBePairOrNil();
-    } catch ( e ) { if ( !(e instanceof Pair.NotPair) ) throw e;
+    } catch ( e ) { if ( !(e instanceof Pair_st.NotPair) ) throw e;
         throw new ArcError( "if: unexpected: " + this.body_ );
     }
     
-    vm.pushFrame( new IfBuilder.BuildIf2(
+    vm.pushFrame( new IfBuilder_st.BuildIf2(
         this.clause_, this.body_.cdr(), this.lexicalBindings_ ) );
-    Compiler.compile( vm, this.body_.car(), this.lexicalBindings_ );
+    Compiler_st.compile(
+        vm, this.body_.car(), this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-IfBuilder.BuildIf2 = function ( clause, body, lexicalBindings ) {
+IfBuilder_st.BuildIf2 = function ( clause, body, lexicalBindings ) {
     Instruction.call( this );
     this.clause_ = clause;
     this.body_ = body;
     this.lexicalBindings_ = lexicalBindings;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "AssignmentBuilder.build" ) );
+    this.belongsTo( ArcString_st.make( "IfBuilder.build" ) );
 };
 
-IfBuilder.BuildIf2.prototype = new Instruction();
-IfBuilder.BuildIf2.prototype.className = "IfBuilder.BuildIf2";
+IfBuilder_st.BuildIf2.prototype = new Instruction();
+IfBuilder_st.BuildIf2.prototype.className = "IfBuilder.BuildIf2";
 
-IfBuilder.BuildIf2.prototype.operate = function ( vm ) {
+IfBuilder_st.BuildIf2.prototype.operate = function ( vm ) {
     this.clause_.take( vm.popA().reduce() );
-    vm.pushFrame( new IfBuilder.BuildIf1(
+    vm.pushFrame( new IfBuilder_st.BuildIf1(
         this.clause_, this.body_, this.lexicalBindings_ ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//IfBuilder.build = function ( vm, body, lexicalBindings ) {
+//IfBuilder_st.build = function ( vm, body, lexicalBindings ) {
 //    var original = body;
 //    var clause = new IfClause();
 //    while ( 0 < body.len() )
@@ -10508,7 +10631,8 @@ IfBuilder.BuildIf2.prototype.operate = function ( vm ) {
 //            // PORT NOTE: This was a cast in Java.
 //            if ( !(body instanceof Pair) )
 //                throw new TypeError();
-//            body.setCdr( new Pair( ArcObject.NIL, ArcObject.NIL ) );
+//            body.setCdr( new Pair().init2(
+//                ArcObject_st.NIL, ArcObject_st.NIL ) );
 //            body = body.cdr();
 //            break;
 //        default:
@@ -10522,10 +10646,11 @@ IfBuilder.BuildIf2.prototype.operate = function ( vm ) {
 //        try {
 //            body.mustBePairOrNil();
 //        } catch ( notPair ) {
-//            if ( !(notPair instanceof Pair.NotPair) ) throw notPair;
+//            if ( !(notPair instanceof Pair_st.NotPair) )
+//                throw notPair;
 //            throw new ArcError( "if: unexpected: " + body );
 //        }
-//        clause.take( Compiler.compile(
+//        clause.take( Compiler_st.compile(
 //            vm, body.car(), lexicalBindings ).reduce() );
 //        body = body.cdr();
 //    }
@@ -10539,19 +10664,19 @@ IfBuilder.BuildIf2.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed late: Nil Pair ArcError Compiler Invocation
 
-var InvocationBuilder = {};
+var InvocationBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-InvocationBuilder.build = function ( vm, body, lexicalBindings ) {
+InvocationBuilder_st.build = function ( vm, body, lexicalBindings ) {
     var original = body;
     var list = [];
-    vm.pushFrame( new InvocationBuilder.BuildInvocation(
+    vm.pushFrame( new InvocationBuilder_st.BuildInvocation(
         body, lexicalBindings, original, list ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-InvocationBuilder.BuildInvocation = function (
+InvocationBuilder_st.BuildInvocation = function (
     body, lexicalBindings, original, list ) {
     
     Instruction.call( this );
@@ -10560,71 +10685,73 @@ InvocationBuilder.BuildInvocation = function (
     this.original_ = original;
     this.list_ = list;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "InvocationBuilder.build" ) );
+    this.belongsTo( ArcString_st.make( "InvocationBuilder.build" ) );
 };
 
-InvocationBuilder.BuildInvocation.prototype = new Instruction();
-InvocationBuilder.BuildInvocation.prototype.className =
+InvocationBuilder_st.BuildInvocation.prototype = new Instruction();
+InvocationBuilder_st.BuildInvocation.prototype.className =
     "InvocationBuilder.BuildInvocation";
 
-InvocationBuilder.BuildInvocation.prototype.operate = function (
+InvocationBuilder_st.BuildInvocation.prototype.operate = function (
     vm ) {
     
     if ( this.body_ instanceof Nil ) {
         vm.pushA( new Invocation(
-            Pair.buildFrom1( this.list_ ) ).reduce() );
+            Pair_st.buildFrom1( this.list_ ) ).reduce() );
         return;
     }
     
     try {
         this.body_.mustBePairOrNil();
     } catch ( notPair ) {
-        if ( !(notPair instanceof Pair.NotPair) ) throw notPair;
+        if ( !(notPair instanceof Pair_st.NotPair) ) throw notPair;
         throw new ArcError(
             "can't compile " + this.original_ + "; not a proper " +
             "list" );
     }
-    vm.pushFrame( new InvocationBuilder.BuildInvocation(
+    vm.pushFrame( new InvocationBuilder_st.BuildInvocation(
         this.body_.cdr(), this.lexicalBindings_, this.original_,
         this.list_ ) );
-    vm.pushFrame( new InvocationBuilder.ReducePush( this.list_ ) );
-    Compiler.compile( vm, this.body_.car(), this.lexicalBindings_ );
+    vm.pushFrame( new InvocationBuilder_st.ReducePush( this.list_ ) );
+    Compiler_st.compile(
+        vm, this.body_.car(), this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-InvocationBuilder.ReducePush = function ( list ) {
+InvocationBuilder_st.ReducePush = function ( list ) {
     Instruction.call( this );
     this.list_ = list;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "InvocationBuilder.build" ) );
+    this.belongsTo( ArcString_st.make( "InvocationBuilder.build" ) );
 };
 
-InvocationBuilder.ReducePush.prototype = new Instruction();
-InvocationBuilder.ReducePush.prototype.className =
+InvocationBuilder_st.ReducePush.prototype = new Instruction();
+InvocationBuilder_st.ReducePush.prototype.className =
     "InvocationBuilder.ReducePush";
 
-InvocationBuilder.ReducePush.prototype.operate = function ( vm ) {
+InvocationBuilder_st.ReducePush.prototype.operate = function ( vm ) {
     this.list_.push( vm.popA().reduce() );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//InvocationBuilder.build = function ( vm, body, lexicalBindings ) {
+//InvocationBuilder_st.build = function ( vm, body, lexicalBindings ) {
 //    var original = body;
 //    var list = [];
 //    while ( !(body instanceof Nil) ) {
 //        try {
 //            body.mustBePairOrNil();
 //        } catch ( notPair ) {
-//            if ( !(notPair instanceof Pair.NotPair) ) throw notPair;
+//            if ( !(notPair instanceof Pair_st.NotPair) )
+//                throw notPair;
 //            throw new ArcError(
 //                "can't compile " + original + "; not a proper list" );
 //        }
-//        list.push( Compiler.compile(
+//        list.push( Compiler_st.compile(
 //            vm, body.car(), lexicalBindings ).reduce() );
 //        body = body.cdr();
 //    }
-//    return new Invocation( Pair.buildFrom1( list ) ).reduce();
+//    return new Invocation( Pair_st.buildFrom1( list ) ).reduce();
 //};
 
 
@@ -10633,80 +10760,83 @@ InvocationBuilder.ReducePush.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed late: Nil Pair Compiler
 
-var PairExpander = {};
+var PairExpander_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-PairExpander.expand = function ( vm, body, lexicalBindings ) {
+PairExpander_st.expand = function ( vm, body, lexicalBindings ) {
     var result = [];
-    vm.pushFrame( new PairExpander.ExpandPair(
+    vm.pushFrame( new PairExpander_st.ExpandPair(
         body, lexicalBindings, result ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-PairExpander.ExpandPair = function ( body, lexicalBindings, result ) {
+PairExpander_st.ExpandPair = function (
+    body, lexicalBindings, result ) {
+    
     Instruction.call( this );
     this.body_ = body;
     this.lexicalBindings_ = lexicalBindings;
     this.result_ = result;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "PairExpander.expand" ) );
+    this.belongsTo( ArcString_st.make( "PairExpander.expand" ) );
 };
 
-PairExpander.ExpandPair.prototype = new Instruction();
-PairExpander.ExpandPair.prototype.className =
+PairExpander_st.ExpandPair.prototype = new Instruction();
+PairExpander_st.ExpandPair.prototype.className =
     "PairExpander.ExpandPair";
 
-PairExpander.ExpandPair.prototype.operate = function ( vm ) {
+PairExpander_st.ExpandPair.prototype.operate = function ( vm ) {
     if ( this.body_ instanceof Nil
         || !(this.body_ instanceof Pair) ) {
-        vm.pushFrame( new PairExpander.FinishPair( this.result_ ) );
-        Compiler.compile( vm, this.body_, this.lexicalBindings_ );
+        vm.pushFrame(
+            new PairExpander_st.FinishPair( this.result_ ) );
+        Compiler_st.compile( vm, this.body_, this.lexicalBindings_ );
         return;
     }
     
-    vm.pushFrame( new PairExpander.ExpandPair(
+    vm.pushFrame( new PairExpander_st.ExpandPair(
         this.body_.cdr(), this.lexicalBindings_, this.result_ ) );
     
     var next = this.body_.car();
-    vm.pushFrame( new PairExpander.ReducePush( this.result_ ) );
-    Compiler.compile( vm, next, this.lexicalBindings_ );
+    vm.pushFrame( new PairExpander_st.ReducePush( this.result_ ) );
+    Compiler_st.compile( vm, next, this.lexicalBindings_ );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-PairExpander.ReducePush = function ( list ) {
+PairExpander_st.ReducePush = function ( list ) {
     Instruction.call( this );
     this.list_ = list;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "PairExpander.expand" ) );
+    this.belongsTo( ArcString_st.make( "PairExpander.expand" ) );
 };
 
-PairExpander.ReducePush.prototype = new Instruction();
-PairExpander.ReducePush.prototype.className =
+PairExpander_st.ReducePush.prototype = new Instruction();
+PairExpander_st.ReducePush.prototype.className =
     "PairExpander.ReducePush";
 
-PairExpander.ReducePush.prototype.operate = function ( vm ) {
+PairExpander_st.ReducePush.prototype.operate = function ( vm ) {
     this.list_.push( vm.popA().reduce() );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-PairExpander.FinishPair = function ( result ) {
+PairExpander_st.FinishPair = function ( result ) {
     Instruction.call( this );
     this.result_ = result;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "PairExpander.expand" ) );
+    this.belongsTo( ArcString_st.make( "PairExpander.expand" ) );
 };
 
-PairExpander.FinishPair.prototype = new Instruction();
-PairExpander.FinishPair.prototype.className =
+PairExpander_st.FinishPair.prototype = new Instruction();
+PairExpander_st.FinishPair.prototype.className =
     "PairExpander.FinishPair";
 
-PairExpander.FinishPair.prototype.operate = function ( vm ) {
+PairExpander_st.FinishPair.prototype.operate = function ( vm ) {
     // PORT NOTE: This local variable didn't exist in Java.
     var newResult =
-        Pair.buildFrom2( this.result_, vm.popA().reduce() );
+        Pair_st.buildFrom2( this.result_, vm.popA().reduce() );
     // PORT NOTE: This was a cast in Java.
     if ( !(newResult instanceof Pair) )
         throw new TypeError();
@@ -10714,19 +10844,19 @@ PairExpander.FinishPair.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//PairExpander.expand = function ( vm, body, lexicalBindings ) {
+//PairExpander_st.expand = function ( vm, body, lexicalBindings ) {
 //    var result = [];
 //    
 //    while ( !(body instanceof Nil) && body instanceof Pair ) {
 //        var next = body.car();
 //        body = body.cdr();
-//        result.push(
-//            Compiler.compile( vm, next, lexicalBindings ).reduce() );
+//        result.push( Compiler_st.compile(
+//            vm, next, lexicalBindings ).reduce() );
 //    }
 //    
 //    // PORT NOTE: This local variable didn't exist in Java.
-//    var result = Pair.buildFrom2( result,
-//        Compiler.compile( vm, body, lexicalBindings ).reduce() );
+//    var result = Pair_st.buildFrom2( result,
+//        Compiler_st.compile( vm, body, lexicalBindings ).reduce() );
 //    // PORT NOTE: This was a cast in Java.
 //    if ( !(result instanceof Pair) )
 //        throw new TypeError();
@@ -10740,43 +10870,43 @@ PairExpander.FinishPair.prototype.operate = function ( vm ) {
 // Needed early: Symbol
 // Needed late: QuasiQuotation Pair Compiler
 
-var QuasiQuoteCompiler = {};
+var QuasiQuoteCompiler_st = {};
 
-QuasiQuoteCompiler.QUASIQUOTE = Symbol.mkSym( "quasiquote" );
-QuasiQuoteCompiler.UNQUOTE = Symbol.mkSym( "unquote" );
-QuasiQuoteCompiler.UNQUOTE_SPLICING =
-    Symbol.mkSym( "unquote-splicing" );
+QuasiQuoteCompiler_st.QUASIQUOTE = Symbol_st.mkSym( "quasiquote" );
+QuasiQuoteCompiler_st.UNQUOTE = Symbol_st.mkSym( "unquote" );
+QuasiQuoteCompiler_st.UNQUOTE_SPLICING =
+    Symbol_st.mkSym( "unquote-splicing" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-QuasiQuoteCompiler.compile = function (
+QuasiQuoteCompiler_st.compile = function (
     vm, expression, lexicalBindings, nesting ) {
     
     if ( expression.isNotPair() ) {
         vm.pushA( expression );
-    } else if ( QuasiQuotation.isUnQuote( expression ) ) {
-        QuasiQuoteCompiler.compileUnquote_( vm,
-            QuasiQuoteCompiler.UNQUOTE, expression, nesting,
+    } else if ( QuasiQuotation_st.isUnQuote( expression ) ) {
+        QuasiQuoteCompiler_st.compileUnquote_( vm,
+            QuasiQuoteCompiler_st.UNQUOTE, expression, nesting,
             lexicalBindings );
-    } else if ( QuasiQuotation.isUnQuoteSplicing( expression ) ) {
-        QuasiQuoteCompiler.compileUnquote_( vm,
-            QuasiQuoteCompiler.UNQUOTE_SPLICING, expression, nesting,
-            lexicalBindings );
-    } else if ( QuasiQuotation.isQuasiQuote( expression ) ) {
-        vm.pushFrame( new QuasiQuoteCompiler.Prefix(
-            QuasiQuoteCompiler.QUASIQUOTE ) );
-        QuasiQuoteCompiler.compile( vm, expression.cdr().car(),
+    } else if ( QuasiQuotation_st.isUnQuoteSplicing( expression ) ) {
+        QuasiQuoteCompiler_st.compileUnquote_( vm,
+            QuasiQuoteCompiler_st.UNQUOTE_SPLICING, expression,
+            nesting, lexicalBindings );
+    } else if ( QuasiQuotation_st.isQuasiQuote( expression ) ) {
+        vm.pushFrame( new QuasiQuoteCompiler_st.Prefix(
+            QuasiQuoteCompiler_st.QUASIQUOTE ) );
+        QuasiQuoteCompiler_st.compile( vm, expression.cdr().car(),
             lexicalBindings, nesting + 1 );
     } else {
         var result = [];
         
-        vm.pushFrame( new QuasiQuoteCompiler.CompileQuasiQuote(
+        vm.pushFrame( new QuasiQuoteCompiler_st.CompileQuasiQuote(
             result, expression, lexicalBindings, nesting ) );
     }
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-QuasiQuoteCompiler.CompileQuasiQuote = function (
+QuasiQuoteCompiler_st.CompileQuasiQuote = function (
     result, expression, lexicalBindings, nesting ) {
     
     Instruction.call( this );
@@ -10785,91 +10915,95 @@ QuasiQuoteCompiler.CompileQuasiQuote = function (
     this.lexicalBindings_ = lexicalBindings;
     this.nesting_ = nesting;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "QuasiQuoteCompiler.compile" ) );
+    this.belongsTo(
+        ArcString_st.make( "QuasiQuoteCompiler.compile" ) );
 };
 
-QuasiQuoteCompiler.CompileQuasiQuote.prototype = new Instruction();
-QuasiQuoteCompiler.CompileQuasiQuote.prototype.className =
+QuasiQuoteCompiler_st.CompileQuasiQuote.prototype = new Instruction();
+QuasiQuoteCompiler_st.CompileQuasiQuote.prototype.className =
     "QuasiQuoteCompiler.CompileQuasiQuote";
 
-QuasiQuoteCompiler.CompileQuasiQuote.prototype.operate = function (
+QuasiQuoteCompiler_st.CompileQuasiQuote.prototype.operate = function (
     vm ) {
     
     if ( this.expression_.isNotPair() ) {
-        vm.pushFrame(
-            new QuasiQuoteCompiler.FinishQuasiQuote( this.result_ ) );
-        QuasiQuoteCompiler.compile( vm, this.expression_,
+        vm.pushFrame( new QuasiQuoteCompiler_st.FinishQuasiQuote(
+            this.result_ ) );
+        QuasiQuoteCompiler_st.compile( vm, this.expression_,
             this.lexicalBindings_, this.nesting_ );
         return;
     }
     
     var next = this.expression_.car();
-    vm.pushFrame( new QuasiQuoteCompiler.CompileQuasiQuote(
+    vm.pushFrame( new QuasiQuoteCompiler_st.CompileQuasiQuote(
         this.result_, this.expression_.cdr(), this.lexicalBindings_,
         this.nesting_ ) );
     if ( next.isNotPair() ) {
         this.result_.push( next );
     } else {
-        vm.pushFrame( new QuasiQuoteCompiler.Push( this.result_ ) );
-        QuasiQuoteCompiler.compile(
+        vm.pushFrame(
+            new QuasiQuoteCompiler_st.Push( this.result_ ) );
+        QuasiQuoteCompiler_st.compile(
             vm, next, this.lexicalBindings_, this.nesting_ );
     }
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-QuasiQuoteCompiler.FinishQuasiQuote = function ( result ) {
+QuasiQuoteCompiler_st.FinishQuasiQuote = function ( result ) {
     Instruction.call( this );
     this.result_ = result;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "QuasiQuoteCompiler.compile" ) );
+    this.belongsTo(
+        ArcString_st.make( "QuasiQuoteCompiler.compile" ) );
 };
 
-QuasiQuoteCompiler.FinishQuasiQuote.prototype = new Instruction();
-QuasiQuoteCompiler.FinishQuasiQuote.prototype.className =
+QuasiQuoteCompiler_st.FinishQuasiQuote.prototype = new Instruction();
+QuasiQuoteCompiler_st.FinishQuasiQuote.prototype.className =
     "QuasiQuoteCompiler.FinishQuasiQuote";
 
-QuasiQuoteCompiler.FinishQuasiQuote.prototype.operate = function (
+QuasiQuoteCompiler_st.FinishQuasiQuote.prototype.operate = function (
     vm ) {
     
-    vm.pushA( Pair.buildFrom2( this.result_, vm.popA() ) );
+    vm.pushA( Pair_st.buildFrom2( this.result_, vm.popA() ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-QuasiQuoteCompiler.Push = function ( result ) {
+QuasiQuoteCompiler_st.Push = function ( result ) {
     Instruction.call( this );
     this.result_ = result;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "QuasiQuoteCompiler.compile" ) );
+    this.belongsTo(
+        ArcString_st.make( "QuasiQuoteCompiler.compile" ) );
 };
 
-QuasiQuoteCompiler.Push.prototype = new Instruction();
-QuasiQuoteCompiler.Push.prototype.className =
+QuasiQuoteCompiler_st.Push.prototype = new Instruction();
+QuasiQuoteCompiler_st.Push.prototype.className =
     "QuasiQuoteCompiler.Push";
 
-QuasiQuoteCompiler.Push.prototype.operate = function ( vm ) {
+QuasiQuoteCompiler_st.Push.prototype.operate = function ( vm ) {
     this.result_.push( vm.popA() );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//QuasiQuoteCompiler.compile = function (
+//QuasiQuoteCompiler_st.compile = function (
 //    vm, expression, lexicalBindings, nesting ) {
 //    
 //    if ( expression.isNotPair() )
 //        return expression;
 //    
-//    if ( QuasiQuotation.isUnQuote( expression ) ) {
-//        return QuasiQuoteCompiler.compileUnquote_( vm,
-//            QuasiQuoteCompiler.UNQUOTE, expression, nesting,
+//    if ( QuasiQuotation_st.isUnQuote( expression ) ) {
+//        return QuasiQuoteCompiler_st.compileUnquote_( vm,
+//            QuasiQuoteCompiler_st.UNQUOTE, expression, nesting,
 //            lexicalBindings );
-//    } else if ( QuasiQuotation.isUnQuoteSplicing( expression ) ) {
-//        return QuasiQuoteCompiler.compileUnquote_( vm,
-//            QuasiQuoteCompiler.UNQUOTE_SPLICING, expression, nesting,
-//            lexicalBindings );
-//    } else if ( QuasiQuotation.isQuasiQuote( expression ) ) {
-//        return Pair.buildFrom1( [ QuasiQuoteCompiler.QUASIQUOTE,
-//            QuasiQuoteCompiler.compile( vm, expression.cdr().car(),
+//    } else if ( QuasiQuotation_st.isUnQuoteSplicing( expression ) ) {
+//        return QuasiQuoteCompiler_st.compileUnquote_( vm,
+//            QuasiQuoteCompiler_st.UNQUOTE_SPLICING, expression,
+//            nesting, lexicalBindings );
+//    } else if ( QuasiQuotation_st.isQuasiQuote( expression ) ) {
+//        return Pair_st.buildFrom1( [ QuasiQuoteCompiler_st.QUASIQUOTE,
+//            QuasiQuoteCompiler_st.compile( vm, expression.cdr().car(),
 //                lexicalBindings, nesting + 1 ) ] );
 //    } else {
 //        var result = [];
@@ -10880,57 +11014,60 @@ QuasiQuoteCompiler.Push.prototype.operate = function ( vm ) {
 //            if ( next.isNotPair() )
 //                result.push( next );
 //            else
-//                result.push( QuasiQuoteCompiler.compile( vm, next,
+//                result.push( QuasiQuoteCompiler_st.compile( vm, next,
 //                    lexicalBindings, nesting ) );
 //        }
 //        
-//        return Pair.buildFrom2( result, QuasiQuoteCompiler.compile(
-//            vm, expression, lexicalBindings, nesting ) );
+//        return Pair_st.buildFrom2( result,
+//            QuasiQuoteCompiler_st.compile(
+//                vm, expression, lexicalBindings, nesting ) );
 //    }
 //};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-QuasiQuoteCompiler.compileUnquote_ = function (
+QuasiQuoteCompiler_st.compileUnquote_ = function (
     vm, prefix, expression, nesting, lexicalBindings ) {
     
     var compileMe = expression.cdr().car();
-    vm.pushFrame( new QuasiQuoteCompiler.Prefix( prefix ) );
+    vm.pushFrame( new QuasiQuoteCompiler_st.Prefix( prefix ) );
     if ( nesting === 1 )
-        Compiler.compile( vm, compileMe, lexicalBindings );
+        Compiler_st.compile( vm, compileMe, lexicalBindings );
     else
-        QuasiQuoteCompiler.compile(
+        QuasiQuoteCompiler_st.compile(
             vm, compileMe, lexicalBindings, nesting - 1 );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-QuasiQuoteCompiler.Prefix = function ( prefix ) {
+QuasiQuoteCompiler_st.Prefix = function ( prefix ) {
     Instruction.call( this );
     this.prefix_ = prefix;
     // ASYNC PORT TODO: Come up with a better owner for this.
-    this.belongsTo( ArcString.make( "QuasiQuoteCompiler.compile" ) );
+    this.belongsTo(
+        ArcString_st.make( "QuasiQuoteCompiler.compile" ) );
 };
 
-QuasiQuoteCompiler.Prefix.prototype = new Instruction();
-QuasiQuoteCompiler.Prefix.prototype.className =
+QuasiQuoteCompiler_st.Prefix.prototype = new Instruction();
+QuasiQuoteCompiler_st.Prefix.prototype.className =
     "QuasiQuoteCompiler.Prefix";
 
-QuasiQuoteCompiler.Prefix.prototype.operate = function ( vm ) {
-    vm.pushA( Pair.buildFrom1( [ this.prefix_, vm.popA() ] ) );
+QuasiQuoteCompiler_st.Prefix.prototype.operate = function ( vm ) {
+    vm.pushA( Pair_st.buildFrom1( [ this.prefix_, vm.popA() ] ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//QuasiQuoteCompiler.compileUnquote_ = function (
+//QuasiQuoteCompiler_st.compileUnquote_ = function (
 //    vm, prefix, expression, nesting, lexicalBindings ) {
 //    
 //    var compileMe = expression.cdr().car();
 //    var compiled;
 //    if ( nesting === 1 )
-//        compiled = Compiler.compile( vm, compileMe, lexicalBindings );
+//        compiled =
+//            Compiler_st.compile( vm, compileMe, lexicalBindings );
 //    else
-//        compiled = QuasiQuoteCompiler.compile(
+//        compiled = QuasiQuoteCompiler_st.compile(
 //            vm, compileMe, lexicalBindings, nesting - 1 );
-//    return Pair.buildFrom1( [ prefix, compiled ] );
+//    return Pair_st.buildFrom1( [ prefix, compiled ] );
 //};
 
 
@@ -10987,42 +11124,42 @@ Argv.prototype.present = function ( option ) {
 // Needed early: Symbol
 // Needed late: InterpretedFunction Nil IfClause LastAssignment Pair
 
-var Decompiler = {};
+var Decompiler_st = {};
 
-Decompiler.LET = Symbol.mkSym( "let" );
-Decompiler.SELF = Symbol.mkSym( "self" );
-Decompiler.IT = Symbol.mkSym( "it" );
-Decompiler.AFN = Symbol.mkSym( "afn" );
-Decompiler.DO = Symbol.mkSym( "do" );
-Decompiler.WITH = Symbol.mkSym( "with" );
-Decompiler.AIF = Symbol.mkSym( "aif" );
+Decompiler_st.LET = Symbol_st.mkSym( "let" );
+Decompiler_st.SELF = Symbol_st.mkSym( "self" );
+Decompiler_st.IT = Symbol_st.mkSym( "it" );
+Decompiler_st.AFN = Symbol_st.mkSym( "afn" );
+Decompiler_st.DO = Symbol_st.mkSym( "do" );
+Decompiler_st.WITH = Symbol_st.mkSym( "with" );
+Decompiler_st.AIF = Symbol_st.mkSym( "aif" );
 
-Decompiler.decompile = function ( o ) {
+Decompiler_st.decompile = function ( o ) {
     if ( o.parts.car() instanceof InterpretedFunction )
-        return Decompiler.decompile_(
-            Decompiler.withLetDo_( o.parts ) );
+        return Decompiler_st.decompile_(
+            Decompiler_st.withLetDo_( o.parts ) );
     else
         return o.parts;
 };
 
-Decompiler.decompile_ = function ( pair ) {
-    if ( pair.car() === Decompiler.LET )
-        return Decompiler.decompileLet_( pair.cdr() );
+Decompiler_st.decompile_ = function ( pair ) {
+    if ( pair.car() === Decompiler_st.LET )
+        return Decompiler_st.decompileLet_( pair.cdr() );
     else
         return pair;
 };
 
-Decompiler.decompileLet_ = function ( args ) {
-    if ( args.car() === Decompiler.IT ) {
+Decompiler_st.decompileLet_ = function ( args ) {
+    if ( args.car() === Decompiler_st.IT ) {
         var arg = args.cdr().car();
         var rest = args.cdr().cdr();
         if ( rest.cdr() instanceof Nil
             && rest.car() instanceof IfClause ) {
             var aif = rest.car();
             if ( aif.isAifIf() )
-                return Decompiler.makeAif_( aif, arg );
+                return Decompiler_st.makeAif_( aif, arg );
         }
-    } else if ( args.car() === Decompiler.SELF
+    } else if ( args.car() === Decompiler_st.SELF
         && args.cdr().car() instanceof Nil ) {
         var rest = args.cdr().cdr();
         if ( rest.car() instanceof Assignment
@@ -11032,38 +11169,40 @@ Decompiler.decompileLet_ = function ( args ) {
                 && a.assignment.expression instanceof
                     InterpretedFunction
                 && a.assignment instanceof LastAssignment )
-                return Decompiler.makeAfn( a.assignment.expression );
+                return Decompiler_st.makeAfn(
+                    a.assignment.expression );
         }
     }
-    return new Pair( Decompiler.LET, args );
+    return new Pair().init2( Decompiler_st.LET, args );
 };
 
-Decompiler.makeAfn_ = function ( ifn ) {
-    return Pair.buildFrom1(
-        [ Decompiler.AFN, ifn.parameterList() ].concat( ifn.body ) );
+Decompiler_st.makeAfn_ = function ( ifn ) {
+    return Pair_st.buildFrom1( [
+        Decompiler_st.AFN, ifn.parameterList() ].concat( ifn.body ) );
 };
 
-Decompiler.withLetDo_ = function ( parts ) {
+Decompiler_st.withLetDo_ = function ( parts ) {
     var ifn = parts.car();
     var args = parts.cdr();
     var params = ifn.parameterList();
     if ( args.len() === params.len() ) {
         if ( args.len() === 0 )
-            return Decompiler.makeDo_( ifn );
+            return Decompiler_st.makeDo_( ifn );
         else if ( args.len() === 1 )
-            return Decompiler.makeLet_( ifn, args, params );
+            return Decompiler_st.makeLet_( ifn, args, params );
         else
-            return Decompiler.makeWith_( ifn, args, params );
+            return Decompiler_st.makeWith_( ifn, args, params );
     } else {
         return parts;
     }
 };
 
-Decompiler.makeDo_ = function ( ifn ) {
-    return Pair.buildFrom1( [ Decompiler.DO ].concat( ifn.body ) );
+Decompiler_st.makeDo_ = function ( ifn ) {
+    return Pair_st.buildFrom1(
+        [ Decompiler_st.DO ].concat( ifn.body ) );
 };
 
-Decompiler.makeWith_ = function ( ifn, args, params ) {
+Decompiler_st.makeWith_ = function ( ifn, args, params ) {
     var w = [];
     while ( !(params instanceof Nil ) ) {
         w.push( params.car() );
@@ -11071,18 +11210,18 @@ Decompiler.makeWith_ = function ( ifn, args, params ) {
         params = params.cdr();
         args = args.cdr();
     }
-    return Pair.buildFrom1(
-        [ Decompiler.WITH, Pair.buildFrom1( w ) ].concat( ifn.body )
-    );
+    return Pair_st.buildFrom1(
+        [ Decompiler_st.WITH, Pair_st.buildFrom1( w ) ].concat(
+            ifn.body ) );
 };
 
-Decompiler.makeLet_ = function ( ifn, args, params ) {
-    return Pair.buildFrom1( [ Decompiler.LET, params.car(), args.car()
-        ].concat( ifn.body ) );
+Decompiler_st.makeLet_ = function ( ifn, args, params ) {
+    return Pair_st.buildFrom1( [ Decompiler_st.LET,
+        params.car(), args.car() ].concat( ifn.body ) );
 };
 
-Decompiler.makeAif_ = function ( ifClause, arg ) {
-    return Pair.buildFrom1( [ Decompiler.AIF, arg,
+Decompiler_st.makeAif_ = function ( ifClause, arg ) {
+    return Pair_st.buildFrom1( [ Decompiler_st.AIF, arg,
         ifClause.thenExpression(), ifClause.elseExpression() ] );
 };
 
@@ -11096,32 +11235,21 @@ Decompiler.makeAif_ = function ( ifClause, arg ) {
 // PORT TODO: The name-mangling tricks this does won't work yet.
 // Figure out something that will.
 
-// PORT TODO: Change all original uses of the constructor to uses of
-// InterpretedFunction.of().
 /** @constructor */
 function Builtin() {
-    ArcObject.call( this );
 }
+var Builtin_st = {};
 
 Builtin.prototype = new ArcObject();
 Builtin.prototype.className = "Builtin";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Builtin.of = function (
-    parameterList, lexicalBindings, body ) {
-    
-    return new Builtin().init(
-        parameterList, lexicalBindings, body );
-};
-
-// PORT NOTE: This didn't exist in Java. (It was part of the
-// constructor.)
-Builtin.prototype.init = function ( name ) {
+Builtin.prototype.initBuiltin = function ( name ) {
     // PORT NOTE: The name field was protected in Java, but there's
     // also a name method.
     this.name_ = name;
-    Symbol.mkSym( name ).setValue( this );
+    Symbol_st.mkSym( name ).setValue( this );
     return this;
 };
 
@@ -11141,10 +11269,12 @@ Builtin.prototype.compareTo = function ( right ) {
 };
 
 Builtin.prototype.type = function () {
-    return Builtin.TYPE;
+    return Builtin_st.TYPE;
 };
 
-Builtin.checkMaxArgCount = function ( args, functionClass, maxArgs ) {
+Builtin_st.checkMaxArgCount = function (
+    args, functionClass, maxArgs ) {
+    
     if ( maxArgs < args.len() ) {
         System_out_println(
             functionClass + " got args " + args + " was expecting " +
@@ -11155,7 +11285,7 @@ Builtin.checkMaxArgCount = function ( args, functionClass, maxArgs ) {
     }
 };
 
-Builtin.checkMinArgCount = function ( args, functionClass, min ) {
+Builtin_st.checkMinArgCount = function ( args, functionClass, min ) {
     if ( args.size() < min ) {
         throw new ArcError(
             functionClass.toLowerCase() + " expects at least " +
@@ -11163,7 +11293,7 @@ Builtin.checkMinArgCount = function ( args, functionClass, min ) {
     }
 };
 
-Builtin.checkExactArgsCount = function (
+Builtin_st.checkExactArgsCount = function (
     args, argCount, functionClass ) {
     
     if ( args.len() !== argCount ) {
@@ -11188,7 +11318,7 @@ Builtin.prototype.name = function () {
         this.className.toLowerCase() : this.name_;
 };
 
-Builtin.TYPE = Symbol.mkSym( "fn" );
+Builtin_st.TYPE = Symbol_st.mkSym( "fn" );
 
 
 // ===================================================================
@@ -11199,7 +11329,6 @@ Builtin.TYPE = Symbol.mkSym( "fn" );
 
 /** @constructor */
 function Closure( expression, lc ) {
-    ArcObject.call( this );
     this.expression_ = expression;
     this.lc_ = lc;
 }
@@ -11224,7 +11353,7 @@ Closure.prototype.invoke = function ( vm, args ) {
 };
 
 Closure.prototype.type = function () {
-    return Builtin.TYPE;
+    return Builtin_st.TYPE;
 };
 
 Closure.prototype.toString = function () {
@@ -11247,56 +11376,58 @@ Closure.prototype.fn = function () {
 // Needed late: Symbol rainbow.functions.eval.SSyntax
 // rainbow.functions.eval.SSExpand
 
-var Evaluation = {};
+var Evaluation_st = {};
 
-Evaluation.isSpecialSyntax = function ( expression ) {
+Evaluation_st.isSpecialSyntax = function ( expression ) {
     return expression instanceof Symbol &&
-        SSyntax.isSpecial( expression );
+        SSyntax_st.isSpecial( expression );
 };
 
-Evaluation.ssExpand = function ( expression ) {
-    return SSExpand.expand( Symbol.cast( expression, "ssexpand" ) );
+Evaluation_st.ssExpand = function ( expression ) {
+    return SSExpand_st.expand(
+        Symbol_st.cast( expression, "ssexpand" ) );
 };
 
 // PORT TODO: See if this is unused. But don't remove it! (The
 // spelling is correct, too.)
 /** @constructor */
-Evaluation.UnknownSytax = function ( symbol ) {
+Evaluation_st.UnknownSytax = function ( symbol ) {
     ArcError.call( this, "Unknown syntax " + symbol );
 };
 
-Evaluation.UnknownSytax.prototype = new ArcError( void 0 );
-Evaluation.UnknownSytax.prototype.className =
+Evaluation_st.UnknownSytax.prototype = new ArcError( void 0 );
+Evaluation_st.UnknownSytax.prototype.className =
     "Evaluation.UnknownSytax";
 
-Evaluation.isListListQuoted = function ( symbol ) {
+Evaluation_st.isListListQuoted = function ( symbol ) {
     return /[.!]/.test( symbol );
 };
 
-Evaluation.isComposeComplement = function ( symbol ) {
-    return Evaluation.isCompose_( symbol ) ||
-        Evaluation.isComplement_( symbol );
+Evaluation_st.isComposeComplement = function ( symbol ) {
+    return Evaluation_st.isCompose_( symbol ) ||
+        Evaluation_st.isComplement_( symbol );
 };
 
-// PORT TODO: Make sure SSExpand.ANDF_INTRASYM_CHAR is a char code.
-Evaluation.isAndf = function ( symbol ) {
+// PORT TODO: Make sure SSExpand_st.ANDF_INTRASYM_CHAR is a char code.
+Evaluation_st.isAndf = function ( symbol ) {
     if ( symbol.length === 0 )
         return false;
-    else if ( symbol.charCodeAt( 0 ) === SSExpand.ANDF_INTRASYM_CHAR )
-        return Evaluation.isAndf( symbol.substring( 1 ) );
+    else if (
+        symbol.charCodeAt( 0 ) === SSExpand_st.ANDF_INTRASYM_CHAR )
+        return Evaluation_st.isAndf( symbol.substring( 1 ) );
     else if ( symbol.charAt( symbol.length - 1 ) ===
-        SSExpand.ANDF_INTRASYM_CHAR )
-        return Evaluation.isAndf(
+        SSExpand_st.ANDF_INTRASYM_CHAR )
+        return Evaluation_st.isAndf(
             symbol.substring( 0, symbol.length - 1 ) );
     else
-        return symbol.indexOf( SSExpand.ANDF_INTRASYM ) !== -1;
+        return symbol.indexOf( SSExpand_st.ANDF_INTRASYM ) !== -1;
 };
 
-Evaluation.isComplement_ = function ( symbol ) {
+Evaluation_st.isComplement_ = function ( symbol ) {
     return /^~/.test( symbol );
 };
 
-Evaluation.isCompose_ = function ( symbol ) {
+Evaluation_st.isCompose_ = function ( symbol ) {
     return /:/.test( symbol );
 };
 
@@ -11310,12 +11441,10 @@ Evaluation.isCompose_ = function ( symbol ) {
 // ReferenceCounter ArcError Close_Instruction MeasureLexicalReach
 // LiteralObject Builtin FunctionParameterListBuilder IfClause
 
-// PORT TODO: Change all original uses of the constructor to uses of
-// InterpretedFunction.of().
 /** @constructor */
 function InterpretedFunction() {
-    ArcObject.call( this );
 }
+var InterpretedFunction_st = {};
 
 InterpretedFunction.prototype = new ArcObject();
 InterpretedFunction.prototype.Cons_ = InterpretedFunction;
@@ -11323,19 +11452,10 @@ InterpretedFunction.prototype.className = "InterpretedFunction";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-InterpretedFunction.of = function (
+InterpretedFunction.prototype.initInterpretedFunction = function (
     parameterList, lexicalBindings, body ) {
     
-    return new InterpretedFunction().init(
-        parameterList, lexicalBindings, body );
-};
-
-// PORT NOTE: This didn't exist in Java. (It was part of the
-// constructor.)
-InterpretedFunction.prototype.init = function (
-    parameterList, lexicalBindings, body ) {
-    
-    this.name = ArcObject.NIL;
+    this.name = ArcObject_st.NIL;
     // PORT NOTE: The parameterList field was protected in Java, but
     // there's also a parameterList method.
     this.parameterList_ = parameterList;
@@ -11354,7 +11474,7 @@ InterpretedFunction.prototype.init = function (
 
 InterpretedFunction.prototype.unassigned = function ( name ) {
     if ( this.name === name )
-        this.name = ArcObject.NIL;
+        this.name = ArcObject_st.NIL;
 };
 
 InterpretedFunction.prototype.assigned = function ( name ) {
@@ -11398,11 +11518,12 @@ InterpretedFunction.prototype.localProfileName = function () {
 };
 
 InterpretedFunction.prototype.ownerHierarchy = function () {
-    var me = ArcString.make( this.localProfileName() );
+    var me = ArcString_st.make( this.localProfileName() );
     if ( this.lexicalOwner_ !== null )
-        return new Pair( me, this.lexicalOwner_.ownerHierarchy() );
+        return new Pair().init2(
+            me, this.lexicalOwner_.ownerHierarchy() );
     else
-        return new Pair( me, ArcObject.NIL );
+        return new Pair().init2( me, ArcObject_st.NIL );
 };
 
 InterpretedFunction.prototype.lexicalDepth = function () {
@@ -11413,11 +11534,11 @@ InterpretedFunction.prototype.lexicalDepth = function () {
 };
 
 InterpretedFunction.prototype.reduce = function () {
-    if ( Console.stackfunctions && this.canIGoOnTheStack_()
+    if ( Console_st.stackfunctions && this.canIGoOnTheStack_()
         && !(this.parameterList_ instanceof Nil) ) {
         // TODO: .reduce() this to break out of the if clause in
         // curried optional-arg functions
-        return FunctionBodyBuilder.convertToStackParams( this );
+        return FunctionBodyBuilder_st.convertToStackParams( this );
     } else {
         return this;
     }
@@ -11435,7 +11556,7 @@ InterpretedFunction.prototype.canIGoOnTheStack_ = function () {
 InterpretedFunction.prototype.buildInstructionList_ = function () {
     var i = [];
     this.buildInstructions( i );
-    this.instructions_ = Pair.buildFrom1( i );
+    this.instructions_ = Pair_st.buildFrom1( i );
     this.claimInstructions_( this );
 };
 
@@ -11449,15 +11570,16 @@ InterpretedFunction.prototype.lexicalOwner = function () {
 
 // NOTE: This was an anonymous class in Java.
 /** @constructor */
-InterpretedFunction.Visitor_claimInstructions_ = function ( owner ) {
-    Visitor.call( this );
+InterpretedFunction_st.Visitor_claimInstructions_ = function (
+    owner ) {
+    
     this.owner_ = owner;
 };
 
-InterpretedFunction.Visitor_claimInstructions_.prototype =
+InterpretedFunction_st.Visitor_claimInstructions_.prototype =
     new Visitor();
 
-InterpretedFunction.Visitor_claimInstructions_.prototype.
+InterpretedFunction_st.Visitor_claimInstructions_.prototype.
     acceptInstruction = function ( o ) {
     
     o.belongsTo( this.owner_ );
@@ -11466,13 +11588,13 @@ InterpretedFunction.Visitor_claimInstructions_.prototype.
 InterpretedFunction.prototype.claimInstructions_ = function (
     owner ) {
     
-    this.instructions_.visit(
-        new InterpretedFunction.Visitor_claimInstructions_( owner ) );
+    this.instructions_.visit( new InterpretedFunction_st.
+        Visitor_claimInstructions_( owner ) );
 };
 
 InterpretedFunction.prototype.buildInstructions = function ( i ) {
     if ( this.body.length === 0 )
-        i.push( new Literal( ArcObject.NIL ) );
+        i.push( new Literal( ArcObject_st.NIL ) );
     else
         for ( var b = 0; b < this.body.length; b++ ) {
             var expr = this.body[ b ];
@@ -11494,7 +11616,7 @@ InterpretedFunction.prototype.inlineableArg_ = function (
     param, arg ) {
     
     var paramIndex = this.lexicalBindings[ param.name() ];
-    var p = BoundSymbol.make( param, 0, paramIndex );
+    var p = BoundSymbol_st.make( param, 0, paramIndex );
     return (arg.literal()
         || arg instanceof Quotation
         || arg instanceof Symbol
@@ -11555,7 +11677,7 @@ InterpretedFunction.prototype.invokef0 = function ( vm ) {
 
 // PORT TODO: Rename all uses of .invokeN.
 InterpretedFunction.prototype.invokeN0 = function ( vm, lc ) {
-    return this.invoke3( vm, lc, ArcObject.NIL );
+    return this.invoke3( vm, lc, ArcObject_st.NIL );
 };
 
 InterpretedFunction.prototype.invokef1 = function ( vm, arg ) {
@@ -11563,7 +11685,8 @@ InterpretedFunction.prototype.invokef1 = function ( vm, arg ) {
 };
 
 InterpretedFunction.prototype.invokeN1 = function ( vm, lc, arg ) {
-    return this.invoke3( vm, lc, new Pair( arg, ArcObject.NIL ) );
+    return this.invoke3(
+        vm, lc, new Pair().init2( arg, ArcObject_st.NIL ) );
 };
 
 InterpretedFunction.prototype.invokef2 = function ( vm, arg1, arg2 ) {
@@ -11573,8 +11696,8 @@ InterpretedFunction.prototype.invokef2 = function ( vm, arg1, arg2 ) {
 InterpretedFunction.prototype.invokeN2 = function (
     vm, lc, arg1, arg2 ) {
     
-    return this.invoke3( vm, lc,
-        new Pair( arg1, new Pair( arg2, ArcObject.NIL ) ) );
+    return this.invoke3( vm, lc, new Pair().init2(
+        arg1, new Pair().init2( arg2, ArcObject_st.NIL ) ) );
 };
 
 InterpretedFunction.prototype.invokef3 = function (
@@ -11586,8 +11709,9 @@ InterpretedFunction.prototype.invokef3 = function (
 InterpretedFunction.prototype.invokeN3 = function (
     vm, lc, arg1, arg2, arg3 ) {
     
-    return this.invoke3( vm, lc, new Pair( arg1,
-        new Pair( arg2, new Pair( arg3, ArcObject.NIL ) ) ) );
+    return this.invoke3( vm, lc, new Pair().init2( arg1,
+        new Pair().init2( arg2,
+            new Pair().init2( arg3, ArcObject_st.NIL ) ) ) );
 };
 
 InterpretedFunction.prototype.invoke = function ( vm, args ) {
@@ -11624,7 +11748,7 @@ InterpretedFunction.prototype.requiresClosure = function () {
 
 InterpretedFunction.prototype.visit = function ( v ) {
     v.acceptInterpretedFunction( this );
-    FunctionBodyBuilder.visit( v, this.parameterList_, false );
+    FunctionBodyBuilder_st.visit( v, this.parameterList_, false );
     for ( var i = 0, len = this.body.length; i < len; i++ )
         this.body[ i ].visit( v );
     v.endInterpretedFunction( this );
@@ -11639,7 +11763,7 @@ InterpretedFunction.prototype.isIdFn = function () {
                 if ( this.body[ 0 ] instanceof BoundSymbol ) {
                     var p1 = this.parameterList_.car();
                     var rv = this.body[ 0 ];
-                    var equiv = BoundSymbol.make( p1, 0, 0 );
+                    var equiv = BoundSymbol_st.make( p1, 0, 0 );
                     return rv.isSameBoundSymbol( equiv );
                 }
     return false;
@@ -11658,13 +11782,13 @@ InterpretedFunction.prototype.toString = function () {
             return "[" + s.substring( 1, s.length - 1 ) + "]";
         }
     }
-    return Pair.buildFrom1( [ Symbol.mkSym( "fn" ),
+    return Pair_st.buildFrom1( [ Symbol_st.mkSym( "fn" ),
         this.parameterList() ].concat( this.body ) ).toString();
 };
 
 InterpretedFunction.prototype.isBracketFn_ = function () {
     return (this.parameterList_ instanceof Pair
-        && this.parameterList_.car() === Symbol.mkSym( "_" )
+        && this.parameterList_.car() === Symbol_st.mkSym( "_" )
         && this.parameterList_.cdr() instanceof Nil
         && this.body.length === 1
         && !(this.body[ 0 ] instanceof LiteralObject));
@@ -11675,7 +11799,7 @@ InterpretedFunction.prototype.parameterList = function () {
 };
 
 InterpretedFunction.prototype.type = function () {
-    return Builtin.TYPE;
+    return Builtin_st.TYPE;
 };
 
 InterpretedFunction.prototype.nth = function ( index ) {
@@ -11693,7 +11817,7 @@ InterpretedFunction.prototype.length = function () {
 InterpretedFunction.prototype.requireNil = function ( test, info ) {
     try {
         test.cdr().mustBeNil();
-    } catch ( e ) { if ( !(e instanceof Pair.NotPair) ) throw e;
+    } catch ( e ) { if ( !(e instanceof Pair_st.NotPair) ) throw e;
         this.throwArgMismatchError( info );
     }
 };
@@ -11720,11 +11844,11 @@ InterpretedFunction.prototype.curry = function (
     // PORT TODO: See if it's possible for this to throw an error.
     if ( paramIndex === void 0 )
         throw new ReferenceError();
-    var p = BoundSymbol.make( param, 0, paramIndex );
-    var newParams = FunctionParameterListBuilder.curryBound(
+    var p = BoundSymbol_st.make( param, 0, paramIndex );
+    var newParams = FunctionParameterListBuilder_st.curryBound(
         this.parameterList_, p, arg, paramIndex );
     var lexicalBindings = {};
-    FunctionParameterListBuilder.index(
+    FunctionParameterListBuilder_st.index(
         newParams, lexicalBindings, [ 0 ], false );
     var unnest = newParams instanceof Nil;
     if ( !unnest && requiresNesting )
@@ -11734,10 +11858,10 @@ InterpretedFunction.prototype.curry = function (
     for ( var i = 0; i < this.body.length; i++ )
         newBody.push( this.body[ i ].inline5(
             p, arg, unnest, 0, paramIndex ).reduce() );
-    var nb = Pair.buildFrom1( newBody );
+    var nb = Pair_st.buildFrom1( newBody );
     var complexParams =
-        FunctionParameterListBuilder.isComplex( newParams );
-    return FunctionBodyBuilder.buildFunctionBody(
+        FunctionParameterListBuilder_st.isComplex( newParams );
+    return FunctionBodyBuilder_st.buildFunctionBody(
         newParams, lexicalBindings, nb, complexParams );
 };
 
@@ -11751,7 +11875,7 @@ InterpretedFunction.prototype.inline5 = function (
     for ( var i = 0; i < this.body.length; i++ )
         newBody.push( this.body[ i ].inline5(
             p, arg, false, nesting + 1, paramIndex ).reduce() );
-    var nb = Pair.buildFrom1( newBody );
+    var nb = Pair_st.buildFrom1( newBody );
     fn.body = nb.toArray();
     fn.buildInstructionList_();
     return fn;
@@ -11768,7 +11892,7 @@ InterpretedFunction.prototype.inline3 = function (
     for ( var i = 0; i < this.body.length; i++ )
         newBody.push( this.body[ i ].inline3(
             p, arg, paramIndex ).reduce() );
-    var nb = Pair.buildFrom1( newBody );
+    var nb = Pair_st.buildFrom1( newBody );
     fn.body = nb.toArray();
     fn.buildInstructionList_();
     return fn;
@@ -11782,7 +11906,7 @@ InterpretedFunction.prototype.nest = function ( threshold ) {
     var newBody = [];
     for ( var i = 0; i < this.body.length; i++ )
         newBody.push( this.body[ i ].nest( threshold ) );
-    var nb = Pair.buildFrom1( newBody );
+    var nb = Pair_st.buildFrom1( newBody );
     fn.body = nb.toArray();
     fn.buildInstructionList_();
     return fn;
@@ -11832,9 +11956,10 @@ InterpretedFunction.prototype.isAifBody = function () {
 
 /** @constructor */
 function SimpleArgs( parameterList, lexicalBindings, body ) {
-    InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
+    this.initInterpretedFunction(
+        parameterList, lexicalBindings, body );
 }
+var SimpleArgs_st = {};
 
 SimpleArgs.prototype = new InterpretedFunction();
 SimpleArgs.prototype.Cons_ = SimpleArgs;
@@ -11845,11 +11970,11 @@ SimpleArgs.prototype.invoke3 = function ( vm, lc, args ) {
     for ( var k in this.lexicalBindings )
         len++;
     lc = new LexicalClosure( len, lc );
-    SimpleArgs.simple_( lc, this.parameterList_, args );
+    SimpleArgs_st.simple_( lc, this.parameterList_, args );
     vm.pushInvocation2( lc, this.instructions_ );
 };
 
-SimpleArgs.simple_ = function ( lc, parameterList, args ) {
+SimpleArgs_st.simple_ = function ( lc, parameterList, args ) {
     while ( !(parameterList instanceof Nil) ) {
         if ( parameterList instanceof Symbol ) {
             lc.add( args );
@@ -11871,9 +11996,10 @@ SimpleArgs.simple_ = function ( lc, parameterList, args ) {
 
 /** @constructor */
 function ComplexArgs( parameterList, lexicalBindings, body ) {
-    InterpretedFunction.call( this );
-    this.init( parameterList, lexicalBindings, body );
+    this.initInterpretedFunction(
+        parameterList, lexicalBindings, body );
 }
+var ComplexArgs_st = {};
 
 ComplexArgs.prototype = new InterpretedFunction();
 ComplexArgs.prototype.Cons_ = ComplexArgs;
@@ -11886,23 +12012,23 @@ ComplexArgs.prototype.invoke3 = function ( vm, lc, args ) {
         len++;
     lc = new LexicalClosure( len, lc );
     vm.pushFrame(
-        new ComplexArgs.Run( lc, this.instructions_, this ) );
+        new ComplexArgs_st.Run( lc, this.instructions_, this ) );
     this.complex_( vm, lc, this.parameterList_, args );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-ComplexArgs.Run = function ( lc, instructions, owner ) {
+ComplexArgs_st.Run = function ( lc, instructions, owner ) {
     Instruction.call( this );
     this.lc_ = lc;
     this.instructions_ = instructions;
     this.belongsTo( owner );
 };
 
-ComplexArgs.Run.prototype = new Instruction();
-ComplexArgs.Run.prototype.className = "ComplexArgs.Run";
+ComplexArgs_st.Run.prototype = new Instruction();
+ComplexArgs_st.Run.prototype.className = "ComplexArgs.Run";
 
-ComplexArgs.Run.prototype.operate = function ( vm ) {
+ComplexArgs_st.Run.prototype.operate = function ( vm ) {
     vm.pushInvocation2( this.lc_, this.instructions_ );
 };
 
@@ -11912,7 +12038,7 @@ ComplexArgs.Run.prototype.operate = function ( vm ) {
 //    for ( var k in this.lexicalBindings )
 //        len++;
 //    lc = new LexicalClosure( len, lc );
-//    ComplexArgs.complex_( vm, lc, this.parameterList_, args );
+//    ComplexArgs_st.complex_( vm, lc, this.parameterList_, args );
 //    vm.pushInvocation2( lc, this.instructions_ );
 //};
 
@@ -11920,13 +12046,15 @@ ComplexArgs.Run.prototype.operate = function ( vm ) {
 ComplexArgs.prototype.complex_ = function (
     vm, lc, parameters, args ) {
     
-    vm.pushFrame(
-        new ComplexArgs.BuildComplex( lc, parameters, args, this ) );
+    vm.pushFrame( new ComplexArgs_st.BuildComplex(
+        lc, parameters, args, this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-ComplexArgs.BuildComplex = function ( lc, parameters, args, owner ) {
+ComplexArgs_st.BuildComplex = function (
+    lc, parameters, args, owner ) {
+    
     Instruction.call( this );
     this.lc_ = lc;
     this.parameters_ = parameters;
@@ -11934,11 +12062,11 @@ ComplexArgs.BuildComplex = function ( lc, parameters, args, owner ) {
     this.belongsTo( owner );
 };
 
-ComplexArgs.BuildComplex.prototype = new Instruction();
-ComplexArgs.BuildComplex.prototype.className =
+ComplexArgs_st.BuildComplex.prototype = new Instruction();
+ComplexArgs_st.BuildComplex.prototype.className =
     "ComplexArgs.BuildComplex";
 
-ComplexArgs.BuildComplex.prototype.operate = function ( vm ) {
+ComplexArgs_st.BuildComplex.prototype.operate = function ( vm ) {
     if ( this.parameters_.isNotPair() ) {
         if ( this.parameters_ instanceof Symbol )
             this.lc_.add( this.args_ );
@@ -11948,27 +12076,27 @@ ComplexArgs.BuildComplex.prototype.operate = function ( vm ) {
     var nextParameter = this.parameters_.car();
     var nextArg = this.args_.car();
     
-    vm.pushFrame( new ComplexArgs.BuildComplex(
+    vm.pushFrame( new ComplexArgs_st.BuildComplex(
         this.lc_, this.parameters_.cdr(), this.args_.cdr(),
         this.owner() ) );
     
     if ( nextParameter instanceof Symbol ) {
         this.lc_.add( nextArg );
-    } else if ( ComplexArgs.optional( nextParameter ) ) {
+    } else if ( ComplexArgs_st.optional( nextParameter ) ) {
         var optional =
-            ComplexArgs.optionalParam_( nextParameter );
+            ComplexArgs_st.optionalParam_( nextParameter );
         if ( !(this.args_ instanceof Nil) ) {
             this.lc_.add( nextArg );
         } else {
             vm.pushFrame(
-                new ComplexArgs.AddToLc( this.lc_, this ) );
-            ComplexArgs.evalOptional_( vm, this.lc_, optional );
+                new ComplexArgs_st.AddToLc( this.lc_, this ) );
+            ComplexArgs_st.evalOptional_( vm, this.lc_, optional );
         }
     } else {
         try {
             nextArg.mustBePairOrNil();
         } catch ( e ) {
-            if ( !(e instanceof Pair.NotPair) ) throw e;
+            if ( !(e instanceof Pair_st.NotPair) ) throw e;
             throw new ArcError(
                 "Expected list argument for destructuring " +
                 "parameter " + nextParameter + ", got " +
@@ -11983,46 +12111,46 @@ ComplexArgs.BuildComplex.prototype.operate = function ( vm ) {
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-ComplexArgs.AddToLc = function ( lc, owner ) {
+ComplexArgs_st.AddToLc = function ( lc, owner ) {
     Instruction.call( this );
     this.lc_ = lc;
     this.belongsTo( owner );
 };
 
-ComplexArgs.AddToLc.prototype = new Instruction();
-ComplexArgs.AddToLc.prototype.className = "ComplexArgs.AddToLc";
+ComplexArgs_st.AddToLc.prototype = new Instruction();
+ComplexArgs_st.AddToLc.prototype.className = "ComplexArgs.AddToLc";
 
-ComplexArgs.AddToLc.prototype.operate = function ( vm ) {
+ComplexArgs_st.AddToLc.prototype.operate = function ( vm ) {
     this.lc_.add( vm.popA() );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//ComplexArgs.complex_ = function ( vm, lc, parameters, args ) {
+//ComplexArgs_st.complex_ = function ( vm, lc, parameters, args ) {
 //    while ( !parameters.isNotPair() ) {
 //        var nextParameter = parameters.car();
 //        var nextArg = args.car();
 //        
 //        if ( nextParameter instanceof Symbol ) {
 //            lc.add( nextArg );
-//        } else if ( ComplexArgs.optional( nextParameter ) ) {
+//        } else if ( ComplexArgs_st.optional( nextParameter ) ) {
 //            var optional =
-//                ComplexArgs.optionalParam_( nextParameter );
+//                ComplexArgs_st.optionalParam_( nextParameter );
 //            if ( !(args instanceof Nil) )
 //                lc.add( nextArg );
 //            else
-//                lc.add(
-//                    ComplexArgs.evalOptional_( vm, lc, optional ) );
+//                lc.add( ComplexArgs_st.evalOptional_(
+//                    vm, lc, optional ) );
 //        } else {
 //            try {
 //                nextArg.mustBePairOrNil();
 //            } catch ( e ) {
-//                if ( !(e instanceof Pair.NotPair) ) throw e;
+//                if ( !(e instanceof Pair_st.NotPair) ) throw e;
 //                throw new ArcError(
 //                    "Expected list argument for destructuring " +
 //                    "parameter " + nextParameter + ", got " +
 //                    nextArg );
 //            }
-//            ComplexArgs.complex_( vm, lc, nextParameter, nextArg );
+//            ComplexArgs_st.complex_( vm, lc, nextParameter, nextArg );
 //        }
 //        
 //        parameters = parameters.cdr();
@@ -12034,28 +12162,28 @@ ComplexArgs.AddToLc.prototype.operate = function ( vm ) {
 //};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
-ComplexArgs.evalOptional_ = function ( vm, lc, optional ) {
+ComplexArgs_st.evalOptional_ = function ( vm, lc, optional ) {
     var i = [];
     optional.cdr().car().addInstructions( i );
-    vm.pushInvocation2( lc, Pair.buildFrom1( i ) );
+    vm.pushInvocation2( lc, Pair_st.buildFrom1( i ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//ComplexArgs.evalOptional_ = function ( vm, lc, optional ) {
+//ComplexArgs_st.evalOptional_ = function ( vm, lc, optional ) {
 //    var i = [];
 //    optional.cdr().car().addInstructions( i );
-//    vm.pushInvocation2( lc, Pair.buildFrom1( i ) );
+//    vm.pushInvocation2( lc, Pair_st.buildFrom1( i ) );
 //    return vm.thread();
 //};
 
-ComplexArgs.optional = function ( nextParameter ) {
+ComplexArgs_st.optional = function ( nextParameter ) {
     if ( !(nextParameter instanceof Pair) )
         return false;
     
-    return nextParameter.car() === ComplexArgs.o_;
+    return nextParameter.car() === ComplexArgs_st.o_;
 };
 
-ComplexArgs.optionalParam_ = function ( nextParameter ) {
+ComplexArgs_st.optionalParam_ = function ( nextParameter ) {
     // PORT NOTE: This local variable didn't exist in Java.
     var result = nextParameter.cdr();
     // PORT NOTE: This was a cast in Java.
@@ -12064,7 +12192,7 @@ ComplexArgs.optionalParam_ = function ( nextParameter ) {
     return result;
 };
 
-ComplexArgs.o_ = Symbol.mkSym( "o" );
+ComplexArgs_st.o_ = Symbol_st.mkSym( "o" );
 
 
 // ===================================================================
@@ -12075,13 +12203,10 @@ ComplexArgs.o_ = Symbol.mkSym( "o" );
 // FunctionParameterListBuilder Pair FunctionBodyBuilder
 
 // PORT NOTE: This was abstract in Java.
-// PORT NOTE: We've changed all original uses of the constructor
-// (which were just super() calls) to uses of
-// StackFunctionSupport.of().
 /** @constructor */
 function StackFunctionSupport() {
-    InterpretedFunction.call( this );
 }
+var StackFunctionSupport_st = {};
 
 StackFunctionSupport.prototype = new InterpretedFunction();
 StackFunctionSupport.prototype.Cons_ = StackFunctionSupport;
@@ -12089,19 +12214,11 @@ StackFunctionSupport.prototype.className = "StackFunctionSupport";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-StackFunctionSupport.of = function (
-    parameterList, lexicalBindings, body ) {
-    
-    return new StackFunctionSupport().initStackFunctionSupport(
-        parameterList, lexicalBindings, body );
-};
-
-// PORT NOTE: This didn't exist in Java. (It was part of the
-// constructor.)
 StackFunctionSupport.prototype.initStackFunctionSupport = function (
     parameterList, lexicalBindings, body ) {
     
-    return this.init( parameterList, lexicalBindings, body );
+    return this.initInterpretedFunction(
+        parameterList, lexicalBindings, body );
 };
 
 StackFunctionSupport.prototype.canInline = function ( param, arg ) {
@@ -12130,35 +12247,35 @@ StackFunctionSupport.prototype.curry = function (
     
     var paramIndex = this.lexicalBindings[ param.name() ];
     var p = new StackSymbol( param, paramIndex );
-    var newParams = FunctionParameterListBuilder.curryStack(
+    var newParams = FunctionParameterListBuilder_st.curryStack(
         this.parameterList_, p, arg, paramIndex );
     var lexicalBindings = {};
-    FunctionParameterListBuilder.index(
+    FunctionParameterListBuilder_st.index(
         newParams, lexicalBindings, [ 0 ], false );
     
     var newBody = [];
     for ( var i = 0; i < this.body.length; i++ )
         newBody.push(
             this.body[ i ].inline3( p, arg, paramIndex ).reduce() );
-    var nb = Pair.buildFrom1( newBody );
+    var nb = Pair_st.buildFrom1( newBody );
     var complexParams =
-        FunctionParameterListBuilder.isComplex( newParams );
-    return FunctionBodyBuilder.buildStackFunctionBody(
+        FunctionParameterListBuilder_st.isComplex( newParams );
+    return FunctionBodyBuilder_st.buildStackFunctionBody(
         newParams, lexicalBindings, nb, complexParams );
 };
 
 // PORT NOTE: We've renamed all uses of .convert().
-StackFunctionSupport.convertBody = function (
+StackFunctionSupport_st.convertBody = function (
     lexicalBindings, body ) {
     
     var nb = new Array( ~~body.length );
     for ( var i = 0; i < body.length; i++ )
-        nb[ i ] = StackFunctionSupport.convertItem(
+        nb[ i ] = StackFunctionSupport_st.convertItem(
             lexicalBindings, body[ i ] );
-    return Pair.buildFrom1( nb );
+    return Pair_st.buildFrom1( nb );
 };
 
-StackFunctionSupport.convertItem = function (
+StackFunctionSupport_st.convertItem = function (
     lexicalBindings, item ) {
     
     return item.replaceBoundSymbols( lexicalBindings );
@@ -12173,10 +12290,10 @@ StackFunctionSupport.convertItem = function (
 
 /** @constructor */
 function Bind() {
-    InterpretedFunction.call( this );
 }
+var Bind_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind" ] = Bind;
+    "Bind" ] = Bind_stForClasses;
 
 Bind.prototype = new InterpretedFunction();
 Bind.prototype.Cons_ = Bind;
@@ -12184,8 +12301,11 @@ Bind.prototype.className = "Bind";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind[ "of" ] = function ( parameterList, lexicalBindings, body ) {
-    return new Bind().init( parameterList, lexicalBindings, body );
+Bind_stForClasses[ "of" ] = function (
+    parameterList, lexicalBindings, body ) {
+    
+    return new Bind().initInterpretedFunction(
+        parameterList, lexicalBindings, body );
 };
 
 Bind.prototype.invokeN0 = function ( vm, lc ) {
@@ -12196,7 +12316,7 @@ Bind.prototype.invoke3 = function ( vm, lc, args ) {
     try {
         args.mustBeNil();
     } catch ( notNil ) {
-        if ( !(notNil instanceof ArcObject.NotNil) ) throw notNil;
+        if ( !(notNil instanceof ArcObject_st.NotNil) ) throw notNil;
         throw new ArcError( "expected 0 args, got " + args );
     }
     vm.pushInvocation2( lc, this.instructions_ );
@@ -12211,10 +12331,10 @@ Bind.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_A() {
-    InterpretedFunction.call( this );
 }
+var Bind_A_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_A" ] = Bind_A;
+    "Bind_A" ] = Bind_A_stForClasses;
 
 Bind_A.prototype = new InterpretedFunction();
 Bind_A.prototype.Cons_ = Bind_A;
@@ -12222,8 +12342,11 @@ Bind_A.prototype.className = "Bind_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A[ "of" ] = function ( parameterList, lexicalBindings, body ) {
-    return new Bind_A().init( parameterList, lexicalBindings, body );
+Bind_A_stForClasses[ "of" ] = function (
+    parameterList, lexicalBindings, body ) {
+    
+    return new Bind_A().initInterpretedFunction(
+        parameterList, lexicalBindings, body );
 };
 
 Bind_A.prototype.invokeN0 = function ( vm, lc ) {
@@ -12246,7 +12369,7 @@ Bind_A.prototype.invoke3 = function ( vm, lc, args ) {
     try {
         args.cdr().mustBeNil();
     } catch ( notNil ) {
-        if ( !(notNil instanceof ArcObject.NotNil) ) throw notNil;
+        if ( !(notNil instanceof ArcObject_st.NotNil) ) throw notNil;
         throw new ArcError(
             "expected 1 arg, got " + args + " calling " + this );
     }
@@ -12262,10 +12385,10 @@ Bind_A.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_A_A() {
-    InterpretedFunction.call( this );
 }
+var Bind_A_A_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_A_A" ] = Bind_A_A;
+    "Bind_A_A" ] = Bind_A_A_stForClasses;
 
 Bind_A_A.prototype = new InterpretedFunction();
 Bind_A_A.prototype.Cons_ = Bind_A_A;
@@ -12273,8 +12396,10 @@ Bind_A_A.prototype.className = "Bind_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_A[ "of" ] = function ( parameterList, lexicalBindings, body ) {
-    return new Bind_A_A().init(
+Bind_A_A_stForClasses[ "of" ] = function (
+    parameterList, lexicalBindings, body ) {
+    
+    return new Bind_A_A().initInterpretedFunction(
         parameterList, lexicalBindings, body );
 };
 
@@ -12300,7 +12425,7 @@ Bind_A_A.prototype.invoke3 = function ( vm, lc, args ) {
     try {
         args.cdr().cdr().mustBeNil();
     } catch ( notNil ) {
-        if ( !(notNil instanceof ArcObject.NotNil) ) throw notNil;
+        if ( !(notNil instanceof ArcObject_st.NotNil) ) throw notNil;
         throw new ArcError( "expected 2 args, got " + args );
     }
     this.invokeN2( vm, lc, args.car(), args.cdr().car() );
@@ -12315,10 +12440,10 @@ Bind_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_A_A_A() {
-    InterpretedFunction.call( this );
 }
+var Bind_A_A_A_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_A_A_A" ] = Bind_A_A_A;
+    "Bind_A_A_A" ] = Bind_A_A_A_stForClasses;
 
 Bind_A_A_A.prototype = new InterpretedFunction();
 Bind_A_A_A.prototype.Cons_ = Bind_A_A_A;
@@ -12326,10 +12451,10 @@ Bind_A_A_A.prototype.className = "Bind_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_A_A[ "of" ] = function (
+Bind_A_A_A_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, body ) {
     
-    return new Bind_A_A_A().init(
+    return new Bind_A_A_A().initInterpretedFunction(
         parameterList, lexicalBindings, body );
 };
 
@@ -12361,10 +12486,10 @@ Bind_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_A_A_R() {
-    InterpretedFunction.call( this );
 }
+var Bind_A_A_R_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_A_A_R" ] = Bind_A_A_R;
+    "Bind_A_A_R" ] = Bind_A_A_R_stForClasses;
 
 Bind_A_A_R.prototype = new InterpretedFunction();
 Bind_A_A_R.prototype.Cons_ = Bind_A_A_R;
@@ -12372,10 +12497,10 @@ Bind_A_A_R.prototype.className = "Bind_A_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_A_R[ "of" ] = function (
+Bind_A_A_R_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, body ) {
     
-    return new Bind_A_A_R().init(
+    return new Bind_A_A_R().initInterpretedFunction(
         parameterList, lexicalBindings, body );
 };
 
@@ -12408,10 +12533,10 @@ Bind_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_A_Obound() {
-    InterpretedFunction.call( this );
 }
+var Bind_A_Obound_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_A_Obound" ] = Bind_A_Obound;
+    "Bind_A_Obound" ] = Bind_A_Obound_stForClasses;
 
 Bind_A_Obound.prototype = new InterpretedFunction();
 Bind_A_Obound.prototype.Cons_ = Bind_A_Obound;
@@ -12419,10 +12544,10 @@ Bind_A_Obound.prototype.className = "Bind_A_Obound";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_Obound[ "of" ] = function (
+Bind_A_Obound_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, body ) {
     
-    var result = new Bind_A_Obound().init(
+    var result = new Bind_A_Obound().initInterpretedFunction(
         parameterList, lexicalBindings, body );
     // PORT NOTE: This local variable didn't exist in Java.
     var optExpr = parameterList.cdr().car().cdr().cdr().car();
@@ -12495,10 +12620,10 @@ Bind_A_Obound.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_A_Oliteral() {
-    InterpretedFunction.call( this );
 }
+var Bind_A_Oliteral_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_A_Oliteral" ] = Bind_A_Oliteral;
+    "Bind_A_Oliteral" ] = Bind_A_Oliteral_stForClasses;
 
 Bind_A_Oliteral.prototype = new InterpretedFunction();
 Bind_A_Oliteral.prototype.Cons_ = Bind_A_Oliteral;
@@ -12506,10 +12631,10 @@ Bind_A_Oliteral.prototype.className = "Bind_A_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_Oliteral[ "of" ] = function (
+Bind_A_Oliteral_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, expandedBody ) {
     
-    var result = new Bind_A_Oliteral().init(
+    var result = new Bind_A_Oliteral().initInterpretedFunction(
         parameterList, lexicalBindings, expandedBody );
     result.optExpr_ = parameterList.cdr().car().cdr().cdr().car();
     var optParam = parameterList.cdr().car().cdr().car();
@@ -12577,10 +12702,10 @@ Bind_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_A_Oother() {
-    InterpretedFunction.call( this );
 }
+var Bind_A_Oother_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_A_Oother" ] = Bind_A_Oother;
+    "Bind_A_Oother" ] = Bind_A_Oother_stForClasses;
 
 Bind_A_Oother.prototype = new InterpretedFunction();
 Bind_A_Oother.prototype.Cons_ = Bind_A_Oother;
@@ -12588,15 +12713,15 @@ Bind_A_Oother.prototype.className = "Bind_A_Oother";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_Oother[ "of" ] = function (
+Bind_A_Oother_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, expandedBody ) {
     
-    var result = new Bind_A_Oother().init(
+    var result = new Bind_A_Oother().initInterpretedFunction(
         parameterList, lexicalBindings, expandedBody );
     var optExpr = parameterList.cdr().car().cdr().cdr().car();
     var i = [];
     optExpr.addInstructions( i );
-    result.optInstructions_ = Pair.buildFrom1( i );
+    result.optInstructions_ = Pair_st.buildFrom1( i );
     return result;
 };
 
@@ -12654,10 +12779,10 @@ Bind_A_Oother.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_A_R() {
-    InterpretedFunction.call( this );
 }
+var Bind_A_R_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_A_R" ] = Bind_A_R;
+    "Bind_A_R" ] = Bind_A_R_stForClasses;
 
 Bind_A_R.prototype = new InterpretedFunction();
 Bind_A_R.prototype.Cons_ = Bind_A_R;
@@ -12665,8 +12790,10 @@ Bind_A_R.prototype.className = "Bind_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_A_R[ "of" ] = function ( parameterList, lexicalBindings, body ) {
-    return new Bind_A_R().init(
+Bind_A_R_stForClasses[ "of" ] = function (
+    parameterList, lexicalBindings, body ) {
+    
+    return new Bind_A_R().initInterpretedFunction(
         parameterList, lexicalBindings, body );
 };
 
@@ -12693,10 +12820,10 @@ Bind_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_D_A_A_A_d() {
-    InterpretedFunction.call( this );
 }
+var Bind_D_A_A_A_d_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_D_A_A_A_d" ] = Bind_D_A_A_A_d;
+    "Bind_D_A_A_A_d" ] = Bind_D_A_A_A_d_stForClasses;
 
 Bind_D_A_A_A_d.prototype = new InterpretedFunction();
 Bind_D_A_A_A_d.prototype.Cons_ = Bind_D_A_A_A_d;
@@ -12704,10 +12831,10 @@ Bind_D_A_A_A_d.prototype.className = "Bind_D_A_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_D_A_A_A_d[ "of" ] = function (
+Bind_D_A_A_A_d_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, body ) {
     
-    return new Bind_D_A_A_A_d().init(
+    return new Bind_D_A_A_A_d().initInterpretedFunction(
         parameterList, lexicalBindings, body );
 };
 
@@ -12742,7 +12869,7 @@ Bind_D_A_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
     try {
         args.cdr().mustBeNil();
     } catch ( notNil ) {
-        if ( !(notNil instanceof ArcObject.NotNil) ) throw notNil;
+        if ( !(notNil instanceof ArcObject_st.NotNil) ) throw notNil;
         throw new ArcError(
             "expected 1 arg, got extra " + args.cdr() + " calling " +
             this );
@@ -12759,10 +12886,10 @@ Bind_D_A_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_D_A_A_d() {
-    InterpretedFunction.call( this );
 }
+var Bind_D_A_A_d_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_D_A_A_d" ] = Bind_D_A_A_d;
+    "Bind_D_A_A_d" ] = Bind_D_A_A_d_stForClasses;
 
 Bind_D_A_A_d.prototype = new InterpretedFunction();
 Bind_D_A_A_d.prototype.Cons_ = Bind_D_A_A_d;
@@ -12770,10 +12897,10 @@ Bind_D_A_A_d.prototype.className = "Bind_D_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_D_A_A_d[ "of" ] = function (
+Bind_D_A_A_d_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, body ) {
     
-    return new Bind_D_A_A_d().init(
+    return new Bind_D_A_A_d().initInterpretedFunction(
         parameterList, lexicalBindings, body );
 };
 
@@ -12812,10 +12939,10 @@ Bind_D_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_Obound() {
-    InterpretedFunction.call( this );
 }
+var Bind_Obound_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_Obound" ] = Bind_Obound;
+    "Bind_Obound" ] = Bind_Obound_stForClasses;
 
 Bind_Obound.prototype = new InterpretedFunction();
 Bind_Obound.prototype.Cons_ = Bind_Obound;
@@ -12823,10 +12950,10 @@ Bind_Obound.prototype.className = "Bind_Obound";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_Obound[ "of" ] = function (
+Bind_Obound_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, body ) {
     
-    var result = new Bind_Obound().init(
+    var result = new Bind_Obound().initInterpretedFunction(
         parameterList, lexicalBindings, body );
     var opt = parameterList.car();
     // PORT NOTE: This was a cast in Java.
@@ -12866,7 +12993,8 @@ Bind_Obound.prototype.invoke3 = function ( vm, lc, args ) {
         try {
             args.cdr().mustBeNil();
         } catch ( notNil ) {
-            if ( !(notNil instanceof ArcObject.NotNil) ) throw notNil;
+            if ( !(notNil instanceof ArcObject_st.NotNil) )
+                throw notNil;
             throw new ArcError(
                 "expected 0 or 1 args, got extra " +
                 args.cdr() + " calling " + this );
@@ -12884,10 +13012,10 @@ Bind_Obound.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_Oliteral() {
-    InterpretedFunction.call( this );
 }
+var Bind_Oliteral_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_Oliteral" ] = Bind_Oliteral;
+    "Bind_Oliteral" ] = Bind_Oliteral_stForClasses;
 
 Bind_Oliteral.prototype = new InterpretedFunction();
 Bind_Oliteral.prototype.Cons_ = Bind_Oliteral;
@@ -12895,10 +13023,10 @@ Bind_Oliteral.prototype.className = "Bind_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_Oliteral[ "of" ] = function (
+Bind_Oliteral_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, expandedBody ) {
     
-    var result = new Bind_Oliteral().init(
+    var result = new Bind_Oliteral().initInterpretedFunction(
         parameterList, lexicalBindings, expandedBody );
     result.optExpr_ = parameterList.car().cdr().cdr().car();
     var optParam = parameterList.car().cdr().car();
@@ -12947,7 +13075,8 @@ Bind_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
         try {
             args.cdr().mustBeNil();
         } catch ( notNil ) {
-            if ( !(notNil instanceof ArcObject.NotNil) ) throw notNil;
+            if ( !(notNil instanceof ArcObject_st.NotNil) )
+                throw notNil;
             throw new ArcError(
                 "expected 0 or 1 args, got extra " +
                 args.cdr() + " calling " + this );
@@ -12965,10 +13094,10 @@ Bind_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_Oother() {
-    InterpretedFunction.call( this );
 }
+var Bind_Oother_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_Oother" ] = Bind_Oother;
+    "Bind_Oother" ] = Bind_Oother_stForClasses;
 
 Bind_Oother.prototype = new InterpretedFunction();
 Bind_Oother.prototype.Cons_ = Bind_Oother;
@@ -12976,16 +13105,15 @@ Bind_Oother.prototype.className = "Bind_Oother";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_Oother[ "of" ] = function (
+Bind_Oother_stForClasses[ "of" ] = function (
     parameterList, lexicalBindings, expandedBody ) {
     
-    var result = new Bind_Oother().init(
+    var result = new Bind_Oother().initInterpretedFunction(
         parameterList, lexicalBindings, expandedBody );
-    result.init( parameterList, lexicalBindings, expandedBody );
     result.optExpr_ = parameterList.car().cdr().cdr().car();
     var i = [];
     result.optExpr_.addInstructions( i );
-    result.optInstructions_ = Pair.buildFrom1( i );
+    result.optInstructions_ = Pair_st.buildFrom1( i );
     return result;
 };
 
@@ -13026,7 +13154,8 @@ Bind_Oother.prototype.invoke3 = function ( vm, lc, args ) {
         try {
             args.cdr().mustBeNil();
         } catch ( notNil ) {
-            if ( !(notNil instanceof ArcObject.NotNil) ) throw notNil;
+            if ( !(notNil instanceof ArcObject_st.NotNil) )
+                throw notNil;
             throw new ArcError(
                 "expected 0 or 1 args, got extra " +
                 args.cdr() + " calling " + this );
@@ -13044,10 +13173,10 @@ Bind_Oother.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Bind_R() {
-    InterpretedFunction.call( this );
 }
+var Bind_R_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise." +
-    "Bind_R" ] = Bind_R;
+    "Bind_R" ] = Bind_R_stForClasses;
 
 Bind_R.prototype = new InterpretedFunction();
 Bind_R.prototype.Cons_ = Bind_R;
@@ -13055,8 +13184,11 @@ Bind_R.prototype.className = "Bind_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Bind_R[ "of" ] = function ( parameterList, lexicalBindings, body ) {
-    return new Bind_R().init( parameterList, lexicalBindings, body );
+Bind_R_stForClasses[ "of" ] = function (
+    parameterList, lexicalBindings, body ) {
+    
+    return new Bind_R().initInterpretedFunction(
+        parameterList, lexicalBindings, body );
 };
 
 Bind_R.prototype.invoke3 = function ( vm, lc, args ) {
@@ -13078,10 +13210,10 @@ Bind_R.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_A.of*().
 /** @constructor */
 function Stack_A() {
-    StackFunctionSupport.call( this );
 }
+var Stack_A_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_A" ] = Stack_A;
+    "Stack_A" ] = Stack_A_stForClasses;
 
 Stack_A.prototype = new StackFunctionSupport();
 Stack_A.prototype.Cons_ = Stack_A;
@@ -13089,15 +13221,17 @@ Stack_A.prototype.className = "Stack_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A[ "of1" ] = function ( original ) {
-    return Stack_A[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_A_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_A_stForClasses[ "of3" ]( original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A[ "of3" ] = function ( parameterList, lexicalBindings, body ) {
+Stack_A_stForClasses[ "of3" ] = function (
+    parameterList, lexicalBindings, body ) {
+    
     return new Stack_A().initStackFunctionSupport(
         parameterList, lexicalBindings, body );
 };
@@ -13130,10 +13264,10 @@ Stack_A.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_A_A.of*().
 /** @constructor */
 function Stack_A_A() {
-    StackFunctionSupport.call( this );
 }
+var Stack_A_A_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_A_A" ] = Stack_A_A;
+    "Stack_A_A" ] = Stack_A_A_stForClasses;
 
 Stack_A_A.prototype = new StackFunctionSupport();
 Stack_A_A.prototype.Cons_ = Stack_A_A;
@@ -13141,15 +13275,15 @@ Stack_A_A.prototype.className = "Stack_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A[ "of1" ] = function ( original ) {
-    return Stack_A_A[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_A_A_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_A_A_stForClasses[ "of3" ]( original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A[ "of3" ] = function (
+Stack_A_A_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_A().initStackFunctionSupport(
@@ -13184,10 +13318,10 @@ Stack_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_A_A_A.of*().
 /** @constructor */
 function Stack_A_A_A() {
-    StackFunctionSupport.call( this );
 }
+var Stack_A_A_A_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_A_A_A" ] = Stack_A_A_A;
+    "Stack_A_A_A" ] = Stack_A_A_A_stForClasses;
 
 Stack_A_A_A.prototype = new StackFunctionSupport();
 Stack_A_A_A.prototype.Cons_ = Stack_A_A_A;
@@ -13195,15 +13329,16 @@ Stack_A_A_A.prototype.className = "Stack_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_A[ "of1" ] = function ( original ) {
-    return Stack_A_A_A[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_A_A_A_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_A_A_A_stForClasses[ "of3" ](
+        original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_A[ "of3" ] = function (
+Stack_A_A_A_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_A_A().initStackFunctionSupport(
@@ -13244,10 +13379,10 @@ Stack_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_A_A_A_A.of*().
 /** @constructor */
 function Stack_A_A_A_A() {
-    StackFunctionSupport.call( this );
 }
+var Stack_A_A_A_A_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_A_A_A_A" ] = Stack_A_A_A_A;
+    "Stack_A_A_A_A" ] = Stack_A_A_A_A_stForClasses;
 
 Stack_A_A_A_A.prototype = new StackFunctionSupport();
 Stack_A_A_A_A.prototype.Cons_ = Stack_A_A_A_A;
@@ -13255,15 +13390,16 @@ Stack_A_A_A_A.prototype.className = "Stack_A_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_A_A[ "of1" ] = function ( original ) {
-    return Stack_A_A_A_A[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_A_A_A_A_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_A_A_A_A_stForClasses[ "of3" ](
+        original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_A_A[ "of3" ] = function (
+Stack_A_A_A_A_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_A_A_A().initStackFunctionSupport(
@@ -13306,10 +13442,10 @@ Stack_A_A_A_A.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_A_A_R.of*().
 /** @constructor */
 function Stack_A_A_R() {
-    StackFunctionSupport.call( this );
 }
+var Stack_A_A_R_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_A_A_R" ] = Stack_A_A_R;
+    "Stack_A_A_R" ] = Stack_A_A_R_stForClasses;
 
 Stack_A_A_R.prototype = new StackFunctionSupport();
 Stack_A_A_R.prototype.Cons_ = Stack_A_A_R;
@@ -13317,15 +13453,16 @@ Stack_A_A_R.prototype.className = "Stack_A_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_R[ "of1" ] = function ( original ) {
-    return Stack_A_A_R[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_A_A_R_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_A_A_R_stForClasses[ "of3" ](
+        original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_A_R[ "of3" ] = function (
+Stack_A_A_R_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_A_R().initStackFunctionSupport(
@@ -13347,10 +13484,10 @@ Stack_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_A_R.of*().
 /** @constructor */
 function Stack_A_R() {
-    StackFunctionSupport.call( this );
 }
+var Stack_A_R_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_A_R" ] = Stack_A_R;
+    "Stack_A_R" ] = Stack_A_R_stForClasses;
 
 Stack_A_R.prototype = new StackFunctionSupport();
 Stack_A_R.prototype.Cons_ = Stack_A_R;
@@ -13358,15 +13495,15 @@ Stack_A_R.prototype.className = "Stack_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_R[ "of1" ] = function ( original ) {
-    return Stack_A_R[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_A_R_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_A_R_stForClasses[ "of3" ]( original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_R[ "of3" ] = function (
+Stack_A_R_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_A_R().initStackFunctionSupport(
@@ -13388,10 +13525,10 @@ Stack_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_R.of*().
 /** @constructor */
 function Stack_R() {
-    StackFunctionSupport.call( this );
 }
+var Stack_R_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_R" ] = Stack_R;
+    "Stack_R" ] = Stack_R_stForClasses;
 
 Stack_R.prototype = new StackFunctionSupport();
 Stack_R.prototype.Cons_ = Stack_R;
@@ -13399,15 +13536,17 @@ Stack_R.prototype.className = "Stack_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_R[ "of1" ] = function ( original ) {
-    return Stack_R[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_R_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_R_stForClasses[ "of3" ]( original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_R[ "of3" ] = function ( parameterList, lexicalBindings, body ) {
+Stack_R_stForClasses[ "of3" ] = function (
+    parameterList, lexicalBindings, body ) {
+    
     return new Stack_R().initStackFunctionSupport(
         parameterList, lexicalBindings, body );
 };
@@ -13427,10 +13566,10 @@ Stack_R.prototype.invoke3 = function ( vm, lc, args ) {
 // Stack_D_A_A_A_A_d.of*().
 /** @constructor */
 function Stack_D_A_A_A_A_d() {
-    StackFunctionSupport.call( this );
 }
+var Stack_D_A_A_A_A_d_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_D_A_A_A_A_d" ] = Stack_D_A_A_A_A_d;
+    "Stack_D_A_A_A_A_d" ] = Stack_D_A_A_A_A_d_stForClasses;
 
 Stack_D_A_A_A_A_d.prototype = new StackFunctionSupport();
 Stack_D_A_A_A_A_d.prototype.Cons_ = Stack_D_A_A_A_A_d;
@@ -13438,15 +13577,16 @@ Stack_D_A_A_A_A_d.prototype.className = "Stack_D_A_A_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_D_A_A_A_A_d[ "of1" ] = function ( original ) {
-    return Stack_D_A_A_A_A_d[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_D_A_A_A_A_d_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_D_A_A_A_A_d_stForClasses[ "of3" ](
+        original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_D_A_A_A_A_d[ "of3" ] = function (
+Stack_D_A_A_A_A_d_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_D_A_A_A_A_d().initStackFunctionSupport(
@@ -13491,10 +13631,10 @@ Stack_D_A_A_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_D_A_A_d.of*().
 /** @constructor */
 function Stack_D_A_A_d() {
-    StackFunctionSupport.call( this );
 }
+var Stack_D_A_A_d_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_D_A_A_d" ] = Stack_D_A_A_d;
+    "Stack_D_A_A_d" ] = Stack_D_A_A_d_stForClasses;
 
 Stack_D_A_A_d.prototype = new StackFunctionSupport();
 Stack_D_A_A_d.prototype.Cons_ = Stack_D_A_A_d;
@@ -13502,15 +13642,16 @@ Stack_D_A_A_d.prototype.className = "Stack_D_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_D_A_A_d[ "of1" ] = function ( original ) {
-    return Stack_D_A_A_d[ "of3" ]( original.parameterList(),
-        original.lexicalBindings, StackFunctionSupport.convertBody(
+Stack_D_A_A_d_stForClasses[ "of1" ] = function ( original ) {
+    return Stack_D_A_A_d_stForClasses[ "of3" ](
+        original.parameterList(),
+        original.lexicalBindings, StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
 };
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_D_A_A_d[ "of3" ] = function (
+Stack_D_A_A_d_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     return new Stack_D_A_A_d().initStackFunctionSupport(
@@ -13549,10 +13690,10 @@ Stack_D_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // Stack_A_Oliteral.of*().
 /** @constructor */
 function Stack_A_Oliteral() {
-    StackFunctionSupport.call( this );
 }
+var Stack_A_Oliteral_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_A_Oliteral" ] = Stack_A_Oliteral;
+    "Stack_A_Oliteral" ] = Stack_A_Oliteral_stForClasses;
 
 Stack_A_Oliteral.prototype = new StackFunctionSupport();
 Stack_A_Oliteral.prototype.Cons_ = Stack_A_Oliteral;
@@ -13560,10 +13701,10 @@ Stack_A_Oliteral.prototype.className = "Stack_A_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_Oliteral[ "of1" ] = function ( original ) {
+Stack_A_Oliteral_stForClasses[ "of1" ] = function ( original ) {
     var result = new Stack_A_Oliteral().initStackFunctionSupport(
         original.parameterList(), original.lexicalBindings,
-        StackFunctionSupport.convertBody(
+        StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
     result.optExpr_ =
         result.parameterList_.cdr().car().cdr().cdr().car();
@@ -13586,7 +13727,7 @@ Stack_A_Oliteral[ "of1" ] = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_A_Oliteral[ "of3" ] = function (
+Stack_A_Oliteral_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     var result = new Stack_A_Oliteral().initStackFunctionSupport(
@@ -13658,10 +13799,10 @@ Stack_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // (which were only reflection uses) to uses of Stack_Oliteral.of*().
 /** @constructor */
 function Stack_Oliteral() {
-    StackFunctionSupport.call( this );
 }
+var Stack_Oliteral_stForClasses = {};
 classes[ "rainbow.function.interpreted.optimise.stack." +
-    "Stack_Oliteral" ] = Stack_Oliteral;
+    "Stack_Oliteral" ] = Stack_Oliteral_stForClasses;
 
 Stack_Oliteral.prototype = new StackFunctionSupport();
 Stack_Oliteral.prototype.Cons_ = Stack_Oliteral;
@@ -13669,10 +13810,10 @@ Stack_Oliteral.prototype.className = "Stack_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_Oliteral[ "of1" ] = function ( original ) {
+Stack_Oliteral_stForClasses[ "of1" ] = function ( original ) {
     var result = new Stack_Oliteral().initStackFunctionSupport(
         original.parameterList(), original.lexicalBindings,
-        StackFunctionSupport.convertBody(
+        StackFunctionSupport_st.convertBody(
             original.lexicalBindings, original.body ) );
     result.optExpr_ =
         result.parameterList_.car().cdr().cdr().car();
@@ -13695,7 +13836,7 @@ Stack_Oliteral[ "of1" ] = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
-Stack_Oliteral[ "of3" ] = function (
+Stack_Oliteral_stForClasses[ "of3" ] = function (
     parameterList, lexicalBindings, body ) {
     
     var result = new Stack_Oliteral().initStackFunctionSupport(
@@ -13755,9 +13896,9 @@ Stack_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 
 /** @constructor */
 function Macex() {
-    Builtin.call( this );
-    this.init( "macex" );
+    this.initBuiltin( "macex" );
 }
+var Macex_st = {};
 
 Macex.prototype = new Builtin();
 Macex.prototype.className = "Macex";
@@ -13765,7 +13906,7 @@ Macex.prototype.className = "Macex";
 // ASYNC PORT NOTE: The synchronous Java version is below.
 Macex.prototype.invoke = function ( vm, args ) {
     if ( args instanceof Nil ) {
-        vm.pushA( ArcObject.NIL );
+        vm.pushA( ArcObject_st.NIL );
         return;
     }
     
@@ -13787,7 +13928,7 @@ Macex.prototype.invoke = function ( vm, args ) {
     }
     
     var macro = macroName.value();
-    var fn = Tagged.ifTagged( macro, "mac" );
+    var fn = Tagged_st.ifTagged( macro, "mac" );
     if ( fn === null ) {
         vm.pushA( expression );
         return;
@@ -13798,28 +13939,29 @@ Macex.prototype.invoke = function ( vm, args ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(body instanceof Pair) )
         throw new TypeError();
-    vm.pushFrame( new Macex.Again( this ) );
+    vm.pushFrame( new Macex_st.Again( this ) );
     fn.invokeAndWait( vm, body );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Macex.Again = function ( owner ) {
+Macex_st.Again = function ( owner ) {
     Instruction.call( this );
     this.belongsTo( owner );
 };
 
-Macex.Again.prototype = new Instruction();
-Macex.Again.prototype.className = "Macex.Again";
+Macex_st.Again.prototype = new Instruction();
+Macex_st.Again.prototype.className = "Macex.Again";
 
-Macex.Again.prototype.operate = function ( vm ) {
-    this.owner().invoke( vm, new Pair( vm.popA(), ArcObject.NIL ) );
+Macex_st.Again.prototype.operate = function ( vm ) {
+    this.owner().invoke(
+        vm, new Pair().init2( vm.popA(), ArcObject_st.NIL ) );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
-//Macex.prototype.invoke = function ( vm, args ) {
+//Macex_st.prototype.invoke = function ( vm, args ) {
 //    if ( args instanceof Nil ) {
-//        vm.pushA( ArcObject.NIL );
+//        vm.pushA( ArcObject_st.NIL );
 //        return;
 //    }
 //    
@@ -13841,7 +13983,7 @@ Macex.Again.prototype.operate = function ( vm ) {
 //    }
 //    
 //    var macro = macroName.value();
-//    var fn = Tagged.ifTagged( macro, "mac" );
+//    var fn = Tagged_st.ifTagged( macro, "mac" );
 //    if ( fn === null ) {
 //        vm.pushA( expression );
 //        return;
@@ -13853,7 +13995,8 @@ Macex.Again.prototype.operate = function ( vm ) {
 //    if ( !(body instanceof Pair) )
 //        throw new TypeError();
 //    expression = fn.invokeAndWait( vm, body );
-//    this.invoke( vm, new Pair( expression, ArcObject.NIL ) );
+//    this.invoke(
+//        vm, new Pair().init2( expression, ArcObject_st.NIL ) );
 //};
 
 
@@ -13865,31 +14008,31 @@ Macex.Again.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function Uniq() {
-    Builtin.call( this );
-    this.init( "uniq" );
+    this.initBuiltin( "uniq" );
 }
+var Uniq_st = {};
 
 Uniq.prototype = new Builtin();
 Uniq.prototype.className = "Uniq";
 
 Uniq.prototype.invokef0 = function ( vm ) {
     // PORT NOTE: This was synchronized on Uniq.class in Java.
-    vm.pushA( Symbol.mkSym( "gs" + (++Uniq.count_) ) );
+    vm.pushA( Symbol_st.mkSym( "gs" + (++Uniq_st.count_) ) );
 };
 
 Uniq.prototype.invokePair = function ( args ) {
     try {
         args.mustBeNil();
     } catch ( notNil ) {
-        if ( !(notNil instanceof ArcObject.NotNil) )
+        if ( !(notNil instanceof ArcObject_st.NotNil) )
             throw new ArcError(
                 "uniq: expects no args, got " + args );
     }
     // PORT NOTE: This was synchronized on Uniq.class in Java.
-    return Symbol.mkSym( "gs" + (++Uniq.count_) );
+    return Symbol_st.mkSym( "gs" + (++Uniq_st.count_) );
 };
 
-Uniq.count_ = 0;
+Uniq_st.count_ = 0;
 
 
 // ===================================================================
@@ -13900,15 +14043,14 @@ Uniq.count_ = 0;
 
 /** @constructor */
 function Details() {
-    Builtin.call( this );
-    this.init( "details" );
+    this.initBuiltin( "details" );
 }
 
 Details.prototype = new Builtin();
 Details.prototype.className = "Details";
 
 Details.prototype.invokePair = function ( args ) {
-    return ArcException.cast( args.car(), this ).message();
+    return ArcException_st.cast( args.car(), this ).message();
 };
 
 
@@ -13920,15 +14062,15 @@ Details.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Err() {
-    Builtin.call( this );
-    this.init( "err" );
+    this.initBuiltin( "err" );
 }
 
 Err.prototype = new Builtin();
 Err.prototype.className = "Err";
 
 Err.prototype.invokePair = function ( args ) {
-    throw new ArcError( ArcString.cast( args.car(), this ).value() );
+    throw new ArcError(
+        ArcString_st.cast( args.car(), this ).value() );
 };
 
 
@@ -13940,8 +14082,7 @@ Err.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function OnErr() {
-    Builtin.call( this );
-    this.init( "on-err" );
+    this.initBuiltin( "on-err" );
 }
 
 OnErr.prototype = new Builtin();
@@ -13951,7 +14092,7 @@ OnErr.prototype.invoke = function ( vm, args ) {
     var c = new Catch( args.car(), vm.getAp() );
     c.belongsTo( this );
     vm.pushFrame( c );
-    args.cdr().car().invoke( vm, ArcObject.NIL );
+    args.cdr().car().invoke( vm, ArcObject_st.NIL );
 };
 
 
@@ -13963,34 +14104,34 @@ OnErr.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Protect() {
-    Builtin.call( this );
-    this.init( "protect" );
+    this.initBuiltin( "protect" );
     
-    this.v_ = new Protect.Anon_v_( this );
+    this.v_ = new Protect_st.Anon_v_( this );
 }
+var Protect_st = {};
 
 Protect.prototype = new Builtin();
 Protect.prototype.className = "Protect";
 
 // PORT NOTE: This was an anonymous inner class in Java.
 /** @constructor */
-Protect.Anon_v_ = function ( this_Protect ) {
+Protect_st.Anon_v_ = function ( this_Protect ) {
     this.this_Protect_ = this_Protect;
 };
-Protect.Anon_v_.prototype = new Visitor();
-Protect.Anon_v_.prototype.acceptInstruction = function ( o ) {
+Protect_st.Anon_v_.prototype = new Visitor();
+Protect_st.Anon_v_.prototype.acceptInstruction = function ( o ) {
     o.belongsTo( this.this_Protect_ );
 };
 
 Protect.prototype.invoke = function ( vm, args ) {
-    var instructions = new Pair(
+    var instructions = new Pair().init2(
         new FinallyInvoke( args.cdr().car() ),
-        new Pair(
+        new Pair().init2(
             new PopArg( "clear up 'protect/after' return value" ),
-            ArcObject.NIL ) );
+            ArcObject_st.NIL ) );
     instructions.visit( this.v_ );
     vm.pushInvocation2( null, instructions );
-    args.car().invoke( vm, ArcObject.NIL );
+    args.car().invoke( vm, ArcObject_st.NIL );
 };
 
 
@@ -14002,8 +14143,7 @@ Protect.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Apply() {
-    Builtin.call( this );
-    this.init( "apply" );
+    this.initBuiltin( "apply" );
 }
 
 Apply.prototype = new Builtin();
@@ -14026,7 +14166,7 @@ Apply.prototype.invokef2 = function ( vm, arg1, arg2 ) {
 };
 
 Apply.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
-    arg1.invoke( vm, new Pair( arg2, arg3 ) );
+    arg1.invoke( vm, new Pair().init2( arg2, arg3 ) );
 };
 
 Apply.prototype.invoke = function ( vm, args ) {
@@ -14042,10 +14182,10 @@ Apply.prototype.invoke = function ( vm, args ) {
 
 Apply.prototype.constructApplyArgs_ = function ( args ) {
     if ( args.cdr() instanceof Nil )
-        return Pair.cast( args.car(), this );
+        return Pair_st.cast( args.car(), this );
     else
-        return new Pair( args.car(), this.constructApplyArgs_(
-            Pair.cast( args.cdr(), this ) ) );
+        return new Pair().init2( args.car(), this.constructApplyArgs_(
+            Pair_st.cast( args.cdr(), this ) ) );
 };
 
 
@@ -14057,43 +14197,44 @@ Apply.prototype.constructApplyArgs_ = function ( args ) {
 
 /** @constructor */
 function Eval() {
-    Builtin.call( this );
-    this.init( "eval" );
+    this.initBuiltin( "eval" );
 }
+var Eval_st = {};
 
 Eval.prototype = new Builtin();
 Eval.prototype.className = "Eval";
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 Eval.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new Eval.ReduceAndExecute( this ) );
-    Compiler.compile( vm, args.car(), [] );
+    vm.pushFrame( new Eval_st.ReduceAndExecute( this ) );
+    Compiler_st.compile( vm, args.car(), [] );
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
 //Eval.prototype.invoke = function ( vm, args ) {
 //    var expression = args.car();
-//    expression = Compiler.compile( vm, expression, [] ).reduce();
+//    expression = Compiler_st.compile( vm, expression, [] ).reduce();
 //    var i = [];
 //    expression.addInstructions( i );
-//    vm.pushInvocation2( null, Pair.buildFrom1( i ) );
+//    vm.pushInvocation2( null, Pair_st.buildFrom1( i ) );
 //};
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Eval.ReduceAndExecute = function ( owner ) {
+Eval_st.ReduceAndExecute = function ( owner ) {
     Instruction.call( this );
     this.belongsTo( owner );
 };
 
-Eval.ReduceAndExecute.prototype = new Instruction();
-Eval.ReduceAndExecute.prototype.className = "Eval.ReduceAndExecute";
+Eval_st.ReduceAndExecute.prototype = new Instruction();
+Eval_st.ReduceAndExecute.prototype.className =
+    "Eval.ReduceAndExecute";
 
-Eval.ReduceAndExecute.prototype.operate = function ( vm ) {
+Eval_st.ReduceAndExecute.prototype.operate = function ( vm ) {
     var expression = vm.popA().reduce();
     var i = [];
     expression.addInstructions( i );
-    vm.pushInvocation2( null, Pair.buildFrom1( i ) );
+    vm.pushInvocation2( null, Pair_st.buildFrom1( i ) );
 };
 
 
@@ -14106,67 +14247,67 @@ Eval.ReduceAndExecute.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function SSExpand() {
-    Builtin.call( this );
-    this.init( "ssexpand" );
+    this.initBuiltin( "ssexpand" );
 }
+var SSExpand_st = {};
 
 SSExpand.prototype = new Builtin();
 SSExpand.prototype.className = "SSExpand";
 
 SSExpand.prototype.invokePair = function ( args ) {
-    return SSExpand.expand( Symbol.cast( args.car(), this ) );
+    return SSExpand_st.expand( Symbol_st.cast( args.car(), this ) );
 };
 
-SSExpand.expand = function ( s ) {
+SSExpand_st.expand = function ( s ) {
     var symbol = s.name();
-    if ( Evaluation.isComposeComplement( symbol ) )
-        return SSExpand.expandCompose_( symbol );
-    else if ( Evaluation.isAndf( symbol ) )
-        return SSExpand.expandAndf_( symbol );
-    else if ( Evaluation.isListListQuoted( symbol ) )
-        return SSExpand.expandExpression_( symbol );
+    if ( Evaluation_st.isComposeComplement( symbol ) )
+        return SSExpand_st.expandCompose_( symbol );
+    else if ( Evaluation_st.isAndf( symbol ) )
+        return SSExpand_st.expandAndf_( symbol );
+    else if ( Evaluation_st.isListListQuoted( symbol ) )
+        return SSExpand_st.expandExpression_( symbol );
     else
         throw new ArcError( "Unknown syntax " + symbol );
 };
 
-SSExpand.expandAndf_ = function ( symbol ) {
-    var toks = [ Symbol.mkSym( "andf" ) ];
-    var tokenised = SSExpand.andToks_( symbol );
+SSExpand_st.expandAndf_ = function ( symbol ) {
+    var toks = [ Symbol_st.mkSym( "andf" ) ];
+    var tokenised = SSExpand_st.andToks_( symbol );
     for ( var i = 0, len = tokenised.length; i < len; i++ ) {
         var s = tokenised[ i ];
         // PORT NOTE: This local variable didn't exist in Java.
-        var sym = Symbol.make( s );
+        var sym = Symbol_st.make( s );
         // PORT NOTE: This was a cast in Java.
         if ( !(sym instanceof Symbol) )
             throw new TypeError();
-        toks.push( SSExpand.readValueObject_( sym ) );
+        toks.push( SSExpand_st.readValueObject_( sym ) );
     }
-    return Pair.buildFrom1( toks );
+    return Pair_st.buildFrom1( toks );
 };
 
-SSExpand.andToks_ = function ( symbol ) {
+SSExpand_st.andToks_ = function ( symbol ) {
     if ( symbol.length === 0 ) {
         return [ "" ];
     } else if (
-        symbol.charCodeAt( 0 ) === SSExpand.ANDF_INTRASYM_CHAR ) {
-        var result = SSExpand.andToks_( symbol.substring( 1 ) );
-        result[ 0 ] = SSExpand.ANDF_INTRASYM + result[ 0 ];
+        symbol.charCodeAt( 0 ) === SSExpand_st.ANDF_INTRASYM_CHAR ) {
+        var result = SSExpand_st.andToks_( symbol.substring( 1 ) );
+        result[ 0 ] = SSExpand_st.ANDF_INTRASYM + result[ 0 ];
         return result;
     } else if ( symbol.charCodeAt( symbol.length - 1 ) ===
-        SSExpand.ANDF_INTRASYM_CHAR ) {
-        var result = SSExpand.andToks_(
+        SSExpand_st.ANDF_INTRASYM_CHAR ) {
+        var result = SSExpand_st.andToks_(
             symbol.substring( 0, symbol.length - 1 ) );
-        result[ result.length - 1 ] += SSExpand.ANDF_INTRASYM;
+        result[ result.length - 1 ] += SSExpand_st.ANDF_INTRASYM;
         return result;
     } else {
-        return symbol.split( SSExpand.ANDF_INTRASYM );
+        return symbol.split( SSExpand_st.ANDF_INTRASYM );
     }
 };
 
 // PORT NOTE: We changed the parameters of the private
 // SSExpand.expandToks( Iterator ).
-SSExpand.expandToks_ = function ( list, i ) {
-    var s = SSExpand.readValueObject_( list[ i++ ] );
+SSExpand_st.expandToks_ = function ( list, i ) {
+    var s = SSExpand_st.readValueObject_( list[ i++ ] );
     var sep = null;
     if ( i < list.length ) {
         sep = list[ i++ ];
@@ -14175,13 +14316,14 @@ SSExpand.expandToks_ = function ( list, i ) {
             throw new TypeError();
     }
     
-    var next = sep === Symbol.BANG ?
-        Pair.buildFrom1( [ Symbol.mkSym( "quote" ), s ] ) : s;
+    var next = sep === Symbol_st.BANG ?
+        Pair_st.buildFrom1( [ Symbol_st.mkSym( "quote" ), s ] ) : s;
     if ( i < list.length )
-        return Pair.buildFrom1(
-            [ SSExpand.expandToks_( list, i ), next ] );
+        return Pair_st.buildFrom1(
+            [ SSExpand_st.expandToks_( list, i ), next ] );
     else if ( sep !== null )
-        return Pair.buildFrom1( [ Symbol.mkSym( "get" ), next ] );
+        return Pair_st.buildFrom1(
+            [ Symbol_st.mkSym( "get" ), next ] );
     else
         return next;
 };
@@ -14189,25 +14331,25 @@ SSExpand.expandToks_ = function ( list, i ) {
 // PORT NOTE: We renamed each private SSExpand.readValue().
 // PORT TODO: This seems really different from Arc. Figure out if it
 // should be. But don't correct it!
-SSExpand.readValueString_ = function ( s ) {
+SSExpand_st.readValueString_ = function ( s ) {
     try {
-        return ArcParser.readFirstObjectFromString( s );
+        return ArcParser_st.readFirstObjectFromString( s );
     } catch ( e ) { if ( !(e instanceof ParseException) ) throw e;
         throw new ArcError(
             "Couldn't read value of symbol: " + s, e );
     }
 };
 
-SSExpand.readValueObject_ = function ( symbol ) {
+SSExpand_st.readValueObject_ = function ( symbol ) {
     if ( symbol instanceof Nil )
         return symbol;
     // PORT NOTE: This was a cast in Java.
     if ( !(symbol instanceof Symbol) )
         throw new TypeError();
-    return SSExpand.readValueString_( symbol.name() );
+    return SSExpand_st.readValueString_( symbol.name() );
 };
 
-SSExpand.expandExpression_ = function ( symbol ) {
+SSExpand_st.expandExpression_ = function ( symbol ) {
     // PORT NOTE: The original version uses java.util.StringTokenizer.
     var tokens = symbol.replace( /#/g, "#h" ).replace( /%/g, "#p" ).
         replace( /([.!])/g, "%$1%" ).split( /%+/ );
@@ -14215,9 +14357,9 @@ SSExpand.expandExpression_ = function ( symbol ) {
     var wasSep = false;
     for ( var i = 0, len = tokens.length; i < len; i++ ) {
         if ( tokens[ i ] === "" ) continue;
-        var sym = Symbol.make(
+        var sym = Symbol_st.make(
             tokens[ i ].replace( /#p/g, "%" ).replace( /#h/g, "#" ) );
-        if ( SSExpand.isSpecialListSyntax_( sym ) ) {
+        if ( SSExpand_st.isSpecialListSyntax_( sym ) ) {
             if ( wasSep )
                 throw new ArcError( "Bad syntax " + symbol );
             else
@@ -14228,34 +14370,35 @@ SSExpand.expandExpression_ = function ( symbol ) {
         list.unshift( sym );
     }
     if ( wasSep )
-        list.unshift( Symbol.mkSym( "#<eof>" ) );
+        list.unshift( Symbol_st.mkSym( "#<eof>" ) );
     
-    return SSExpand.expandToks_( list, 0 );
+    return SSExpand_st.expandToks_( list, 0 );
 };
 
-SSExpand.isSpecialListSyntax_ = function ( sym ) {
-    return sym === Symbol.DOT || sym === Symbol.BANG;
+SSExpand_st.isSpecialListSyntax_ = function ( sym ) {
+    return sym === Symbol_st.DOT || sym === Symbol_st.BANG;
 };
 
-SSExpand.expandCompose_ = function ( symbol ) {
+SSExpand_st.expandCompose_ = function ( symbol ) {
     var elements = symbol.split( ":" );
     if ( elements.length === 1 )
-        return SSExpand.possiblyComplement_( elements[ 0 ] );
-    var list = [ Symbol.mkSym( "compose" ) ];
+        return SSExpand_st.possiblyComplement_( elements[ 0 ] );
+    var list = [ Symbol_st.mkSym( "compose" ) ];
     for ( var i = 0, len = elements.length; i < len; i++ )
-        list.push( SSExpand.possiblyComplement_( elements[ i ] ) );
-    return Pair.buildFrom2( list, ArcObject.NIL );
+        list.push( SSExpand_st.possiblyComplement_( elements[ i ] ) );
+    return Pair_st.buildFrom2( list, ArcObject_st.NIL );
 };
 
-SSExpand.possiblyComplement_ = function ( element ) {
+SSExpand_st.possiblyComplement_ = function ( element ) {
     return /^~/.test( element ) ?
-        Pair.buildFrom1( [ Symbol.mkSym( "complement" ),
-            SSExpand.readValueString_( element.substring( 1 ) ) ] ) :
-        SSExpand.readValueString_( element );
+        Pair_st.buildFrom1( [ Symbol_st.mkSym( "complement" ),
+            SSExpand_st.readValueString_(
+                element.substring( 1 ) ) ] ) :
+        SSExpand_st.readValueString_( element );
 };
 
-SSExpand.ANDF_INTRASYM = "&";
-SSExpand.ANDF_INTRASYM_CHAR = "&".charCodeAt( 0 );
+SSExpand_st.ANDF_INTRASYM = "&";
+SSExpand_st.ANDF_INTRASYM_CHAR = "&".charCodeAt( 0 );
 
 
 // ===================================================================
@@ -14266,23 +14409,23 @@ SSExpand.ANDF_INTRASYM_CHAR = "&".charCodeAt( 0 );
 
 /** @constructor */
 function SSyntax() {
-    Builtin.call( this );
-    this.init( "ssyntax" );
+    this.initBuiltin( "ssyntax" );
 }
+var SSyntax_st = {};
 
 SSyntax.prototype = new Builtin();
 SSyntax.prototype.className = "SSyntax";
 
 SSyntax.prototype.invokePair = function ( args ) {
     return args.car() instanceof Symbol &&
-        SSyntax.isSpecial( args.car() ) ?
-        ArcObject.T : ArcObject.NIL;
+        SSyntax_st.isSpecial( args.car() ) ?
+        ArcObject_st.T : ArcObject_st.NIL;
 };
 
-SSyntax.isSpecial = function ( symbol ) {
-    return (Evaluation.isComposeComplement( symbol.name() )
-        || Evaluation.isAndf( symbol.name() )
-        || Evaluation.isListListQuoted( symbol.name() ));
+SSyntax_st.isSpecial = function ( symbol ) {
+    return (Evaluation_st.isComposeComplement( symbol.name() )
+        || Evaluation_st.isAndf( symbol.name() )
+        || Evaluation_st.isListListQuoted( symbol.name() ));
 };
 
 
@@ -14293,8 +14436,7 @@ SSyntax.isSpecial = function ( symbol ) {
 
 /** @constructor */
 function JavaDebug() {
-    Builtin.call( this );
-    this.init( "java-debug" );
+    this.initBuiltin( "java-debug" );
 }
 
 JavaDebug.prototype = new Builtin();
@@ -14313,22 +14455,21 @@ JavaDebug.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function JavaInvoke() {
-    Builtin.call( this );
-    this.init( "java-invoke" );
+    this.initBuiltin( "java-invoke" );
 }
 
 JavaInvoke.prototype = new Builtin();
 JavaInvoke.prototype.className = "JavaInvoke";
 
 JavaInvoke.prototype.invokePair = function ( args ) {
-    var target = JsObject.cast( args.car(), this );
-    var methodName = Symbol.cast( args.cdr().car(), this ).name();
+    var target = JsObject_st.cast( args.car(), this );
+    var methodName = Symbol_st.cast( args.cdr().car(), this ).name();
     // PORT NOTE: This local variable didn't exist in Java.
     var jsArgs = args.cdr().cdr().car();
     // PORT NOTE: This was a cast in Java.
     if ( !(jsArgs instanceof Pair) )
         throw new TypeError();
-    return JsObject.wrap( target.invokeJs( methodName, jsArgs ) );
+    return JsObject_st.wrap( target.invokeJs( methodName, jsArgs ) );
 };
 
 
@@ -14339,8 +14480,7 @@ JavaInvoke.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Car() {
-    Builtin.call( this );
-    this.init( "car" );
+    this.initBuiltin( "car" );
 }
 
 Car.prototype = new Builtin();
@@ -14351,7 +14491,7 @@ Car.prototype.invokef1 = function ( vm, arg ) {
 };
 
 Car.prototype.invokePair = function ( args ) {
-    Builtin.checkExactArgsCount( args, 1, this.className );
+    Builtin_st.checkExactArgsCount( args, 1, this.className );
     return args.car().car();
 };
 
@@ -14363,8 +14503,7 @@ Car.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Cdr() {
-    Builtin.call( this );
-    this.init( "cdr" );
+    this.initBuiltin( "cdr" );
 }
 
 Cdr.prototype = new Builtin();
@@ -14375,7 +14514,7 @@ Cdr.prototype.invokef1 = function ( vm, arg ) {
 };
 
 Cdr.prototype.invokePair = function ( args ) {
-    Builtin.checkExactArgsCount( args, 1, this.className );
+    Builtin_st.checkExactArgsCount( args, 1, this.className );
     return args.car().cdr();
 };
 
@@ -14388,20 +14527,19 @@ Cdr.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Cons() {
-    Builtin.call( this );
-    this.init( "cons" );
+    this.initBuiltin( "cons" );
 }
 
 Cons.prototype = new Builtin();
 Cons.prototype.className = "Cons";
 
 Cons.prototype.invokef2 = function ( vm, arg1, arg2 ) {
-    vm.pushA( new Pair( arg1, arg2 ) );
+    vm.pushA( new Pair().init2( arg1, arg2 ) );
 };
 
 Cons.prototype.invokePair = function ( args ) {
-    Builtin.checkExactArgsCount( args, 2, this.className );
-    return new Pair( args.car(), args.cdr().car() );
+    Builtin_st.checkExactArgsCount( args, 2, this.className );
+    return new Pair().init2( args.car(), args.cdr().car() );
 };
 
 
@@ -14413,15 +14551,14 @@ Cons.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Len() {
-    Builtin.call( this );
-    this.init( "len" );
+    this.initBuiltin( "len" );
 }
 
 Len.prototype = new Builtin();
 Len.prototype.className = "Len";
 
 Len.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     return new Rational( args.car().len(), 1 );
 };
 
@@ -14434,8 +14571,7 @@ Len.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function NewString() {
-    Builtin.call( this );
-    this.init( "newstring" );
+    this.initBuiltin( "newstring" );
 }
 
 NewString.prototype = new Builtin();
@@ -14446,7 +14582,7 @@ NewString.prototype.invokePair = function ( args ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(n instanceof ArcNumber) )
         throw new TypeError();
-    var c = ArcCharacter.NULL;
+    var c = ArcCharacter_st.NULL;
     if ( !(args.cdr() instanceof Nil) ) {
         c = args.cdr().car();
         // PORT NOTE: This was a cast in Java.
@@ -14456,7 +14592,7 @@ NewString.prototype.invokePair = function ( args ) {
     var b = [];
     for ( var i = 0; i < n.toInt(); i++ )
         b.push( c.value() );
-    return ArcString.make( b.join( "" ) );
+    return ArcString_st.make( b.join( "" ) );
 };
 
 
@@ -14467,8 +14603,7 @@ NewString.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Scar() {
-    Builtin.call( this );
-    this.init( "scar" );
+    this.initBuiltin( "scar" );
 }
 
 Scar.prototype = new Builtin();
@@ -14490,8 +14625,7 @@ Scar.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Scdr() {
-    Builtin.call( this );
-    this.init( "scdr" );
+    this.initBuiltin( "scdr" );
 }
 
 Scdr.prototype = new Builtin();
@@ -14516,17 +14650,16 @@ Scdr.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Acos() {
-    Builtin.call( this );
-    this.init( "acos" );
+    this.initBuiltin( "acos" );
 }
 
 Acos.prototype = new Builtin();
 Acos.prototype.className = "Acos";
 
 Acos.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
-        Math.acos( ArcNumber.cast( args.car(), this ).toDouble() );
+        Math.acos( ArcNumber_st.cast( args.car(), this ).toDouble() );
     return new Real( result );
 };
 
@@ -14539,15 +14672,15 @@ Acos.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Add() {
-    Builtin.call( this );
-    this.init( "+" );
+    this.initBuiltin( "+" );
 }
+var Add_st = {};
 
 Add.prototype = new Builtin();
 Add.prototype.className = "Add";
 
 Add.prototype.invokef0 = function ( vm ) {
-    vm.pushA( Rational.ZERO );
+    vm.pushA( Rational_st.ZERO );
 };
 
 Add.prototype.invokef1 = function ( vm, arg ) {
@@ -14564,7 +14697,7 @@ Add.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
 
 Add.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil )
-        return Rational.ZERO;
+        return Rational_st.ZERO;
     var result = args.car();
     var rest = args.cdr();
     while ( !(rest instanceof Nil) ) {
@@ -14574,8 +14707,8 @@ Add.prototype.invokePair = function ( args ) {
     return result;
 };
 
-Add.sum = function ( args ) {
-    return Maths.precision( args ).sum( args );
+Add_st.sum = function ( args ) {
+    return Maths_st.precision( args ).sum( args );
 };
 
 
@@ -14587,17 +14720,16 @@ Add.sum = function ( args ) {
 
 /** @constructor */
 function Asin() {
-    Builtin.call( this );
-    this.init( "asin" );
+    this.initBuiltin( "asin" );
 }
 
 Asin.prototype = new Builtin();
 Asin.prototype.className = "Asin";
 
 Asin.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
-        Math.asin( ArcNumber.cast( args.car(), this ).toDouble() );
+        Math.asin( ArcNumber_st.cast( args.car(), this ).toDouble() );
     return new Real( result );
 };
 
@@ -14610,17 +14742,16 @@ Asin.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Atan() {
-    Builtin.call( this );
-    this.init( "atan" );
+    this.initBuiltin( "atan" );
 }
 
 Atan.prototype = new Builtin();
 Atan.prototype.className = "Atan";
 
 Atan.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
-        Math.atan( ArcNumber.cast( args.car(), this ).toDouble() );
+        Math.atan( ArcNumber_st.cast( args.car(), this ).toDouble() );
     return new Real( result );
 };
 
@@ -14633,17 +14764,16 @@ Atan.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function ComplexParts() {
-    Builtin.call( this );
-    this.init( "complex-parts" );
+    this.initBuiltin( "complex-parts" );
 }
 
 ComplexParts.prototype = new Builtin();
 ComplexParts.prototype.className = "ComplexParts";
 
 ComplexParts.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
-    var x = Complex.cast( args.car(), this );
-    return Pair.buildFrom1( [ x.realPart(), x.imaginaryPart() ] );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
+    var x = Complex_st.cast( args.car(), this );
+    return Pair_st.buildFrom1( [ x.realPart(), x.imaginaryPart() ] );
 };
 
 
@@ -14655,17 +14785,16 @@ ComplexParts.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Cosine() {
-    Builtin.call( this );
-    this.init( "cos" );
+    this.initBuiltin( "cos" );
 }
 
 Cosine.prototype = new Builtin();
 Cosine.prototype.className = "Cosine";
 
 Cosine.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
-        Math.cos( ArcNumber.cast( args.car(), this ).toDouble() );
+        Math.cos( ArcNumber_st.cast( args.car(), this ).toDouble() );
     return new Real( result );
 };
 
@@ -14678,8 +14807,7 @@ Cosine.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Divide() {
-    Builtin.call( this );
-    this.init( "/" );
+    this.initBuiltin( "/" );
 }
 
 Divide.prototype = new Builtin();
@@ -14689,7 +14817,7 @@ Divide.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil )
         throw new ArcError( "Function `/` expected at least 1 arg" );
     
-    return Maths.precision( args ).divide( args );
+    return Maths_st.precision( args ).divide( args );
 };
 
 
@@ -14701,15 +14829,14 @@ Divide.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Expt() {
-    Builtin.call( this );
-    this.init( "expt" );
+    this.initBuiltin( "expt" );
 }
 
 Expt.prototype = new Builtin();
 Expt.prototype.className = "Expt";
 
 Expt.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 2 );
+    Builtin_st.checkMaxArgCount( args, this.className, 2 );
     var base = args.car();
     // PORT NOTE: This was a cast in Java.
     if ( !(base instanceof ArcNumber) )
@@ -14739,16 +14866,15 @@ Expt.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Logarithm() {
-    Builtin.call( this );
-    this.init( "log" );
+    this.initBuiltin( "log" );
 }
 
 Logarithm.prototype = new Builtin();
 Logarithm.prototype.className = "Logarithm";
 
 Logarithm.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
-    var arg = ArcNumber.cast( args.car(), this );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
+    var arg = ArcNumber_st.cast( args.car(), this );
     if ( arg instanceof Complex )
         return arg.log();
     else
@@ -14764,8 +14890,7 @@ Logarithm.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function MakeComplex() {
-    Builtin.call( this );
-    this.init( "make-complex" );
+    this.initBuiltin( "make-complex" );
 }
 
 MakeComplex.prototype = new Builtin();
@@ -14774,9 +14899,9 @@ MakeComplex.prototype.className = "MakeComplex";
 // TODO: this can be implemented in arc
 // (def make-complex (real image) (+ real (* 0+i imag)))
 MakeComplex.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 2 );
-    var a = ArcNumber.cast( args.car(), this );
-    var b = ArcNumber.cast( args.cdr().car(), this );
+    Builtin_st.checkMaxArgCount( args, this.className, 2 );
+    var a = ArcNumber_st.cast( args.car(), this );
+    var b = ArcNumber_st.cast( args.cdr().car(), this );
     return new Complex( a.toDouble(), b.toDouble() );
 };
 
@@ -14788,15 +14913,15 @@ MakeComplex.prototype.invokePair = function ( args ) {
 // Needed late: Nil Real Complex Pair Nil ArcNumber Rational
 
 // PORT NOTE: This was originally abstract.
-var Maths = {};
+var Maths_st = {};
 
 // PORT TODO: Find an equivalent for this Java:
 // public static final Random random = new Random();
-Maths.random = {};
-Maths.random.nextDouble = function () {
+Maths_st.random = {};
+Maths_st.random.nextDouble = function () {
     return Math.rand();
 };
-Maths.random.nextLong = function () {
+Maths_st.random.nextLong = function () {
     while ( true ) {
         var result = Math.floor( Math.rand() * 0x0020000000000000 );
         if ( result < 0x0020000000000000 )
@@ -14804,11 +14929,11 @@ Maths.random.nextLong = function () {
     }
 };
 
-Maths.precision = function ( args ) {
+Maths_st.precision = function ( args ) {
     if ( args instanceof Nil ) {
-        return Maths.rationalOps_;
+        return Maths_st.rationalOps_;
     } else if ( args.car() instanceof Real ) {
-        return Maths.doubleOps_;
+        return Maths_st.doubleOps_;
     } else if ( args.car() instanceof Complex ) {
         return complexOps;
     } else {
@@ -14817,37 +14942,36 @@ Maths.precision = function ( args ) {
         // PORT NOTE: This was a cast in Java.
         if ( !(cdr instanceof Pair) )
             throw new TypeError();
-        return Maths.precision( args.cdr() );
+        return Maths_st.precision( args.cdr() );
     }
 }
 
 // PORT NOTE: This was originally an interface.
 /** @constructor */
-Maths.MathsOps = function () {
+Maths_st.MathsOps = function () {
 };
 
 // PORT NOTE: This was originally an interface method.
-Maths.MathsOps.prototype.sum = void 0;
+Maths_st.MathsOps.prototype.sum = void 0;
 
 // PORT NOTE: This was originally an interface method.
-Maths.MathsOps.prototype.multiply = void 0;
+Maths_st.MathsOps.prototype.multiply = void 0;
 
 // PORT NOTE: This was originally an interface method.
-Maths.MathsOps.prototype.divide = void 0;
+Maths_st.MathsOps.prototype.divide = void 0;
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-Maths.Anon_doubleOps_ = function () {
-    Maths.MathsOps.call( this );
+Maths_st.Anon_doubleOps_ = function () {
 };
 
-Maths.Anon_doubleOps_.prototype = new Maths.MathsOps();
+Maths_st.Anon_doubleOps_.prototype = new Maths_st.MathsOps();
 
-Maths.Anon_doubleOps_.prototype.sum = function ( args ) {
-    return Real.make( this.sumNumbers_( args ) );
+Maths_st.Anon_doubleOps_.prototype.sum = function ( args ) {
+    return Real_st.make( this.sumNumbers_( args ) );
 };
 
-Maths.Anon_doubleOps_.prototype.sumNumbers_ = function ( args ) {
+Maths_st.Anon_doubleOps_.prototype.sumNumbers_ = function ( args ) {
     if ( args instanceof Nil )
         return 0;
     // PORT NOTE: This local variable didn't exist in Java.
@@ -14865,11 +14989,11 @@ Maths.Anon_doubleOps_.prototype.sumNumbers_ = function ( args ) {
     return carDouble + this.sumNumbers_( cdr );
 };
 
-Maths.Anon_doubleOps_.prototype.multiply = function ( args ) {
-    return Real.make( this.multiplyDouble_( args ) );
+Maths_st.Anon_doubleOps_.prototype.multiply = function ( args ) {
+    return Real_st.make( this.multiplyDouble_( args ) );
 };
 
-Maths.Anon_doubleOps_.prototype.divide = function ( args ) {
+Maths_st.Anon_doubleOps_.prototype.divide = function ( args ) {
     // PORT NOTE: This local variable didn't exist in Java.
     var cdr1 = args.cdr();
     // PORT NOTE: This local variable didn't exist in Java.
@@ -14884,10 +15008,12 @@ Maths.Anon_doubleOps_.prototype.divide = function ( args ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(cdr2 instanceof Pair) )
         throw new TypeError();
-    return Real.make( first / this.multiplyDouble_( cdr2 ) );
+    return Real_st.make( first / this.multiplyDouble_( cdr2 ) );
 };
 
-Maths.Anon_doubleOps_.prototype.multiplyDouble_ = function ( args ) {
+Maths_st.Anon_doubleOps_.prototype.multiplyDouble_ = function (
+    args ) {
+    
     if ( args instanceof Nil )
         return 1;
     var left = args.car();
@@ -14905,21 +15031,20 @@ Maths.Anon_doubleOps_.prototype.multiplyDouble_ = function ( args ) {
     return first * rest;
 };
 
-Maths.doubleOps_ = new Maths.Anon_doubleOps_();
+Maths_st.doubleOps_ = new Maths_st.Anon_doubleOps_();
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-Maths.Anon_complexOps_ = function () {
-    Maths.MathsOps.call( this );
+Maths_st.Anon_complexOps_ = function () {
 };
 
-Maths.Anon_complexOps_.prototype = new Maths.MathsOps();
+Maths_st.Anon_complexOps_.prototype = new Maths_st.MathsOps();
 
-Maths.Anon_complexOps_.prototype.sum = function ( args ) {
+Maths_st.Anon_complexOps_.prototype.sum = function ( args ) {
     if ( args instanceof Nil )
-        return Complex.ZERO;
+        return Complex_st.ZERO;
     // PORT NOTE: This local variable didn't exist in Java.
-    var first = Complex.make( args.car() );
+    var first = Complex_st.make( args.car() );
     // PORT NOTE: This local variable didn't exist in Java.
     var cdr = args.cdr();
     // PORT NOTE: This was a cast in Java.
@@ -14928,12 +15053,12 @@ Maths.Anon_complexOps_.prototype.sum = function ( args ) {
     return first.plusComplex( this.sum( cdr ) );
 };
 
-Maths.Anon_complexOps_.prototype.multiply = function ( args ) {
+Maths_st.Anon_complexOps_.prototype.multiply = function ( args ) {
     if ( args instanceof Nil )
         return new Complex( 1, 0 );
     
     // PORT NOTE: This local variable didn't exist in Java.
-    var first = Complex.make( args.car() );
+    var first = Complex_st.make( args.car() );
     // PORT NOTE: This local variable didn't exist in Java.
     var cdr = args.cdr();
     // PORT NOTE: This was a cast in Java.
@@ -14945,9 +15070,9 @@ Maths.Anon_complexOps_.prototype.multiply = function ( args ) {
 // PORT TODO: See if this inconsistency with the other MathsOps
 // (the fact that a one-length list isn't inverted) is a bug. But
 // don't fix it!
-Maths.Anon_complexOps_.prototype.divide = function ( args ) {
+Maths_st.Anon_complexOps_.prototype.divide = function ( args ) {
     // PORT NOTE: This local variable didn't exist in Java.
-    var first = Complex.make( args.car() );
+    var first = Complex_st.make( args.car() );
     // PORT NOTE: This local variable didn't exist in Java.
     var cdr = args.cdr();
     // PORT NOTE: This was a cast in Java.
@@ -14956,19 +15081,18 @@ Maths.Anon_complexOps_.prototype.divide = function ( args ) {
     return first.timesComplex( this.multiply( cdr ).inverse() );
 };
 
-Maths.complexOps_ = new Maths.Anon_complexOps_();
+Maths_st.complexOps_ = new Maths_st.Anon_complexOps_();
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-Maths.Anon_rationalOps_ = function () {
-    Maths.MathsOps.call( this );
+Maths_st.Anon_rationalOps_ = function () {
 };
 
-Maths.Anon_rationalOps_.prototype = new Maths.MathsOps();
+Maths_st.Anon_rationalOps_.prototype = new Maths_st.MathsOps();
 
-Maths.Anon_rationalOps_.prototype.sum = function ( args ) {
+Maths_st.Anon_rationalOps_.prototype.sum = function ( args ) {
     if ( args instanceof Nil ) {
-        return Rational.ZERO;
+        return Rational_st.ZERO;
     } else {
         var r = args.car();
         // PORT NOTE: This was a cast in Java.
@@ -14983,9 +15107,9 @@ Maths.Anon_rationalOps_.prototype.sum = function ( args ) {
     }
 };
 
-Maths.Anon_rationalOps_.prototype.multiply = function ( args ) {
+Maths_st.Anon_rationalOps_.prototype.multiply = function ( args ) {
     if ( args instanceof Nil )
-        return Rational.ONE;
+        return Rational_st.ONE;
     var left = args.car();
     // PORT NOTE: This was a cast in Java.
     if ( !(left instanceof Rational) )
@@ -14998,7 +15122,7 @@ Maths.Anon_rationalOps_.prototype.multiply = function ( args ) {
     return left.times( this.multiply( cdr ) );
 };
 
-Maths.Anon_rationalOps_.prototype.divide = function ( args ) {
+Maths_st.Anon_rationalOps_.prototype.divide = function ( args ) {
     // PORT NOTE: This local variable didn't exist in Java.
     var cdr1 = args.cdr();
     // PORT NOTE: This local variable didn't exist in Java.
@@ -15015,7 +15139,7 @@ Maths.Anon_rationalOps_.prototype.divide = function ( args ) {
     return first.times( this.multiply( cdr2 ).invert() );
 };
 
-Maths.rationalOps_ = new Maths.Anon_rationalOps_();
+Maths_st.rationalOps_ = new Maths_st.Anon_rationalOps_();
 
 
 // ===================================================================
@@ -15026,8 +15150,7 @@ Maths.rationalOps_ = new Maths.Anon_rationalOps_();
 
 /** @constructor */
 function Mod() {
-    Builtin.call( this );
-    this.init( "mod" );
+    this.initBuiltin( "mod" );
 }
 
 Mod.prototype = new Builtin();
@@ -15044,7 +15167,7 @@ Mod.prototype.invokef2 = function ( vm, arg1, arg2 ) {
 };
 
 Mod.prototype.invoke = function ( vm, args ) {
-    Builtin.checkMaxArgCount( args, this.className, 2 );
+    Builtin_st.checkMaxArgCount( args, this.className, 2 );
     this.invokef2( vm, args.car(), args.cdr().car() );
 };
 
@@ -15057,15 +15180,14 @@ Mod.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Multiply() {
-    Builtin.call( this );
-    this.init( "*" );
+    this.initBuiltin( "*" );
 }
 
 Multiply.prototype = new Builtin();
 Multiply.prototype.className = "Multiply";
 
 Multiply.prototype.invokef0 = function ( vm ) {
-    vm.pushA( Rational.ONE );
+    vm.pushA( Rational_st.ONE );
 };
 
 Multiply.prototype.invokef1 = function ( vm, arg ) {
@@ -15082,7 +15204,7 @@ Multiply.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
 
 Multiply.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil )
-        return Rational.ONE;
+        return Rational_st.ONE;
     var result = args.car();
     var rest = args.cdr();
     while ( !(rest instanceof Nil) ) {
@@ -15101,17 +15223,16 @@ Multiply.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function PolarCoordinates() {
-    Builtin.call( this );
-    this.init( "polar-coordinates" );
+    this.initBuiltin( "polar-coordinates" );
 }
 
 PolarCoordinates.prototype = new Builtin();
 PolarCoordinates.prototype.className = "PolarCoordinates";
 
 PolarCoordinates.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
-    var x = Complex.cast( args.car(), this );
-    return Pair.buildFrom1(
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
+    var x = Complex_st.cast( args.car(), this );
+    return Pair_st.buildFrom1(
         [ new Real( x.radius() ), new Real( x.theta() ) ] );
 };
 
@@ -15124,24 +15245,23 @@ PolarCoordinates.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Quotient() {
-    Builtin.call( this );
-    this.init( "quotient" );
+    this.initBuiltin( "quotient" );
 }
 
 Quotient.prototype = new Builtin();
 Quotient.prototype.className = "Quotient";
 
 Quotient.prototype.invokePair = function ( args ) {
-    Builtin.checkExactArgsCount( args, 2, this.className );
-    var top = Rational.cast( args.car(), this );
-    var bottom = Rational.cast( args.cdr().car(), this );
+    Builtin_st.checkExactArgsCount( args, 2, this.className );
+    var top = Rational_st.cast( args.car(), this );
+    var bottom = Rational_st.cast( args.cdr().car(), this );
     if ( !(top.isInteger() && bottom.isInteger()) )
         throw new ArcError(
             "Type error: " + this + " : expected integer, got " +
             args );
     // PORT NOTE: In Java, this was just integer division.
     var result = top.toInt() / bottom.toInt();
-    return Rational.make1(
+    return Rational_st.make1(
         result < 0 ? Math.ceil( result ) : Math.floor( result ) );
 };
 
@@ -15154,8 +15274,7 @@ Quotient.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Rand() {
-    Builtin.call( this );
-    this.init( "rand" );
+    this.initBuiltin( "rand" );
 }
 
 Rand.prototype = new Builtin();
@@ -15163,7 +15282,7 @@ Rand.prototype.className = "Rand";
 
 Rand.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil ) {
-        return new Real( Maths.random.nextDouble() );
+        return new Real( Maths_st.random.nextDouble() );
     } else {
         var r = args.car();
         // PORT NOTE: This was a cast in Java.
@@ -15176,7 +15295,7 @@ Rand.prototype.invokePair = function ( args ) {
         // PORT TODO: Fix this and the Java version so that they're
         // less biased.
         return new Rational(
-            Math.abs( Maths.random.nextLong() % r.toInt() ), 1 );
+            Math.abs( Maths_st.random.nextLong() % r.toInt() ), 1 );
     }
 };
 
@@ -15189,17 +15308,16 @@ Rand.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Sine() {
-    Builtin.call( this );
-    this.init( "sin" );
+    this.initBuiltin( "sin" );
 }
 
 Sine.prototype = new Builtin();
 Sine.prototype.className = "Sine";
 
 Sine.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
-        Math.sin( ArcNumber.cast( args.car(), this ).toDouble() );
+        Math.sin( ArcNumber_st.cast( args.car(), this ).toDouble() );
     return new Real( result );
 };
 
@@ -15211,8 +15329,7 @@ Sine.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Sqrt() {
-    Builtin.call( this );
-    this.init( "sqrt" );
+    this.initBuiltin( "sqrt" );
 }
 
 Sqrt.prototype = new Builtin();
@@ -15223,7 +15340,7 @@ Sqrt.prototype.invokef1 = function ( vm, arg ) {
 };
 
 Sqrt.prototype.invoke = function ( vm, args ) {
-    Builtin.checkExactArgsCount( args, 1, this.className );
+    Builtin_st.checkExactArgsCount( args, 1, this.className );
     this.invokef1( vm, args.car() );
 };
 
@@ -15236,8 +15353,7 @@ Sqrt.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Subtract() {
-    Builtin.call( this );
-    this.init( "-" );
+    this.initBuiltin( "-" );
 }
 
 Subtract.prototype = new Builtin();
@@ -15278,7 +15394,7 @@ Subtract.prototype.invokePair = function ( args ) {
     
     if ( rest instanceof Nil )
         return first;
-    return Add.sum( new Pair( first, rest ) ).negate();
+    return Add_st.sum( new Pair().init2( first, rest ) ).negate();
 };
 
 
@@ -15290,17 +15406,16 @@ Subtract.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Tangent() {
-    Builtin.call( this );
-    this.init( "tan" );
+    this.initBuiltin( "tan" );
 }
 
 Tangent.prototype = new Builtin();
 Tangent.prototype.className = "Tangent";
 
 Tangent.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
-        Math.tan( ArcNumber.cast( args.car(), this ).toDouble() );
+        Math.tan( ArcNumber_st.cast( args.car(), this ).toDouble() );
     return new Real( result );
 };
 
@@ -15313,8 +15428,7 @@ Tangent.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Trunc() {
-    Builtin.call( this );
-    this.init( "trunc" );
+    this.initBuiltin( "trunc" );
 }
 
 Trunc.prototype = new Builtin();
@@ -15323,7 +15437,7 @@ Trunc.prototype.className = "Trunc";
 // PORT TODO: Note that (trunc -1.1) should be -1. This is a bug. But
 // don't fix it!
 Trunc.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     // PORT NOTE: This local variable didn't exist in Java.
     var car = args.car();
     // PORT NOTE: This was a cast in Java.
@@ -15342,8 +15456,7 @@ Trunc.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Bound() {
-    Builtin.call( this );
-    this.init( "bound" );
+    this.initBuiltin( "bound" );
 }
 
 Bound.prototype = new Builtin();
@@ -15357,13 +15470,13 @@ Bound.prototype.invokef1 = function ( vm, arg ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(arg instanceof Symbol) )
         throw new TypeError();
-    vm.pushA( Truth.valueOf( arg.bound() ) );
+    vm.pushA( Truth_st.valueOf( arg.bound() ) );
 };
 
 Bound.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
-    var sym = Symbol.cast( args.car(), this );
-    return Truth.valueOf( sym.bound() );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
+    var sym = Symbol_st.cast( args.car(), this );
+    return Truth_st.valueOf( sym.bound() );
 };
 
 
@@ -15375,16 +15488,15 @@ Bound.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Exact() {
-    Builtin.call( this );
-    this.init( "exact" );
+    this.initBuiltin( "exact" );
 }
 
 Exact.prototype = new Builtin();
 Exact.prototype.className = "Exact";
 
 Exact.prototype.invokePair = function ( args ) {
-    var arg = ArcNumber.cast( args.car(), this );
-    return Truth.valueOf(
+    var arg = ArcNumber_st.cast( args.car(), this );
+    return Truth_st.valueOf(
         arg instanceof Rational && arg.isInteger() );
 };
 
@@ -15397,29 +15509,28 @@ Exact.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function GreaterThan() {
-    Builtin.call( this );
-    this.init( ">" );
+    this.initBuiltin( ">" );
 }
 
 GreaterThan.prototype = new Builtin();
 GreaterThan.prototype.className = "GreaterThan";
 
 GreaterThan.prototype.invokef0 = function ( vm ) {
-    vm.pushA( ArcObject.T );
+    vm.pushA( ArcObject_st.T );
 };
 
 GreaterThan.prototype.invokef1 = function ( vm, arg1 ) {
-    vm.pushA( ArcObject.T );
+    vm.pushA( ArcObject_st.T );
 };
 
 GreaterThan.prototype.invokef2 = function ( vm, arg1, arg2 ) {
-    vm.pushA(
-        arg1.compareTo( arg2 ) <= 0 ? ArcObject.NIL : ArcObject.T );
+    vm.pushA( arg1.compareTo( arg2 ) <= 0 ?
+        ArcObject_st.NIL : ArcObject_st.T );
 };
 
 GreaterThan.prototype.invokePair = function ( args ) {
     if ( args.len() < 2 )
-        return ArcObject.T;
+        return ArcObject_st.T;
     var left = args.car();
     var others = args.cdr();
     // PORT NOTE: This was a cast in Java.
@@ -15429,14 +15540,14 @@ GreaterThan.prototype.invokePair = function ( args ) {
         var right = others.car();
         var comparison = left.compareTo( right );
         if ( comparison <= 0 )
-            return ArcObject.NIL;
+            return ArcObject_st.NIL;
         left = right;
         others = others.cdr();
         // PORT NOTE: This was a cast in Java.
         if ( !(others instanceof Pair) )
             throw new TypeError();
     }
-    return ArcObject.T;
+    return ArcObject_st.T;
 };
 
 
@@ -15448,23 +15559,22 @@ GreaterThan.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Is() {
-    Builtin.call( this );
-    this.init( "is" );
+    this.initBuiltin( "is" );
 }
 
 Is.prototype = new Builtin();
 Is.prototype.className = "Is";
 
 Is.prototype.invokef0 = function ( vm ) {
-    vm.pushA( ArcObject.T );
+    vm.pushA( ArcObject_st.T );
 };
 
 Is.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushA( ArcObject.T );
+    vm.pushA( ArcObject_st.T );
 };
 
 Is.prototype.invokef2 = function ( vm, arg1, arg2 ) {
-    vm.pushA( Truth.valueOf( arg1.isSame( arg2 ) ) );
+    vm.pushA( Truth_st.valueOf( arg1.isSame( arg2 ) ) );
 };
 
 Is.prototype.invokePair = function ( args ) {
@@ -15473,10 +15583,10 @@ Is.prototype.invokePair = function ( args ) {
 
 Is.prototype.checkIs_ = function ( test, args ) {
     if ( args instanceof Nil )
-        return ArcObject.T;
+        return ArcObject_st.T;
     
     if ( !test.isSame( args.car() ) )
-        return ArcObject.NIL;
+        return ArcObject_st.NIL;
     
     return this.checkIs_( test, args.cdr() );
 };
@@ -15490,24 +15600,23 @@ Is.prototype.checkIs_ = function ( test, args ) {
 
 /** @constructor */
 function LessThan() {
-    Builtin.call( this );
-    this.init( "<" );
+    this.initBuiltin( "<" );
 }
 
 LessThan.prototype = new Builtin();
 LessThan.prototype.className = "LessThan";
 
 LessThan.prototype.invokef0 = function ( vm ) {
-    vm.pushA( ArcObject.T );
+    vm.pushA( ArcObject_st.T );
 };
 
 LessThan.prototype.invokef1 = function ( vm, arg1 ) {
-    vm.pushA( ArcObject.T );
+    vm.pushA( ArcObject_st.T );
 };
 
 LessThan.prototype.invokef2 = function ( vm, arg1, arg2 ) {
-    vm.pushA(
-        arg1.compareTo( arg2 ) < 0 ? ArcObject.T : ArcObject.NIL );
+    vm.pushA( arg1.compareTo( arg2 ) < 0 ?
+        ArcObject_st.T : ArcObject_st.NIL );
 };
 
 LessThan.prototype.invokePair = function ( args ) {
@@ -15520,14 +15629,14 @@ LessThan.prototype.invokePair = function ( args ) {
         var right = others.car();
         var comparison = left.compareTo( right );
         if ( comparison >= 0 )
-            return ArcObject.NIL;
+            return ArcObject_st.NIL;
         left = right;
         others = others.cdr();
         // PORT NOTE: This was a cast in Java.
         if ( !(others instanceof Pair) )
             throw new TypeError();
     }
-    return ArcObject.T;
+    return ArcObject_st.T;
 };
 
 
@@ -15539,16 +15648,15 @@ LessThan.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function RainbowDebug() {
-    Builtin.call( this );
-    this.init( "rainbow-debug" );
+    this.initBuiltin( "rainbow-debug" );
 }
 
 RainbowDebug.prototype = new Builtin();
 RainbowDebug.prototype.className = "RainbowDebug";
 
 RainbowDebug.prototype.invoke = function ( vm, args ) {
-    vm.setInterceptor( VMInterceptor.DEBUG );
-    vm.pushA( Symbol.mkSym( this.name_ ) );
+    vm.setInterceptor( VMInterceptor_st.DEBUG );
+    vm.pushA( Symbol_st.mkSym( this.name_ ) );
 };
 
 
@@ -15560,8 +15668,7 @@ RainbowDebug.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function RainbowProfile() {
-    Builtin.call( this );
-    this.init( "rainbow-profile" );
+    this.initBuiltin( "rainbow-profile" );
 }
 
 RainbowProfile.prototype = new Builtin();
@@ -15569,7 +15676,7 @@ RainbowProfile.prototype.className = "RainbowProfile";
 
 RainbowProfile.prototype.invokef0 = function ( vm ) {
     this.profile( vm );
-    vm.pushA( ArcObject.NIL );
+    vm.pushA( ArcObject_st.NIL );
 };
 
 RainbowProfile.prototype.invokef1 = function ( vm, arg ) {
@@ -15577,11 +15684,11 @@ RainbowProfile.prototype.invokef1 = function ( vm, arg ) {
     if ( !(arg instanceof VM) )
         throw new TypeError();
     this.profile( arg );
-    vm.pushA( ArcObject.NIL );
+    vm.pushA( ArcObject_st.NIL );
 };
 
 RainbowProfile.prototype.profile = function ( target ) {
-    target.setInterceptor( VMInterceptor.PROFILE );
+    target.setInterceptor( VMInterceptor_st.PROFILE );
 };
 
 
@@ -15593,8 +15700,7 @@ RainbowProfile.prototype.profile = function ( target ) {
 
 /** @constructor */
 function RainbowProfileReport() {
-    Builtin.call( this );
-    this.init( "rainbow-profile-report" );
+    this.initBuiltin( "rainbow-profile-report" );
 }
 
 RainbowProfileReport.prototype = new Builtin();
@@ -15616,11 +15722,11 @@ RainbowProfileReport.prototype.createReport_ = function ( target ) {
     report.sref(
         this.createInvocationReport_(
             target.profileData.invocationProfile ),
-        Symbol.mkSym( "invocation-profile" ) );
+        Symbol_st.mkSym( "invocation-profile" ) );
     report.sref(
         this.createInstructionReport_(
             target.profileData.instructionProfile ),
-        Symbol.mkSym( "instruction-profile" ) );
+        Symbol_st.mkSym( "instruction-profile" ) );
     return report;
 };
 
@@ -15628,7 +15734,7 @@ RainbowProfileReport.prototype.createReport_ = function ( target ) {
 RainbowProfileReport.prototype.createInstructionReport_ = function (
     profile ) {
     
-    var result = ArcObject.NIL;
+    var result = ArcObject_st.NIL;
     if ( profile !== null ) {
         // PORT NOTE: The Java version used a TreeSet and a nested
         // class here.
@@ -15643,9 +15749,9 @@ RainbowProfileReport.prototype.createInstructionReport_ = function (
         } );
         for ( var i = 0, len = sorted.length; i < len; i++ ) {
             var e = sorted[ i ];
-            var thisResult = new Pair(
-                Rational.make1( e.v ), ArcString.make( e.k ) );
-            result = new Pair( thisResult, result );
+            var thisResult = new Pair().init2(
+                Rational_st.make1( e.v ), ArcString_st.make( e.k ) );
+            result = new Pair().init2( thisResult, result );
         }
     }
     return result;
@@ -15654,7 +15760,7 @@ RainbowProfileReport.prototype.createInstructionReport_ = function (
 RainbowProfileReport.prototype.createInvocationReport_ = function (
     profile ) {
     
-    var result = ArcObject.NIL;
+    var result = ArcObject_st.NIL;
     if ( profile !== null ) {
         // PORT NOTE: The Java version used a TreeSet and a nested
         // class here.
@@ -15679,7 +15785,7 @@ RainbowProfileReport.prototype.createInvocationReport_ = function (
         } );
         for ( var i = 0, len = sorted.length; i < len; i++ ) {
             var e = sorted[ i ];
-            result = new Pair( e.toPair(), result );
+            result = new Pair().init2( e.toPair(), result );
         }
     }
     return result;
@@ -15694,15 +15800,14 @@ RainbowProfileReport.prototype.createInvocationReport_ = function (
 
 /** @constructor */
 function CurrentGcMilliseconds() {
-    Builtin.call( this );
-    this.init( "current-gc-milliseconds" );
+    this.initBuiltin( "current-gc-milliseconds" );
 }
 
 CurrentGcMilliseconds.prototype = new Builtin();
 CurrentGcMilliseconds.prototype.className = "CurrentGcMilliseconds";
 
 CurrentGcMilliseconds.prototype.invoke = function ( vm, args ) {
-    vm.pushA( Rational.make1( 1 ) );
+    vm.pushA( Rational_st.make1( 1 ) );
 };
 
 
@@ -15714,8 +15819,7 @@ CurrentGcMilliseconds.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function CurrentProcessMilliseconds() {
-    Builtin.call( this );
-    this.init( "current-process-milliseconds" );
+    this.initBuiltin( "current-process-milliseconds" );
 }
 
 CurrentProcessMilliseconds.prototype = new Builtin();
@@ -15723,7 +15827,7 @@ CurrentProcessMilliseconds.prototype.className =
     "CurrentProcessMilliseconds";
 
 CurrentProcessMilliseconds.prototype.invoke = function ( vm, args ) {
-    vm.pushA( Rational.make1( 1 ) );
+    vm.pushA( Rational_st.make1( 1 ) );
 };
 
 
@@ -15735,20 +15839,20 @@ CurrentProcessMilliseconds.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Declare() {
-    Builtin.call( this );
-    this.init( "declare" );
+    this.initBuiltin( "declare" );
 }
+var Declare_st = {};
 
 Declare.prototype = new Builtin();
 Declare.prototype.className = "Declare";
 
 Declare.prototype.invokef2 = function ( vm, arg1, arg2 ) {
-    if ( arg1 === Declare.atstrings ) {
-        var prev = Compiler.atstrings;
-        Compiler.atstrings = arg2;
+    if ( arg1 === Declare_st.atstrings ) {
+        var prev = Compiler_st.atstrings;
+        Compiler_st.atstrings = arg2;
         vm.pushA( prev );
     } else {
-        vm.pushA( ArcObject.NIL );
+        vm.pushA( ArcObject_st.NIL );
     }
 };
 
@@ -15756,7 +15860,7 @@ Declare.prototype.invoke = function ( vm, args ) {
     this.invokef2( vm, args.car(), args.cdr().car() );
 };
 
-Declare.atstrings = Symbol.mkSym( "atstrings" );
+Declare_st.atstrings = Symbol_st.mkSym( "atstrings" );
 
 
 // ===================================================================
@@ -15767,15 +15871,14 @@ Declare.atstrings = Symbol.mkSym( "atstrings" );
 
 /** @constructor */
 function MSec() {
-    Builtin.call( this );
-    this.init( "msec" );
+    this.initBuiltin( "msec" );
 }
 
 MSec.prototype = new Builtin();
 MSec.prototype.className = "MSec";
 
 MSec.prototype.invokePair = function ( args ) {
-    return Rational.make1( new Date().getTime() );
+    return Rational_st.make1( new Date().getTime() );
 };
 
 
@@ -15787,8 +15890,7 @@ MSec.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Seconds() {
-    Builtin.call( this );
-    this.init( "seconds" );
+    this.initBuiltin( "seconds" );
 }
 
 Seconds.prototype = new Builtin();
@@ -15797,7 +15899,7 @@ Seconds.prototype.className = "Seconds";
 Seconds.prototype.invokePair = function ( args ) {
     // PORT NOTE: In Java, this was just integer division.
     var result = new Date().getTime() / 1000;
-    return Rational.make1(
+    return Rational_st.make1(
         result < 0 ? Math.ceil( result ) : Math.floor( result ) );
 };
 
@@ -15810,8 +15912,7 @@ Seconds.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function MapTable() {
-    Builtin.call( this );
-    this.init( "maptable" );
+    this.initBuiltin( "maptable" );
 }
 
 MapTable.prototype = new Builtin();
@@ -15829,7 +15930,7 @@ MapTable.prototype.invokef2 = function ( vm, f, hash ) {
 };
 
 MapTable.prototype.invoke = function ( vm, args ) {
-    Builtin.checkExactArgsCount( args, 2, this.className );
+    Builtin_st.checkExactArgsCount( args, 2, this.className );
     this.invokef2( vm, args.car(), args.cdr().car() );
 };
 
@@ -15841,8 +15942,7 @@ MapTable.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Sref() {
-    Builtin.call( this );
-    this.init( "sref" );
+    this.initBuiltin( "sref" );
 }
 
 Sref.prototype = new Builtin();
@@ -15853,7 +15953,7 @@ Sref.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
 };
 
 Sref.prototype.invoke = function ( vm, args ) {
-    Builtin.checkExactArgsCount( args, 3, this.className );
+    Builtin_st.checkExactArgsCount( args, 3, this.className );
     this.invokef3(
         vm, args.car(), args.cdr().car(), args.cdr().cdr().car() );
 };
@@ -15866,8 +15966,7 @@ Sref.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Table() {
-    Builtin.call( this );
-    this.init( "table" );
+    this.initBuiltin( "table" );
 }
 
 Table.prototype = new Builtin();
@@ -15881,7 +15980,7 @@ Table.prototype.invoke = function ( vm, args ) {
         i.belongsTo( this );
         vm.pushFrame( i );
         var f = args.car();
-        f.invoke( vm, Pair.buildFrom1( [ hash ] ) );
+        f.invoke( vm, Pair_st.buildFrom1( [ hash ] ) );
     }
 };
 
@@ -15898,27 +15997,27 @@ Table.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function AtomicInvoke() {
-    Builtin.call( this );
-    this.init( "atomic-invoke" );
+    this.initBuiltin( "atomic-invoke" );
 }
+var AtomicInvoke_st = {};
 
 AtomicInvoke.prototype = new Builtin();
 AtomicInvoke.prototype.className = "AtomicInvoke";
 
 AtomicInvoke.prototype.invokef1 = function ( vm, f ) {
-    while ( vm !== AtomicInvoke.owner_
-        && AtomicInvoke.owner_ !== null ) {
+    while ( vm !== AtomicInvoke_st.owner_
+        && AtomicInvoke_st.owner_ !== null ) {
         // PORT NOTE: Yes, this is deadlock. We would do the
         // equivalent of Java "lock.wait()" here, but there are no
         // other threads to wait for.
     }
-    AtomicInvoke.owner_ = vm;
-    AtomicInvoke.entryCount_++;
-    var i = new AtomicInvoke.ReleaseLock();
+    AtomicInvoke_st.owner_ = vm;
+    AtomicInvoke_st.entryCount_++;
+    var i = new AtomicInvoke_st.ReleaseLock();
     i.belongsTo( this );
     vm.pushFrame( i );
     
-    f.invoke( vm, ArcObject.NIL );
+    f.invoke( vm, ArcObject_st.NIL );
 };
 
 AtomicInvoke.prototype.invoke = function ( vm, args ) {
@@ -15926,22 +16025,22 @@ AtomicInvoke.prototype.invoke = function ( vm, args ) {
 };
 
 /** @constructor */
-AtomicInvoke.ReleaseLock = function () {
+AtomicInvoke_st.ReleaseLock = function () {
     Instruction.call( this );
 };
 
-AtomicInvoke.ReleaseLock.prototype = new Instruction();
-AtomicInvoke.ReleaseLock.prototype.className =
+AtomicInvoke_st.ReleaseLock.prototype = new Instruction();
+AtomicInvoke_st.ReleaseLock.prototype.className =
     "AtomicInvoke.ReleaseLock";
 
-AtomicInvoke.ReleaseLock.prototype.operate = function ( vm ) {
-    AtomicInvoke.entryCount_--;
-    if ( AtomicInvoke.entryCount_ === 0 )
-        AtomicInvoke.owner_ = null;
+AtomicInvoke_st.ReleaseLock.prototype.operate = function ( vm ) {
+    AtomicInvoke_st.entryCount_--;
+    if ( AtomicInvoke_st.entryCount_ === 0 )
+        AtomicInvoke_st.owner_ = null;
 };
 
-AtomicInvoke.owner_ = null;
-AtomicInvoke.entryCount_ = 0;
+AtomicInvoke_st.owner_ = null;
+AtomicInvoke_st.entryCount_ = 0;
 
 
 // ===================================================================
@@ -15952,8 +16051,7 @@ AtomicInvoke.entryCount_ = 0;
 
 /** @constructor */
 function BreakThread() {
-    Builtin.call( this );
-    this.init( "break-thread" );
+    this.initBuiltin( "break-thread" );
 }
 
 BreakThread.prototype = new Builtin();
@@ -15964,8 +16062,8 @@ BreakThread.prototype.invokePair = function ( args ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(victim instanceof VM) )
         throw new TypeError();
-    victim.setInterceptor( VMInterceptor.KILL );
-    return ArcObject.NIL;
+    victim.setInterceptor( VMInterceptor_st.KILL );
+    return ArcObject_st.NIL;
 };
 
 
@@ -15977,9 +16075,9 @@ BreakThread.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function CCC() {
-    Builtin.call( this );
-    this.init( "ccc" );
+    this.initBuiltin( "ccc" );
 }
+var CCC_st = {};
 
 CCC.prototype = new Builtin();
 CCC.prototype.className = "CCC";
@@ -15987,11 +16085,11 @@ CCC.prototype.className = "CCC";
 CCC.prototype.invokef1 = function ( vm, fn ) {
     if ( fn instanceof Nil )
         throw new ArcError( "Can't ccc nil!" );
-    var e = new CCC.ContinuationWrapper( vm );
+    var e = new CCC_st.ContinuationWrapper( vm );
     
     
 //    // TODO: no longer need TCV
-//    var tcv = new CCC.TriggerCopyVM_( e );
+//    var tcv = new CCC_st.TriggerCopyVM_( e );
 //    tcv.belongsTo( this );
 //    vm.pushFrame( tcv );
     
@@ -16000,39 +16098,38 @@ CCC.prototype.invokef1 = function ( vm, fn ) {
 };
 
 CCC.prototype.invoke = function ( vm, args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     this.invokef1( vm, args.car() );
 };
 
 /** @constructor */
-CCC.TriggerCopyVM_ = function ( cc ) {
+CCC_st.TriggerCopyVM_ = function ( cc ) {
     Instruction.call( this );
     this.cc_ = cc;
 }
 
-CCC.TriggerCopyVM_.prototype = new Instruction();
-CCC.TriggerCopyVM_.prototype.className = "CCC.TriggerCopyVM_";
+CCC_st.TriggerCopyVM_.prototype = new Instruction();
+CCC_st.TriggerCopyVM_.prototype.className = "CCC.TriggerCopyVM_";
 
-CCC.TriggerCopyVM_.prototype.operate = function ( vm ) {
+CCC_st.TriggerCopyVM_.prototype.operate = function ( vm ) {
     this.cc_.setCopyRequired();
 };
 
-CCC.TriggerCopyVM_.prototype.toString = function () {
+CCC_st.TriggerCopyVM_.prototype.toString = function () {
     return "#<require-vm-copy #" + this.cc_.vm_.threadId + ">";
 };
 
 /** @constructor */
-CCC.ContinuationWrapper = function ( vm ) {
-    ArcObject.call( this );
+CCC_st.ContinuationWrapper = function ( vm ) {
     this.vm_ = vm.copy();
     this.copyRequired_ = false;
 };
 
-CCC.ContinuationWrapper.prototype = new ArcObject();
-CCC.ContinuationWrapper.prototype.className =
+CCC_st.ContinuationWrapper.prototype = new ArcObject();
+CCC_st.ContinuationWrapper.prototype.className =
     "CCC.ContinuationWrapper";
 
-CCC.ContinuationWrapper.prototype.applyFinallies_ = function (
+CCC_st.ContinuationWrapper.prototype.applyFinallies_ = function (
     vm, finallies ) {
     
     var fc = finallies[ 0 ].length;
@@ -16051,7 +16148,7 @@ CCC.ContinuationWrapper.prototype.applyFinallies_ = function (
     }
 };
 
-CCC.ContinuationWrapper.prototype.invokef1 = function ( vm, arg ) {
+CCC_st.ContinuationWrapper.prototype.invokef1 = function ( vm, arg ) {
     var oldIP = vm.lastCommonAncestor( this.vm_ );
     var finallies = vm.gatherFinallies( oldIP );
     this.vm_.copyTo( vm );
@@ -16059,7 +16156,7 @@ CCC.ContinuationWrapper.prototype.invokef1 = function ( vm, arg ) {
     this.applyFinallies_( vm, finallies );
 };
 
-CCC.ContinuationWrapper.prototype.faster_but_broken_invokef1 =
+CCC_st.ContinuationWrapper.prototype.faster_but_broken_invokef1 =
     function ( vm, arg ) {
     
     if ( this.copyRequired_ ) {
@@ -16082,21 +16179,21 @@ CCC.ContinuationWrapper.prototype.faster_but_broken_invokef1 =
     }
 };
 
-CCC.ContinuationWrapper.prototype.invoke = function ( vm, args ) {
+CCC_st.ContinuationWrapper.prototype.invoke = function ( vm, args ) {
     this.invokef1( vm, args.car() );
 };
 
-CCC.ContinuationWrapper.prototype.type = function () {
-    return Builtin.TYPE;
+CCC_st.ContinuationWrapper.prototype.type = function () {
+    return Builtin_st.TYPE;
 };
 
-CCC.ContinuationWrapper.prototype.setCopyRequired = function (
+CCC_st.ContinuationWrapper.prototype.setCopyRequired = function (
     vm, args ) {
     
     this.copyRequired_ = true;
 };
 
-CCC.ContinuationWrapper.prototype.toString = function () {
+CCC_st.ContinuationWrapper.prototype.toString = function () {
     return "#<continuation ip:" + this.vm_.ip + ";" +
         "ap:" + this.vm_.ap + ";VM#" + this.vm_.threadId + ">";
 };
@@ -16109,8 +16206,7 @@ CCC.ContinuationWrapper.prototype.toString = function () {
 
 /** @constructor */
 function CurrentThread() {
-    Builtin.call( this );
-    this.init( "current-thread" );
+    this.initBuiltin( "current-thread" );
 }
 
 CurrentThread.prototype = new Builtin();
@@ -16129,8 +16225,7 @@ CurrentThread.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Dead() {
-    Builtin.call( this );
-    this.init( "dead" );
+    this.initBuiltin( "dead" );
 }
 
 Dead.prototype = new Builtin();
@@ -16141,7 +16236,7 @@ Dead.prototype.invoke = function ( vm, args ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(victim instanceof VM) )
         throw new TypeError();
-    vm.pushA( Truth.valueOf( victim.dead() ) );
+    vm.pushA( Truth_st.valueOf( victim.dead() ) );
 };
 
 
@@ -16156,8 +16251,7 @@ Dead.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function KillThread() {
-    Builtin.call( this );
-    this.init( "kill-thread" );
+    this.initBuiltin( "kill-thread" );
 }
 
 KillThread.prototype = new Builtin();
@@ -16168,8 +16262,8 @@ KillThread.prototype.invoke = function ( vm, args ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(victim instanceof VM) )
         throw new TypeError();
-    victim.setInterceptor( VMInterceptor.KILL );
-    vm.pushA( ArcObject.NIL );
+    victim.setInterceptor( VMInterceptor_st.KILL );
+    vm.pushA( ArcObject_st.NIL );
 };
 
 
@@ -16181,8 +16275,7 @@ KillThread.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function NewThreadLocal() {
-    Builtin.call( this );
-    this.init( "thread-local" );
+    this.initBuiltin( "thread-local" );
 }
 
 NewThreadLocal.prototype = new Builtin();
@@ -16201,15 +16294,14 @@ NewThreadLocal.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function ThreadLocalGet() {
-    Builtin.call( this );
-    this.init( "thread-local-ref" );
+    this.initBuiltin( "thread-local-ref" );
 }
 
 ThreadLocalGet.prototype = new Builtin();
 ThreadLocalGet.prototype.className = "ThreadLocalGet";
 
 ThreadLocalGet.prototype.invokePair = function ( args ) {
-    var tl = ArcThreadLocal.cast( args.car(), this );
+    var tl = ArcThreadLocal_st.cast( args.car(), this );
     return tl.get();
 };
 
@@ -16222,15 +16314,14 @@ ThreadLocalGet.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function ThreadLocalSet() {
-    Builtin.call( this );
-    this.init( "thread-local-set" );
+    this.initBuiltin( "thread-local-set" );
 }
 
 ThreadLocalSet.prototype = new Builtin();
 ThreadLocalSet.prototype.className = "ThreadLocalSet";
 
 ThreadLocalSet.prototype.invokePair = function ( args ) {
-    var tl = ArcThreadLocal.cast( args.car(), this );
+    var tl = ArcThreadLocal_st.cast( args.car(), this );
     var value = args.cdr().car();
     tl.set( value );
     return value;
@@ -16245,8 +16336,7 @@ ThreadLocalSet.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Annotate() {
-    Builtin.call( this );
-    this.init( "annotate" );
+    this.initBuiltin( "annotate" );
 }
 
 Annotate.prototype = new Builtin();
@@ -16270,9 +16360,8 @@ Annotate.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Coerce() {
-    Builtin.call( this );
-    this.init( "coerce" );
-    Typing.init();
+    this.initBuiltin( "coerce" );
+    Typing_st.init();
 }
 
 Coerce.prototype = new Builtin();
@@ -16294,7 +16383,7 @@ Coerce.prototype.invokef2 = function ( vm, arg, toType ) {
         var coercer = toType.getCoercion( fromType );
         coercer.invokef1( vm, arg );
     } catch ( e ) {
-        if ( e instanceof Typing.CantCoerce )
+        if ( e instanceof Typing_st.CantCoerce )
             throw new ArcError(
                 "Can't coerce " + arg + " to " + toType );
         throw new ArcError(
@@ -16319,7 +16408,7 @@ Coerce.prototype.invokef3 = function ( vm, arg, toType, base ) {
         var coercer = toType.getCoercion( fromType );
         coercer.invokef2( vm, arg, base );
     } catch ( e ) {
-        if ( e instanceof Typing.CantCoerce )
+        if ( e instanceof Typing_st.CantCoerce )
             throw new ArcError(
                 "Can't coerce " + arg + " to " + toType );
         throw new ArcError(
@@ -16348,8 +16437,7 @@ Coerce.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Rep() {
-    Builtin.call( this );
-    this.init( "rep" );
+    this.initBuiltin( "rep" );
 }
 
 Rep.prototype = new Builtin();
@@ -16358,7 +16446,7 @@ Rep.prototype.className = "Rep";
 Rep.prototype.invokePair = function ( args ) {
     var arg = args.car();
     if ( arg instanceof Tagged )
-        return Tagged.cast( args.car(), this ).getRep();
+        return Tagged_st.cast( args.car(), this ).getRep();
     else
         return arg;
 };
@@ -16371,8 +16459,7 @@ Rep.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Type() {
-    Builtin.call( this );
-    this.init( "type" );
+    this.initBuiltin( "type" );
 }
 
 Type.prototype = new Builtin();
@@ -16383,7 +16470,7 @@ Type.prototype.invokef1 = function ( vm, arg ) {
 };
 
 Type.prototype.invokePair = function ( args ) {
-    Builtin.checkMaxArgCount( args, this.className, 1 );
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var arg = args.car();
     return arg.type();
 };
@@ -16396,31 +16483,31 @@ Type.prototype.invokePair = function ( args ) {
 // Needed late: ArcString ArcCharacter Pair Nil Rational ArcNumber
 // Complex Real ParseException ArcError
 
-var Typing = {};
+var Typing_st = {};
 
-Typing.STRING = Symbol.mkSym( "string" );
-Typing.SYM = Symbol.mkSym( "sym" );
-Typing.INT = Symbol.mkSym( "int" );
-Typing.NUM = Symbol.mkSym( "num" );
-Typing.CONS = Symbol.mkSym( "cons" );
-Typing.CHAR = Symbol.mkSym( "char" );
+Typing_st.STRING = Symbol_st.mkSym( "string" );
+Typing_st.SYM = Symbol_st.mkSym( "sym" );
+Typing_st.INT = Symbol_st.mkSym( "int" );
+Typing_st.NUM = Symbol_st.mkSym( "num" );
+Typing_st.CONS = Symbol_st.mkSym( "cons" );
+Typing_st.CHAR = Symbol_st.mkSym( "char" );
 
-Typing.init = function () {
-    Typing.CONS.addCoercion( Typing.STRING,
-        new Typing.Coercion( "string-cons", function ( arg ) {
+Typing_st.init = function () {
+    Typing_st.CONS.addCoercion( Typing_st.STRING,
+        new Typing_st.Coercion( "string-cons", function ( arg ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(arg instanceof ArcString) )
                 throw new TypeError();
             var source = arg.value();
             var chars = [];
             for ( var i = 0; i < source.length; i++ )
-                chars.push( ArcCharacter.makeFromCharCode(
+                chars.push( ArcCharacter_st.makeFromCharCode(
                     source.charCodeAt( i ) ) );
-            return Pair.buildFrom1( chars );
+            return Pair_st.buildFrom1( chars );
         } ) );
     
-    Typing.STRING.addCoercion( Typing.CONS,
-        new Typing.Coercion( "cons-string", function ( items ) {
+    Typing_st.STRING.addCoercion( Typing_st.CONS,
+        new Typing_st.Coercion( "cons-string", function ( items ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(items instanceof Pair) )
                 throw new TypeError();
@@ -16432,12 +16519,12 @@ Typing.init = function () {
                 if ( !(items instanceof Pair) )
                     throw new TypeError();
             }
-            return ArcString.make( result.join( "" ) );
+            return ArcString_st.make( result.join( "" ) );
         } ) );
     
-    Typing.STRING.addCoercion( Typing.INT,
-        new Typing.Coercion( "int-string", function ( arg ) {
-            return this.coerce2( arg, Rational.TEN );
+    Typing_st.STRING.addCoercion( Typing_st.INT,
+        new Typing_st.Coercion( "int-string", function ( arg ) {
+            return this.coerce2( arg, Rational_st.TEN );
         }, function ( n, base ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(base instanceof ArcNumber) )
@@ -16446,20 +16533,20 @@ Typing.init = function () {
             if ( !(n instanceof ArcNumber) )
                 throw new TypeError();
             if ( n instanceof Complex )
-                return Typing.stringifyComplex_( n );
+                return Typing_st.stringifyComplex_( n );
             else if ( n instanceof Real && base.toInt() !== 10 )
-                return Typing.cantCoerce_();
+                return Typing_st.cantCoerce_();
             else if ( n instanceof Rational )
-                return Typing.stringifyRational_( n, base );
+                return Typing_st.stringifyRational_( n, base );
             else
-                return Typing.stringifyReal_( n, base );
+                return Typing_st.stringifyReal_( n, base );
         } ) );
     
     // PORT NOTE: Yes, this is the same coercion as for int-string,
     // aside from the name and types involved.
-    Typing.STRING.addCoercion( Typing.NUM,
-        new Typing.Coercion( "num-string", function ( arg ) {
-            return this.coerce2( arg, Rational.TEN );
+    Typing_st.STRING.addCoercion( Typing_st.NUM,
+        new Typing_st.Coercion( "num-string", function ( arg ) {
+            return this.coerce2( arg, Rational_st.TEN );
         }, function ( n, base ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(base instanceof ArcNumber) )
@@ -16468,44 +16555,44 @@ Typing.init = function () {
             if ( !(n instanceof ArcNumber) )
                 throw new TypeError();
             if ( n instanceof Complex )
-                return Typing.stringifyComplex_( n );
+                return Typing_st.stringifyComplex_( n );
             else if ( n instanceof Real && base.toInt() !== 10 )
-                return Typing.cantCoerce_();
+                return Typing_st.cantCoerce_();
             else if ( n instanceof Rational )
-                return Typing.stringifyRational_( n, base );
+                return Typing_st.stringifyRational_( n, base );
             else
-                return Typing.stringifyReal_( n, base );
+                return Typing_st.stringifyReal_( n, base );
         } ) );
     
-    Typing.SYM.addCoercion( Typing.STRING,
-        new Typing.Coercion( "string-sym", function ( original ) {
+    Typing_st.SYM.addCoercion( Typing_st.STRING,
+        new Typing_st.Coercion( "string-sym", function ( original ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(original instanceof ArcString) )
                 throw new TypeError();
-            return Symbol.make( original.value() );
+            return Symbol_st.make( original.value() );
         } ) );
     
-    Typing.STRING.addCoercion( Typing.SYM,
-        new Typing.Coercion( "sym-string", function ( original ) {
+    Typing_st.STRING.addCoercion( Typing_st.SYM,
+        new Typing_st.Coercion( "sym-string", function ( original ) {
             if ( original instanceof Nil )
-                return ArcString.make( "" );
+                return ArcString_st.make( "" );
             var source = original.disp();
-            return ArcString.make( source );
+            return ArcString_st.make( source );
         } ) );
     
-    Typing.INT.addCoercion( Typing.CHAR,
-        new Typing.Coercion( "char-int", function ( original ) {
+    Typing_st.INT.addCoercion( Typing_st.CHAR,
+        new Typing_st.Coercion( "char-int", function ( original ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(original instanceof ArcCharacter) )
                 throw new TypeError();
             var source = original.value();
-            return Rational.make1( source );
+            return Rational_st.make1( source );
         }, function ( original, unused ) {
             return this.coerce1( original );
         } ) );
     
-    Typing.INT.addCoercion( Typing.NUM,
-        new Typing.Coercion( "num-int", function ( original ) {
+    Typing_st.INT.addCoercion( Typing_st.NUM,
+        new Typing_st.Coercion( "num-int", function ( original ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(original instanceof ArcNumber) )
                 throw new TypeError();
@@ -16514,42 +16601,42 @@ Typing.init = function () {
             return this.coerce1( original );
         } ) );
     
-    Typing.NUM.addCoercion( Typing.INT,
-        new Typing.Coercion( "int-num", function ( original ) {
+    Typing_st.NUM.addCoercion( Typing_st.INT,
+        new Typing_st.Coercion( "int-num", function ( original ) {
             return original;
         } ) );
     
-    Typing.CHAR.addCoercion( Typing.INT,
-        new Typing.Coercion( "int-char", function ( num ) {
+    Typing_st.CHAR.addCoercion( Typing_st.INT,
+        new Typing_st.Coercion( "int-char", function ( num ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(num instanceof ArcNumber) )
                 throw new TypeError();
             if ( !num.isInteger() )
-                Typing.cantCoerce_();
-            return ArcCharacter.makeFromCharCode( num.toInt() );
+                Typing_st.cantCoerce_();
+            return ArcCharacter_st.makeFromCharCode( num.toInt() );
         } ) );
     
-    Typing.STRING.addCoercion( Typing.CHAR,
-        new Typing.Coercion( "char-string", function ( original ) {
+    Typing_st.STRING.addCoercion( Typing_st.CHAR,
+        new Typing_st.Coercion( "char-string", function ( original ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(original instanceof ArcCharacter) )
                 throw new TypeError();
             var source = original.value();
-            return ArcString.make( String.fromCharCode( source ) );
+            return ArcString_st.make( String.fromCharCode( source ) );
         } ) );
     
-    Typing.SYM.addCoercion( Typing.CHAR,
-        new Typing.Coercion( "char-sym", function ( original ) {
+    Typing_st.SYM.addCoercion( Typing_st.CHAR,
+        new Typing_st.Coercion( "char-sym", function ( original ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(original instanceof ArcCharacter) )
                 throw new TypeError();
             var source = original.value();
-            return Symbol.make( String.fromCharCode( source ) );
+            return Symbol_st.make( String.fromCharCode( source ) );
         } ) );
     
-    Typing.NUM.addCoercion( Typing.STRING,
-        new Typing.Coercion( "string-num", function ( original ) {
-            return this.coerce2( original, Rational.TEN );
+    Typing_st.NUM.addCoercion( Typing_st.STRING,
+        new Typing_st.Coercion( "string-num", function ( original ) {
+            return this.coerce2( original, Rational_st.TEN );
         }, function ( original, base ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(base instanceof ArcNumber) )
@@ -16559,25 +16646,27 @@ Typing.init = function () {
                 throw new TypeError();
             var source = original.value().toLowerCase();
             if ( source === "+inf.0" )
-                return Real.positiveInfinity();
+                return Real_st.positiveInfinity();
             else if ( source === "-inf.0" )
-                return Real.negativeInfinity();
+                return Real_st.negativeInfinity();
             else if ( source === "+nan.0" )
-                return Real.nan();
+                return Real_st.nan();
             else if ( /i$/i.test( source ) )
-                return Typing.coerceComplex_( source );
+                return Typing_st.coerceComplex_( source );
             else if ( /\./.test( source )
                 || (base.toInt() < 15 && /.e./.test( source )) )
-                return Typing.coerceDouble_( source, base.toInt() );
+                return Typing_st.coerceDouble_(
+                    source, base.toInt() );
             else if ( /\//.test( source ) )
-                return Typing.coerceFraction_( source, base.toInt() );
+                return Typing_st.coerceFraction_(
+                    source, base.toInt() );
             else
-                return Typing.coerceInt_( source, base.toInt() );
+                return Typing_st.coerceInt_( source, base.toInt() );
         } ) );
     
-    Typing.INT.addCoercion( Typing.STRING,
-        new Typing.Coercion( "string-int", function ( original ) {
-            return this.coerce2( original, Rational.TEN );
+    Typing_st.INT.addCoercion( Typing_st.STRING,
+        new Typing_st.Coercion( "string-int", function ( original ) {
+            return this.coerce2( original, Rational_st.TEN );
         }, function ( original, base ) {
             // PORT NOTE: This was a cast in Java.
             if ( !(base instanceof ArcNumber) )
@@ -16588,13 +16677,13 @@ Typing.init = function () {
             var source = original.value().toLowerCase();
             if ( source === "+inf.0" || source === "-inf.0"
                 || source === "+nan.0" || /i$/i.test( source ) ) {
-                throw new Typing.CantCoerce();
+                throw new Typing_st.CantCoerce();
             } else if ( /\./.test( source )
                 || (base.toInt() < 15 && /.e./i.test( source )) ) {
                 // PORT NOTE: This local variable didn't exist in
                 // Java.
                 var coercedDouble =
-                    Typing.coerceDouble_( source, base.toInt() );
+                    Typing_st.coerceDouble_( source, base.toInt() );
                 // PORT NOTE: This was a cast in Java.
                 if ( !(coercedDouble instanceof Real) )
                     throw new TypeError();
@@ -16603,59 +16692,59 @@ Typing.init = function () {
                 // PORT NOTE: This local variable didn't exist in
                 // Java.
                 var coercedFraction =
-                    Typing.coerceFraction_( source, base.toInt() );
+                    Typing_st.coerceFraction_( source, base.toInt() );
                 // PORT NOTE: This was a cast in Java.
                 if ( !(coercedFraction instanceof Rational) )
                     throw new TypeError();
                 return coercedFraction.roundJava();
             } else {
-                return Typing.coerceInt_( source, base.toInt() );
+                return Typing_st.coerceInt_( source, base.toInt() );
             }
         } ) );
 };
 
-Typing.stringifyComplex_ = function ( c ) {
-    return ArcString.make( c.toString() );
+Typing_st.stringifyComplex_ = function ( c ) {
+    return ArcString_st.make( c.toString() );
 };
 
-Typing.stringifyRational_ = function ( rational, base ) {
+Typing_st.stringifyRational_ = function ( rational, base ) {
     return rational.stringify( base );
 };
 
-Typing.stringifyReal_ = function ( d, base ) {
+Typing_st.stringifyReal_ = function ( d, base ) {
     if ( base.toInt() === 10 ) {
-        return ArcString.make( d.toString() );
+        return ArcString_st.make( d.toString() );
     } else {
         var num = d.toInt().toString( ~~base.toInt() );
-        return ArcString.make( "" + num + ".0" );
+        return ArcString_st.make( "" + num + ".0" );
     }
 };
 
-Typing.coerceComplex_ = function ( source ) {
+Typing_st.coerceComplex_ = function ( source ) {
     try {
-        return Complex.parse( source );
+        return Complex_st.parse( source );
     } catch ( e ) { if ( !(e instanceof ParseException) ) throw e;
-        throw new Typing.CantCoerce();
+        throw new Typing_st.CantCoerce();
     }
 };
 
-Typing.coerceInt_ = function ( source, base ) {
+Typing_st.coerceInt_ = function ( source, base ) {
     var value = parseInt( source, ~~base );
-    return Rational.make1( value );
+    return Rational_st.make1( value );
 };
 
-Typing.coerceFraction_ = function ( source, base ) {
+Typing_st.coerceFraction_ = function ( source, base ) {
     var parts = source.split( /\//g );
     if ( 2 < parts.length )
-        throw new Typing.CantCoerce();
+        throw new Typing_st.CantCoerce();
     var num = parseInt( parts[ 0 ], ~~base );
     var div = parseInt( parts[ 1 ], ~~base );
-    return Rational.make2( num, div );
+    return Rational_st.make2( num, div );
 };
 
 // PORT TODO: Notice that this is pretty buggy in the way it uses
 // .split() and doesn't use the whole result. But don't fix it!
-Typing.coerceDouble_ = function ( source, base ) {
+Typing_st.coerceDouble_ = function ( source, base ) {
     var negative = false;
     if ( /^-/.test( source ) ) {
         negative = true;
@@ -16683,14 +16772,13 @@ Typing.coerceDouble_ = function ( source, base ) {
     var result = (integral + decimal) * exponent;
     if ( negative )
         result = -result;
-    return Real.make( result );
+    return Real_st.make( result );
 };
 
 // PORT NOTE: In the original, this only took one argument, and its
 // instances were all based on anonymous classes.
 /** @constructor */
-Typing.Coercion = function ( name, opt_coerce1, opt_coerce2 ) {
-    ArcObject.call( this );
+Typing_st.Coercion = function ( name, opt_coerce1, opt_coerce2 ) {
     this.name_ = name;
     if ( opt_coerce1 !== void 0 )
         this.coerce1 = opt_coerce1;
@@ -16698,41 +16786,41 @@ Typing.Coercion = function ( name, opt_coerce1, opt_coerce2 ) {
         this.coerce2 = opt_coerce2;
 };
 
-Typing.Coercion.prototype = new ArcObject();
-Typing.Coercion.prototype.className = "Typing.Coercion";
+Typing_st.Coercion.prototype = new ArcObject();
+Typing_st.Coercion.prototype.className = "Typing.Coercion";
 
-Typing.Coercion.prototype.type = function () {
-    return Symbol.mkSym( "fn" );
+Typing_st.Coercion.prototype.type = function () {
+    return Symbol_st.mkSym( "fn" );
 };
 
-Typing.Coercion.prototype.coerce1 = function ( original ) {
+Typing_st.Coercion.prototype.coerce1 = function ( original ) {
     throw new ArcError(
         "not implemented: " + name + ".coerce 1 arg" );
 };
 
-Typing.Coercion.prototype.coerce2 = function ( original, base ) {
+Typing_st.Coercion.prototype.coerce2 = function ( original, base ) {
     throw new ArcError(
         "not implemented: " + name + ".coerce 2 args" );
 };
 
-Typing.Coercion.prototype.invokef1 = function ( vm, arg ) {
+Typing_st.Coercion.prototype.invokef1 = function ( vm, arg ) {
     vm.pushA( this.coerce1( arg ) );
 };
 
-Typing.Coercion.prototype.invokef2 = function ( vm, arg1, arg2 ) {
+Typing_st.Coercion.prototype.invokef2 = function ( vm, arg1, arg2 ) {
     vm.pushA( this.coerce2( arg1, arg2 ) );
 };
 
-Typing.cantCoerce_ = function () {
-    throw new Typing.CantCoerce();
+Typing_st.cantCoerce_ = function () {
+    throw new Typing_st.CantCoerce();
 }
 
 // PORT TODO: Figure out a way to do this inheritance and also get a
 // real stack trace.
 /** @constructor */
-Typing.CantCoerce = function () {
+Typing_st.CantCoerce = function () {
 };
-Typing.CantCoerce.prototype = new Error();
+Typing_st.CantCoerce.prototype = new Error();
 
 
 // ===================================================================
@@ -16740,12 +16828,12 @@ Typing.CantCoerce.prototype = new Error();
 // ===================================================================
 // Needed late: (lots)
 
-var Environment = {};
+var Environment_st = {};
 
 // PORT TODO: Skipped dependencies are commented out here. Uncomment
 // them if and as they're implemented.
 
-Environment.init = function () {
+Environment_st.init = function () {
     // system
     new MSec();
     new Seconds();
@@ -16761,8 +16849,8 @@ Environment.init = function () {
 //    new Quit();
     
     // maths
-    Symbol.mkSym( "pi" ).setValue( new Real( Math.PI ) );
-    Symbol.mkSym( "e" ).setValue( new Real( Math.E ) );
+    Symbol_st.mkSym( "pi" ).setValue( new Real( Math.PI ) );
+    Symbol_st.mkSym( "e" ).setValue( new Real( Math.E ) );
     new Trunc();
     new Expt();
     new Rand();
@@ -16904,9 +16992,9 @@ Environment.init = function () {
 
 /** @constructor */
 function Input( original ) {
-    LiteralObject.call( this );
     this.original_ = original;
 }
+var Input_st = {};
 
 Input.prototype = new LiteralObject();
 Input.prototype.className = "Input";
@@ -16917,8 +17005,8 @@ Input.prototype.readByteAsync = function ( then, opt_sync ) {
             return then(
                 new ArcError( "Cannot read byte from " + this, e ) );
         if ( theByte === null )
-            return then( null, ArcObject.NIL );
-        return then( null, Rational.make1( theByte ) );
+            return then( null, ArcObject_st.NIL );
+        return then( null, Rational_st.make1( theByte ) );
     }, opt_sync );
 };
 
@@ -16927,8 +17015,8 @@ Input.prototype.readCharacterAsync = function ( then, opt_sync ) {
         if ( e )
             return then( new ArcError( "reading character: " + e ) );
         if ( result === null )
-            return then( null, ArcObject.NIL );
-        return then( null, ArcCharacter.makeFromCharCode( result ) );
+            return then( null, ArcObject_st.NIL );
+        return then( null, ArcCharacter_st.makeFromCharCode( result ) );
     }, opt_sync );
 };
 
@@ -16939,13 +17027,13 @@ Input.prototype.peekCharacterAsync = function ( then, opt_sync ) {
         if ( e )
             return then( e );
         if ( result === null )
-            return then( null, ArcObject.NIL );
-        return then( null, ArcCharacter.makeFromCharCode( result ) );
+            return then( null, ArcObject_st.NIL );
+        return then( null, ArcCharacter_st.makeFromCharCode( result ) );
     }, opt_sync );
 };
 
 Input.prototype.readObjectAsync = function ( eof, then, opt_sync ) {
-    return ArcParser.readObjectAsync( this.original_, function (
+    return ArcParser_st.readObjectAsync( this.original_, function (
         e, result ) {
         
         if ( e )
@@ -16959,7 +17047,7 @@ Input.prototype.readObjectAsync = function ( eof, then, opt_sync ) {
 };
 
 Input.prototype.type = function () {
-    return Input.TYPE;
+    return Input_st.TYPE;
 };
 
 Input.prototype.unwrap = function () {
@@ -16975,7 +17063,7 @@ Input.prototype.getName = function () {
     return "<input>";
 };
 
-Input.cast = function ( argument, caller ) {
+Input_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof Input) )
@@ -16988,7 +17076,7 @@ Input.cast = function ( argument, caller ) {
     }
 };
 
-Input.TYPE = Symbol.mkSym( "input" );
+Input_st.TYPE = Symbol_st.mkSym( "input" );
 
 
 // ===================================================================
@@ -17001,9 +17089,9 @@ Input.TYPE = Symbol.mkSym( "input" );
 
 /** @constructor */
 function Output( out ) {
-    LiteralObject.call( this );
     this.out_ = out;
 }
+var Output_st = {};
 
 Output.prototype = new LiteralObject();
 Output.prototype.className = "Output";
@@ -17013,7 +17101,7 @@ Output.prototype.write = function ( s ) {
 };
 
 Output.prototype.type = function () {
-    return Output.TYPE;
+    return Output_st.TYPE;
 };
 
 Output.prototype.unwrap = function () {
@@ -17041,7 +17129,7 @@ Output.prototype.writeByte = function ( b ) {
     this.out_.writeByte( b );
 };
 
-Output.cast = function ( argument, caller ) {
+Output_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof Output) )
@@ -17058,7 +17146,7 @@ Output.prototype.flush = function () {
     this.out_.flush();
 };
 
-Output.TYPE = Symbol.mkSym( "output" );
+Output_st.TYPE = Symbol_st.mkSym( "output" );
 
 
 // ===================================================================
@@ -17156,6 +17244,7 @@ function StringOutputPort() {
         flush: function () {}
     } );
 }
+var StringOutputPort_st = {};
 
 StringOutputPort.prototype = new Output( void 0 );
 StringOutputPort.prototype.className = "StringOutputPort";
@@ -17166,14 +17255,14 @@ StringOutputPort.prototype.value = function () {
     // happens for us, we just ignore the last byte at the moment.
     var string = this.parts_.join( "" );
     this.parts_ = [ string ];
-    return ArcString.make( string );
+    return ArcString_st.make( string );
 };
 
 StringOutputPort.prototype.toString = function () {
     return "#<string-output-port>";
 };
 
-StringOutputPort.cast = function ( argument, caller ) {
+StringOutputPort_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
         if ( !(argument instanceof StringOutputPort) )
@@ -17193,76 +17282,79 @@ StringOutputPort.cast = function ( argument, caller ) {
 // Needed early: Output System_out System_err Input System_in Input
 // Output ArcSocket JsObject Nil Pair ArcObject
 
-var IO = {};
+var IO_st = {};
 
 /** @constructor */
-IO.Anon_STD_OUT_ = function () {
+IO_st.Anon_STD_OUT_ = function () {
     Output.call( this, System_out );
 };
 
-IO.Anon_STD_OUT_.prototype = new Output( void 0 );
-IO.Anon_STD_OUT_.prototype.className = "IO.Anon_STD_OUT_";
+// PORT TODO: Figure out whehter these className names should
+// correspond to what we're doing (IO_st.Anon_STD_OUT_) or more what
+// would make sense in the Java version (IO.STD_OUT).
+IO_st.Anon_STD_OUT_.prototype = new Output( void 0 );
+IO_st.Anon_STD_OUT_.prototype.className = "IO.Anon_STD_OUT_";
 
-IO.Anon_STD_OUT_.prototype.close = function () {
+IO_st.Anon_STD_OUT_.prototype.close = function () {
 };
 
-IO.Anon_STD_OUT_.prototype.toString = function () {
+IO_st.Anon_STD_OUT_.prototype.toString = function () {
     return "IO.STD_OUT";
 };
 
-IO.STD_OUT = new IO.Anon_STD_OUT_();
+IO_st.STD_OUT = new IO_st.Anon_STD_OUT_();
 
 /** @constructor */
-IO.Anon_STD_ERR_ = function () {
+IO_st.Anon_STD_ERR_ = function () {
     Output.call( this, System_err );
 };
 
-IO.Anon_STD_ERR_.prototype = new Output( void 0 );
-IO.Anon_STD_ERR_.prototype.className = "IO.Anon_STD_ERR_";
+IO_st.Anon_STD_ERR_.prototype = new Output( void 0 );
+IO_st.Anon_STD_ERR_.prototype.className = "IO.Anon_STD_ERR_";
 
-IO.Anon_STD_ERR_.prototype.close = function () {
+IO_st.Anon_STD_ERR_.prototype.close = function () {
 };
 
-IO.Anon_STD_ERR_.prototype.toString = function () {
+IO_st.Anon_STD_ERR_.prototype.toString = function () {
     return "IO.STD_ERR";
 };
 
-IO.STD_ERR = new IO.Anon_STD_ERR_();
+IO_st.STD_ERR = new IO_st.Anon_STD_ERR_();
 
 /** @constructor */
-IO.Anon_STD_IN_ = function () {
+IO_st.Anon_STD_IN_ = function () {
     Input.call( this, System_in );
 };
 
-IO.Anon_STD_IN_.prototype = new Input( void 0 );
-IO.Anon_STD_IN_.prototype.className = "IO.Anon_STD_IN_";
+IO_st.Anon_STD_IN_.prototype = new Input( void 0 );
+IO_st.Anon_STD_IN_.prototype.className = "IO.Anon_STD_IN_";
 
-IO.Anon_STD_IN_.prototype.close = function () {
+IO_st.Anon_STD_IN_.prototype.close = function () {
 };
 
-IO.Anon_STD_IN_.prototype.toString = function () {
+IO_st.Anon_STD_IN_.prototype.toString = function () {
     return "IO.STD_IN";
 };
 
-IO.STD_IN = new IO.Anon_STD_IN_();
+IO_st.STD_IN = new IO_st.Anon_STD_IN_();
 
 // PORT NOTE: This was public in Java, but there was a method by the
 // same name.
-IO.stdIn_ = { value: IO.STD_IN };
+IO_st.stdIn_ = { value: IO_st.STD_IN };
 
 // PORT NOTE: This was public in Java, but there was a method by the
 // same name.
-IO.stdOut_ = { value: IO.STD_OUT };
+IO_st.stdOut_ = { value: IO_st.STD_OUT };
 
-IO.stdIn = function () {
-    return IO.stdIn_.value;
+IO_st.stdIn = function () {
+    return IO_st.stdIn_.value;
 };
 
-IO.stdOut = function () {
-    return IO.stdOut_.value;
+IO_st.stdOut = function () {
+    return IO_st.stdOut_.value;
 };
 
-IO.close = function ( port ) {
+IO_st.close = function ( port ) {
     if ( port instanceof Input )
         port.close();
     else if ( port instanceof Output )
@@ -17277,29 +17369,29 @@ IO.close = function ( port ) {
             "close: expected Input or Output object; got " + port );
 };
 
-IO.chooseOutputPort = function ( port, caller ) {
+IO_st.chooseOutputPort = function ( port, caller ) {
     if ( port instanceof Nil )
-        return IO.stdOut();
+        return IO_st.stdOut();
     else
-        return Output.cast( port, caller );
+        return Output_st.cast( port, caller );
 };
 
-IO.chooseInputPort = function ( port, caller ) {
+IO_st.chooseInputPort = function ( port, caller ) {
     if ( port instanceof Nil )
-        return IO.stdIn();
+        return IO_st.stdIn();
     else
-        return Input.cast( port, caller );
+        return Input_st.cast( port, caller );
 };
 
-IO.closeAll = function ( args ) {
+IO_st.closeAll = function ( args ) {
     while ( !(args instanceof Nil) ) {
-        IO.close( args.car() );
+        IO_st.close( args.car() );
         args = args.cdr();
         // PORT NOTE: This was a cast in Java.
         if ( !(args instanceof Pair) )
             throw new TypeError();
     }
-    return ArcObject.NIL;
+    return ArcObject_st.NIL;
 };
 
 
@@ -17311,15 +17403,14 @@ IO.closeAll = function ( args ) {
 
 /** @constructor */
 function Close_Builtin() {
-    Builtin.call( this );
-    this.init( "close" );
+    this.initBuiltin( "close" );
 }
 
 Close_Builtin.prototype = new Builtin();
 Close_Builtin.prototype.className = "Close_Builtin";
 
 Close_Builtin.prototype.invokePair = function ( args ) {
-    return IO.closeAll( args );
+    return IO_st.closeAll( args );
 };
 
 
@@ -17331,22 +17422,21 @@ Close_Builtin.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Disp() {
-    Builtin.call( this );
-    this.init( "disp" );
+    this.initBuiltin( "disp" );
 }
 
 Disp.prototype = new Builtin();
 Disp.prototype.className = "Disp";
 
 Disp.prototype.invokef1 = function ( vm, arg ) {
-    this.disp_( IO.stdOut(), arg );
-    vm.pushA( ArcObject.NIL );
+    this.disp_( IO_st.stdOut(), arg );
+    vm.pushA( ArcObject_st.NIL );
 };
 
 Disp.prototype.invokePair = function ( args ) {
-    this.disp_(
-        IO.chooseOutputPort( args.cdr().car(), this ), args.car() );
-    return ArcObject.NIL;
+    this.disp_( IO_st.chooseOutputPort( args.cdr().car(), this ),
+        args.car() );
+    return ArcObject_st.NIL;
 };
 
 Disp.prototype.disp_ = function ( out, o ) {
@@ -17362,16 +17452,15 @@ Disp.prototype.disp_ = function ( out, o ) {
 
 /** @constructor */
 function FlushOut() {
-    Builtin.call( this );
-    this.init( "flushout" );
+    this.initBuiltin( "flushout" );
 }
 
 FlushOut.prototype = new Builtin();
 FlushOut.prototype.className = "FlushOut";
 
 FlushOut.prototype.invokePair = function ( args ) {
-    IO.stdOut().flush();
-    return ArcObject.T;
+    IO_st.stdOut().flush();
+    return ArcObject_st.T;
 };
 
 
@@ -17386,15 +17475,14 @@ FlushOut.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function ForceClose() {
-    Builtin.call( this );
-    this.init( "force-close" );
+    this.initBuiltin( "force-close" );
 }
 
 ForceClose.prototype = new Builtin();
 ForceClose.prototype.className = "ForceClose";
 
 ForceClose.prototype.invokePair = function ( args ) {
-    return IO.closeAll( args );
+    return IO_st.closeAll( args );
 };
 
 
@@ -17408,15 +17496,14 @@ ForceClose.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function StdErr() {
-    Builtin.call( this );
-    this.init( "stderr" );
+    this.initBuiltin( "stderr" );
 }
 
 StdErr.prototype = new Builtin();
 StdErr.prototype.className = "StdErr";
 
 StdErr.prototype.invokePair = function ( args ) {
-    return IO.STD_ERR;
+    return IO_st.STD_ERR;
 };
 
 
@@ -17430,16 +17517,15 @@ StdErr.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function StdIn() {
-    Builtin.call( this );
-    this.init( "stdin" );
+    this.initBuiltin( "stdin" );
 }
 
 StdIn.prototype = new Builtin();
 StdIn.prototype.className = "StdIn";
 
 StdIn.prototype.invokePair = function ( args ) {
-    Builtin.checkExactArgsCount( args, 0, this.className );
-    return IO.stdIn();
+    Builtin_st.checkExactArgsCount( args, 0, this.className );
+    return IO_st.stdIn();
 };
 
 
@@ -17453,15 +17539,14 @@ StdIn.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function StdOut() {
-    Builtin.call( this );
-    this.init( "stdout" );
+    this.initBuiltin( "stdout" );
 }
 
 StdOut.prototype = new Builtin();
 StdOut.prototype.className = "StdOut";
 
 StdOut.prototype.invokePair = function ( args ) {
-    return IO.stdOut();
+    return IO_st.stdOut();
 };
 
 
@@ -17473,16 +17558,16 @@ StdOut.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Write() {
-    Builtin.call( this );
-    this.init( "write" );
+    this.initBuiltin( "write" );
 }
 
 Write.prototype = new Builtin();
 Write.prototype.className = "Write";
 
 Write.prototype.invokePair = function ( args ) {
-    IO.chooseOutputPort( args.cdr().car(), this ).write( args.car() );
-    return ArcObject.NIL;
+    IO_st.chooseOutputPort( args.cdr().car(), this ).write(
+        args.car() );
+    return ArcObject_st.NIL;
 };
 
 
@@ -17494,17 +17579,16 @@ Write.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function WriteB() {
-    Builtin.call( this );
-    this.init( "writeb" );
+    this.initBuiltin( "writeb" );
 }
 
 WriteB.prototype = new Builtin();
 WriteB.prototype.className = "WriteB";
 
 WriteB.prototype.invokePair = function ( args ) {
-    IO.chooseOutputPort( args.cdr().car(), this ).writeRational(
-        Rational.cast( args.car(), this ) );
-    return ArcObject.NIL;
+    IO_st.chooseOutputPort( args.cdr().car(), this ).writeRational(
+        Rational_st.cast( args.car(), this ) );
+    return ArcObject_st.NIL;
 };
 
 
@@ -17516,16 +17600,15 @@ WriteB.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function WriteC() {
-    Builtin.call( this );
-    this.init( "writec" );
+    this.initBuiltin( "writec" );
 }
 
 WriteC.prototype = new Builtin();
 WriteC.prototype.className = "WriteC";
 
 WriteC.prototype.invokePair = function ( args ) {
-    IO.chooseOutputPort( args.cdr().car(), this ).writeChar(
-        ArcCharacter.cast( args.car(), this ) );
+    IO_st.chooseOutputPort( args.cdr().car(), this ).writeChar(
+        ArcCharacter_st.cast( args.car(), this ) );
     return args.car();
 };
 
@@ -17538,8 +17621,7 @@ WriteC.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function InString() {
-    Builtin.call( this );
-    this.init( "instring" );
+    this.initBuiltin( "instring" );
 }
 
 InString.prototype = new Builtin();
@@ -17547,7 +17629,7 @@ InString.prototype.className = "InString";
 
 InString.prototype.invokePair = function ( args ) {
     return new StringInputPort(
-        ArcString.cast( args.car(), this ).value() );
+        ArcString_st.cast( args.car(), this ).value() );
 };
 
 
@@ -17559,15 +17641,14 @@ InString.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Inside() {
-    Builtin.call( this );
-    this.init( "inside" );
+    this.initBuiltin( "inside" );
 }
 
 Inside.prototype = new Builtin();
 Inside.prototype.className = "Inside";
 
 Inside.prototype.invokePair = function ( args ) {
-    var sop = StringOutputPort.cast( args.car(), this );
+    var sop = StringOutputPort_st.cast( args.car(), this );
     return sop.value();
 };
 
@@ -17580,8 +17661,7 @@ Inside.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function OutString() {
-    Builtin.call( this );
-    this.init( "outstring" );
+    this.initBuiltin( "outstring" );
 }
 
 OutString.prototype = new Builtin();
@@ -17600,19 +17680,18 @@ OutString.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function CallWStdIn() {
-    Builtin.call( this );
-    this.init( "call-w/stdin" );
+    this.initBuiltin( "call-w/stdin" );
 }
 
 CallWStdIn.prototype = new Builtin();
 CallWStdIn.prototype.className = "CallWStdIn";
 
 CallWStdIn.prototype.invoke = function ( vm, args ) {
-    var i = new SetThreadLocal( IO.stdIn_, IO.stdIn() );
+    var i = new SetThreadLocal( IO_st.stdIn_, IO_st.stdIn() );
     i.belongsTo( this );
     vm.pushFrame( i );
-    IO.stdIn_.value = Input.cast( args.car(), this );
-    args.cdr().car().invoke( vm, ArcObject.NIL );
+    IO_st.stdIn_.value = Input_st.cast( args.car(), this );
+    args.cdr().car().invoke( vm, ArcObject_st.NIL );
 };
 
 
@@ -17624,19 +17703,18 @@ CallWStdIn.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function CallWStdOut() {
-    Builtin.call( this );
-    this.init( "call-w/stdout" );
+    this.initBuiltin( "call-w/stdout" );
 }
 
 CallWStdOut.prototype = new Builtin();
 CallWStdOut.prototype.className = "CallWStdOut";
 
 CallWStdOut.prototype.invoke = function ( vm, args ) {
-    var i = new SetThreadLocal( IO.stdOut_, IO.stdOut() );
+    var i = new SetThreadLocal( IO_st.stdOut_, IO_st.stdOut() );
     i.belongsTo( this );
     vm.pushFrame( i );
-    IO.stdOut_.value = Output.cast( args.car(), this );
-    args.cdr().car().invoke( vm, ArcObject.NIL );
+    IO_st.stdOut_.value = Output_st.cast( args.car(), this );
+    args.cdr().car().invoke( vm, ArcObject_st.NIL );
 };
 
 
@@ -17651,39 +17729,39 @@ CallWStdOut.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function ReadB() {
-    Builtin.call( this );
-    this.init( "readb" );
+    this.initBuiltin( "readb" );
 }
+var ReadB_st = {};
 
 ReadB.prototype = new Builtin();
 ReadB.prototype.className = "ReadB";
 
 ReadB.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushFrame( new ReadB.Go(
-        IO.chooseInputPort( arg, this ), this ) );
+    vm.pushFrame( new ReadB_st.Go(
+        IO_st.chooseInputPort( arg, this ), this ) );
 };
 
 // ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 ReadB.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new ReadB.Go(
-        IO.chooseInputPort( args.car(), this ), this ) );
+    vm.pushFrame( new ReadB_st.Go(
+        IO_st.chooseInputPort( args.car(), this ), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-ReadB.Go = function ( port, owner ) {
+ReadB_st.Go = function ( port, owner ) {
     Instruction.call( this );
     this.port_ = port;
     this.belongsTo( owner );
 };
 
-ReadB.Go.prototype = new Instruction();
-ReadB.Go.prototype.implementsAsync = true;
-ReadB.Go.prototype.className = "ReadB.Go";
+ReadB_st.Go.prototype = new Instruction();
+ReadB_st.Go.prototype.implementsAsync = true;
+ReadB_st.Go.prototype.className = "ReadB.Go";
 
-ReadB.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+ReadB_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     return this.port_.readByteAsync( function ( e, result ) {
         if ( e ) return void then( e );
         vm.pushA( result );
@@ -17691,7 +17769,7 @@ ReadB.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     }, opt_sync );
 };
 
-ReadB.Go.prototype.operate = function ( vm ) {
+ReadB_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -17707,39 +17785,39 @@ ReadB.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function ReadC() {
-    Builtin.call( this );
-    this.init( "readc" );
+    this.initBuiltin( "readc" );
 }
+var ReadC_st = {};
 
 ReadC.prototype = new Builtin();
 ReadC.prototype.className = "ReadC";
 
 ReadC.prototype.invokef1 = function ( vm, arg ) {
-    vm.pushFrame( new ReadC.Go(
-        IO.chooseInputPort( arg, this ), this ) );
+    vm.pushFrame( new ReadC_st.Go(
+        IO_st.chooseInputPort( arg, this ), this ) );
 };
 
 // ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 ReadC.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new ReadC.Go(
-        IO.chooseInputPort( args.car(), this ), this ) );
+    vm.pushFrame( new ReadC_st.Go(
+        IO_st.chooseInputPort( args.car(), this ), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-ReadC.Go = function ( port, owner ) {
+ReadC_st.Go = function ( port, owner ) {
     Instruction.call( this );
     this.port_ = port;
     this.belongsTo( owner );
 };
 
-ReadC.Go.prototype = new Instruction();
-ReadC.Go.prototype.implementsAsync = true;
-ReadC.Go.prototype.className = "ReadC.Go";
+ReadC_st.Go.prototype = new Instruction();
+ReadC_st.Go.prototype.implementsAsync = true;
+ReadC_st.Go.prototype.className = "ReadC.Go";
 
-ReadC.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+ReadC_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     return this.port_.readCharacterAsync( function ( e, result ) {
         if ( e ) return void then( e );
         vm.pushA( result );
@@ -17747,7 +17825,7 @@ ReadC.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     }, opt_sync );
 };
 
-ReadC.Go.prototype.operate = function ( vm ) {
+ReadC_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -17763,9 +17841,9 @@ ReadC.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function Sread() {
-    Builtin.call( this );
-    this.init( "sread" );
+    this.initBuiltin( "sread" );
 }
+var Sread_st = {};
 
 Sread.prototype = new Builtin();
 Sread.prototype.className = "Sread";
@@ -17774,24 +17852,24 @@ Sread.prototype.className = "Sread";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 Sread.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new Sread.Go(
-        Input.cast( args.car(), this ), args.cdr().car(), this ) );
+    vm.pushFrame( new Sread_st.Go(
+        Input_st.cast( args.car(), this ), args.cdr().car(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Sread.Go = function ( port, eof, owner ) {
+Sread_st.Go = function ( port, eof, owner ) {
     Instruction.call( this );
     this.port_ = port;
     this.eof_ = eof;
     this.belongsTo( owner );
 };
 
-Sread.Go.prototype = new Instruction();
-Sread.Go.prototype.implementsAsync = true;
-Sread.Go.prototype.className = "Sread.Go";
+Sread_st.Go.prototype = new Instruction();
+Sread_st.Go.prototype.implementsAsync = true;
+Sread_st.Go.prototype.className = "Sread.Go";
 
-Sread.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+Sread_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     return this.port_.readObjectAsync( this.eof_, function (
         e, result ) {
         
@@ -17801,7 +17879,7 @@ Sread.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     }, opt_sync );
 };
 
-Sread.Go.prototype.operate = function ( vm ) {
+Sread_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -17817,9 +17895,9 @@ Sread.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function Dir() {
-    Builtin.call( this );
-    this.init( "dir" );
+    this.initBuiltin( "dir" );
 }
+var Dir_st = {};
 
 Dir.prototype = new Builtin();
 Dir.prototype.className = "Dir";
@@ -17828,23 +17906,23 @@ Dir.prototype.className = "Dir";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 Dir.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new Dir.Go(
-        ArcString.cast( args.car(), this ).value(), this ) );
+    vm.pushFrame( new Dir_st.Go(
+        ArcString_st.cast( args.car(), this ).value(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Dir.Go = function ( path, owner ) {
+Dir_st.Go = function ( path, owner ) {
     Instruction.call( this );
     this.path_ = path;
     this.belongsTo( owner );
 };
 
-Dir.Go.prototype = new Instruction();
-Dir.Go.prototype.implementsAsync = true;
-Dir.Go.prototype.className = "Dir.Go";
+Dir_st.Go.prototype = new Instruction();
+Dir_st.Go.prototype.implementsAsync = true;
+Dir_st.Go.prototype.className = "Dir.Go";
 
-Dir.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+Dir_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     return System_fs.dirAsync( this.path_, function ( e, result ) {
         if ( e ) return void then( e );
         vm.pushA( result );
@@ -17852,7 +17930,7 @@ Dir.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     }, opt_sync );
 };
 
-Dir.Go.prototype.operate = function ( vm ) {
+Dir_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -17868,9 +17946,9 @@ Dir.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function DirExists() {
-    Builtin.call( this );
-    this.init( "dir-exists" );
+    this.initBuiltin( "dir-exists" );
 }
+var DirExists_st = {};
 
 DirExists.prototype = new Builtin();
 DirExists.prototype.className = "DirExists";
@@ -17879,35 +17957,35 @@ DirExists.prototype.className = "DirExists";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 DirExists.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new DirExists.Go( args.car(), this ) );
+    vm.pushFrame( new DirExists_st.Go( args.car(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-DirExists.Go = function ( path, owner ) {
+DirExists_st.Go = function ( path, owner ) {
     Instruction.call( this );
     this.path_ = path;
     this.belongsTo( owner );
 };
 
-DirExists.Go.prototype = new Instruction();
-DirExists.Go.prototype.implementsAsync = true;
-DirExists.Go.prototype.className = "DirExists.Go";
+DirExists_st.Go.prototype = new Instruction();
+DirExists_st.Go.prototype.implementsAsync = true;
+DirExists_st.Go.prototype.className = "DirExists.Go";
 
-DirExists.Go.prototype.operateAsync = function (
+DirExists_st.Go.prototype.operateAsync = function (
     vm, then, opt_sync ) {
     
     return System_fs.dirExistsAsync(
-        ArcString.cast( this.path_, this.owner() ).value(),
+        ArcString_st.cast( this.path_, this.owner() ).value(),
         function ( e, result ) {
         
         if ( e ) return void then( e );
-        vm.pushA( result ? this.path_ : ArcObject.NIL );
+        vm.pushA( result ? this.path_ : ArcObject_st.NIL );
         then( null );
     }, opt_sync );
 };
 
-DirExists.Go.prototype.operate = function ( vm ) {
+DirExists_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -17923,9 +18001,9 @@ DirExists.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function FileExists() {
-    Builtin.call( this );
-    this.init( "file-exists" );
+    this.initBuiltin( "file-exists" );
 }
+var FileExists_st = {};
 
 FileExists.prototype = new Builtin();
 FileExists.prototype.className = "FileExists";
@@ -17934,26 +18012,26 @@ FileExists.prototype.className = "FileExists";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 FileExists.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new FileExists.Go( args.car(), this ) );
+    vm.pushFrame( new FileExists_st.Go( args.car(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-FileExists.Go = function ( path, owner ) {
+FileExists_st.Go = function ( path, owner ) {
     Instruction.call( this );
     this.path_ = path;
     this.belongsTo( owner );
 };
 
-FileExists.Go.prototype = new Instruction();
-FileExists.Go.prototype.implementsAsync = true;
-FileExists.Go.prototype.className = "FileExists.Go";
+FileExists_st.Go.prototype = new Instruction();
+FileExists_st.Go.prototype.implementsAsync = true;
+FileExists_st.Go.prototype.className = "FileExists.Go";
 
-FileExists.Go.prototype.operateAsync = function (
+FileExists_st.Go.prototype.operateAsync = function (
     vm, then, opt_sync ) {
     
     return System_fs.fileExistsAsync(
-        ArcString.cast( this.path_, this.owner() ).value(),
+        ArcString_st.cast( this.path_, this.owner() ).value(),
         function ( e, result ) {
         
         if ( e ) return void then( e );
@@ -17962,7 +18040,7 @@ FileExists.Go.prototype.operateAsync = function (
     }, opt_sync );
 };
 
-FileExists.Go.prototype.operate = function ( vm ) {
+FileExists_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -17978,9 +18056,9 @@ FileExists.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function InFile() {
-    Builtin.call( this );
-    this.init( "infile" );
+    this.initBuiltin( "infile" );
 }
+var InFile_st = {};
 
 InFile.prototype = new Builtin();
 InFile.prototype.className = "InFile";
@@ -17989,23 +18067,23 @@ InFile.prototype.className = "InFile";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 InFile.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new InFile.Go(
-        ArcString.cast( args.car(), this ).value(), this ) );
+    vm.pushFrame( new InFile_st.Go(
+        ArcString_st.cast( args.car(), this ).value(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-InFile.Go = function ( path, owner ) {
+InFile_st.Go = function ( path, owner ) {
     Instruction.call( this );
     this.path_ = path;
     this.belongsTo( owner );
 };
 
-InFile.Go.prototype = new Instruction();
-InFile.Go.prototype.implementsAsync = true;
-InFile.Go.prototype.className = "InFile.Go";
+InFile_st.Go.prototype = new Instruction();
+InFile_st.Go.prototype.implementsAsync = true;
+InFile_st.Go.prototype.className = "InFile.Go";
 
-InFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+InFile_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     return System_fs.inFileAsync( this.path_, function ( e, result ) {
         if ( e ) return void then( e );
         vm.pushA( new Input( result ) );
@@ -18013,7 +18091,7 @@ InFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     }, opt_sync );
 };
 
-InFile.Go.prototype.operate = function ( vm ) {
+InFile_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -18029,9 +18107,9 @@ InFile.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function OutFile() {
-    Builtin.call( this );
-    this.init( "outfile" );
+    this.initBuiltin( "outfile" );
 }
+var OutFile_st = {};
 
 OutFile.prototype = new Builtin();
 OutFile.prototype.className = "OutFile";
@@ -18040,27 +18118,27 @@ OutFile.prototype.className = "OutFile";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 OutFile.prototype.invoke = function ( vm, args ) {
-    var name = ArcString.cast( args.car(), this ).value();
+    var name = ArcString_st.cast( args.car(), this ).value();
     var appendSymbol = args.cdr().car();
     var append = !(appendSymbol instanceof Nil) &&
-        Symbol.cast( appendSymbol, this ).name() === "append";
-    vm.pushFrame( new OutFile.Go( name, append, this ) );
+        Symbol_st.cast( appendSymbol, this ).name() === "append";
+    vm.pushFrame( new OutFile_st.Go( name, append, this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-OutFile.Go = function ( name, append, owner ) {
+OutFile_st.Go = function ( name, append, owner ) {
     Instruction.call( this );
     this.name_ = name;
     this.append_ = append;
     this.belongsTo( owner );
 };
 
-OutFile.Go.prototype = new Instruction();
-OutFile.Go.prototype.implementsAsync = true;
-OutFile.Go.prototype.className = "OutFile.Go";
+OutFile_st.Go.prototype = new Instruction();
+OutFile_st.Go.prototype.implementsAsync = true;
+OutFile_st.Go.prototype.className = "OutFile.Go";
 
-OutFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+OutFile_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     return System_fs.outFileAsync( this.name_, this.append_,
         function ( e, result ) {
         
@@ -18070,7 +18148,7 @@ OutFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     }, opt_sync );
 };
 
-OutFile.Go.prototype.operate = function ( vm ) {
+OutFile_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -18086,9 +18164,9 @@ OutFile.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function MakeDirectory() {
-    Builtin.call( this );
-    this.init( "make-directory" );
+    this.initBuiltin( "make-directory" );
 }
+var MakeDirectory_st = {};
 
 MakeDirectory.prototype = new Builtin();
 MakeDirectory.prototype.className = "MakeDirectory";
@@ -18097,35 +18175,35 @@ MakeDirectory.prototype.className = "MakeDirectory";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 MakeDirectory.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new MakeDirectory.Go(
-        ArcString.cast( args.car(), this ).value(), this ) );
+    vm.pushFrame( new MakeDirectory_st.Go(
+        ArcString_st.cast( args.car(), this ).value(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-MakeDirectory.Go = function ( path, owner ) {
+MakeDirectory_st.Go = function ( path, owner ) {
     Instruction.call( this );
     this.path_ = path;
     this.belongsTo( owner );
 };
 
-MakeDirectory.Go.prototype = new Instruction();
-MakeDirectory.Go.prototype.implementsAsync = true;
-MakeDirectory.Go.prototype.className = "MakeDirectory.Go";
+MakeDirectory_st.Go.prototype = new Instruction();
+MakeDirectory_st.Go.prototype.implementsAsync = true;
+MakeDirectory_st.Go.prototype.className = "MakeDirectory.Go";
 
-MakeDirectory.Go.prototype.operateAsync = function (
+MakeDirectory_st.Go.prototype.operateAsync = function (
     vm, then, opt_sync ) {
     
     return System_fs.makeDirectoryAsync( this.path_, function (
         e, result ) {
         
         if ( e ) return void then( e );
-        vm.pushA( result ? Truth.T : Truth.NIL );
+        vm.pushA( result ? Truth_st.T : Truth_st.NIL );
         then( null );
     }, opt_sync );
 };
 
-MakeDirectory.Go.prototype.operate = function ( vm ) {
+MakeDirectory_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -18141,9 +18219,9 @@ MakeDirectory.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function MakeDirectories() {
-    Builtin.call( this );
-    this.init( "make-directory*" );
+    this.initBuiltin( "make-directory*" );
 }
+var MakeDirectories_st = {};
 
 MakeDirectories.prototype = new Builtin();
 MakeDirectories.prototype.className = "MakeDirectories";
@@ -18152,35 +18230,35 @@ MakeDirectories.prototype.className = "MakeDirectories";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 MakeDirectories.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new MakeDirectories.Go(
-        ArcString.cast( args.car(), this ).value(), this ) );
+    vm.pushFrame( new MakeDirectories_st.Go(
+        ArcString_st.cast( args.car(), this ).value(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-MakeDirectories.Go = function ( path, owner ) {
+MakeDirectories_st.Go = function ( path, owner ) {
     Instruction.call( this );
     this.path_ = path;
     this.belongsTo( owner );
 };
 
-MakeDirectories.Go.prototype = new Instruction();
-MakeDirectories.Go.prototype.implementsAsync = true;
-MakeDirectories.Go.prototype.className = "MakeDirectories.Go";
+MakeDirectories_st.Go.prototype = new Instruction();
+MakeDirectories_st.Go.prototype.implementsAsync = true;
+MakeDirectories_st.Go.prototype.className = "MakeDirectories.Go";
 
-MakeDirectories.Go.prototype.operateAsync = function (
+MakeDirectories_st.Go.prototype.operateAsync = function (
     vm, then, opt_sync ) {
     
     return System_fs.makeDirectoriesAsync( this.path_, function (
         e, result ) {
         
         if ( e ) return void then( e );
-        vm.pushA( result ? Truth.T : Truth.NIL );
+        vm.pushA( result ? Truth_st.T : Truth_st.NIL );
         then( null );
     }, opt_sync );
 };
 
-MakeDirectories.Go.prototype.operate = function ( vm ) {
+MakeDirectories_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -18196,9 +18274,9 @@ MakeDirectories.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function MvFile() {
-    Builtin.call( this );
-    this.init( "mvfile" );
+    this.initBuiltin( "mvfile" );
 }
+var MvFile_st = {};
 
 MvFile.prototype = new Builtin();
 MvFile.prototype.className = "MvFile";
@@ -18207,36 +18285,38 @@ MvFile.prototype.className = "MvFile";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 MvFile.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new MvFile.Go(
-        ArcString.cast( args.car(), this ).value(),
-        ArcString.cast( args.cdr().car(), this ).value(),
+    vm.pushFrame( new MvFile_st.Go(
+        ArcString_st.cast( args.car(), this ).value(),
+        ArcString_st.cast( args.cdr().car(), this ).value(),
         this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-MvFile.Go = function ( opath, npath, owner ) {
+MvFile_st.Go = function ( opath, npath, owner ) {
     Instruction.call( this );
     this.opath_ = opath;
     this.npath_ = npath;
     this.belongsTo( owner );
 };
 
-MvFile.Go.prototype = new Instruction();
-MvFile.Go.prototype.implementsAsync = true;
-MvFile.Go.prototype.className = "MvFile.Go";
+MvFile_st.Go.prototype = new Instruction();
+MvFile_st.Go.prototype.implementsAsync = true;
+MvFile_st.Go.prototype.className = "MvFile.Go";
 
-MvFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+MvFile_st.Go.prototype.operateAsync = function (
+    vm, then, opt_sync ) {
+    
     return System_fs.mvFileAsync( this.opath_, this.npath_, function (
         e ) {
         
         if ( e ) return void then( e );
-        vm.pushA( ArcObject.NIL );
+        vm.pushA( ArcObject_st.NIL );
         then( null );
     }, opt_sync );
 };
 
-MvFile.Go.prototype.operate = function ( vm ) {
+MvFile_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -18252,9 +18332,9 @@ MvFile.Go.prototype.operate = function ( vm ) {
 
 /** @constructor */
 function RmFile() {
-    Builtin.call( this );
-    this.init( "rmfile" );
+    this.initBuiltin( "rmfile" );
 }
+var RmFile_st = {};
 
 RmFile.prototype = new Builtin();
 RmFile.prototype.className = "RmFile";
@@ -18263,31 +18343,33 @@ RmFile.prototype.className = "RmFile";
 // can't do that (since it's synchronous), so we're implementing
 // .invoke( VM, Pair ) instead.
 RmFile.prototype.invoke = function ( vm, args ) {
-    vm.pushFrame( new RmFile.Go(
-        ArcString.cast( args.car(), this ).value(), this ) );
+    vm.pushFrame( new RmFile_st.Go(
+        ArcString_st.cast( args.car(), this ).value(), this ) );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-RmFile.Go = function ( path, owner ) {
+RmFile_st.Go = function ( path, owner ) {
     Instruction.call( this );
     this.path_ = path;
     this.belongsTo( owner );
 };
 
-RmFile.Go.prototype = new Instruction();
-RmFile.Go.prototype.implementsAsync = true;
-RmFile.Go.prototype.className = "RmFile.Go";
+RmFile_st.Go.prototype = new Instruction();
+RmFile_st.Go.prototype.implementsAsync = true;
+RmFile_st.Go.prototype.className = "RmFile.Go";
 
-RmFile.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+RmFile_st.Go.prototype.operateAsync = function (
+    vm, then, opt_sync ) {
+    
     return System_fs.rmFileAsync( this.path_, function ( e ) {
         if ( e ) return void then( e );
-        vm.pushA( ArcObject.NIL );
+        vm.pushA( ArcObject_st.NIL );
         then( null );
     }, opt_sync );
 };
 
-RmFile.Go.prototype.operate = function ( vm ) {
+RmFile_st.Go.prototype.operate = function ( vm ) {
     throw new Error();
 };
 
@@ -18301,17 +18383,17 @@ RmFile.Go.prototype.operate = function ( vm ) {
 
 // PORT NOTE: This is substantially different from the original.
 
-var Console = {};
+var Console_st = {};
 
-Console.o = ArcObject.NIL;
-Console.debugJava = false;
-Console.stackfunctions = true;
+Console_st.o = ArcObject_st.NIL;
+Console_st.debugJava = false;
+Console_st.stackfunctions = true;
 
 // PORT TODO: If the "options" parameter is going to come from
 // someplace that the Closure Compiler won't compile alongside this,
 // change this to use things like options[ "nosf" ] which won't be
 // minified.
-Console.mainAsync = function ( options, then, opt_sync ) {
+Console_st.mainAsync = function ( options, then, opt_sync ) {
     var started = new Date().getTime();
     
     // PORT TODO: See if we should implement the original's
@@ -18320,20 +18402,20 @@ Console.mainAsync = function ( options, then, opt_sync ) {
     if ( path.indexOf( "." ) === -1 )
         path = [ "." ].concat( path );
     
-    var programArgs = Console.parseAll_( options[ "args" ] || [] );
+    var programArgs = Console_st.parseAll_( options[ "args" ] || [] );
     
     if ( options[ "nosf" ] )
-        Console.stackfunctions = false;
+        Console_st.stackfunctions = false;
     
-    Environment.init();
+    Environment_st.init();
     var vm = new VM();
-//    vm.setInterceptor( VMInterceptor.DEBUG );
+//    vm.setInterceptor( VMInterceptor_st.DEBUG );
     
-    Symbol.mkSym( "*argv*" ).setValue(
-        Pair.buildFrom1( programArgs ) );
+    Symbol_st.mkSym( "*argv*" ).setValue(
+        Pair_st.buildFrom1( programArgs ) );
     // PORT TODO: Implement *env*.
-    Symbol.mkSym( "call*" ).setValue( new Hash() );
-    Symbol.mkSym( "sig" ).setValue( new Hash() );
+    Symbol_st.mkSym( "call*" ).setValue( new Hash() );
+    Symbol_st.mkSym( "sig" ).setValue( new Hash() );
     
     var filesToLoad = (options[ "noLibs" ] ? [] : [
         "arc",
@@ -18345,12 +18427,12 @@ Console.mainAsync = function ( options, then, opt_sync ) {
     
     var achievedSync = true;
     
-    if ( !Console.loadAllAsync_( vm, path, filesToLoad, function (
+    if ( !Console_st.loadAllAsync_( vm, path, filesToLoad, function (
             e ) {
             
             if ( e ) return void then( e );
             
-            if ( !Console.interpretAllAsync_(
+            if ( !Console_st.interpretAllAsync_(
                     vm, options[ "e" ] || [], function ( e ) {
                     
                     if ( e ) return void then( e );
@@ -18361,7 +18443,7 @@ Console.mainAsync = function ( options, then, opt_sync ) {
                         var ready = new Date().getTime();
                         System_out_println(
                             "repl in " + (ready - started) + "ms" );
-                        if ( !Console.replAsync_(
+                        if ( !Console_st.replAsync_(
                             vm, then, opt_sync ) )
                             achievedSync = false;
                     }
@@ -18373,7 +18455,7 @@ Console.mainAsync = function ( options, then, opt_sync ) {
     return achievedSync;
 };
 
-Console.parseAll_ = function ( list ) {
+Console_st.parseAll_ = function ( list ) {
     var result = [];
     for ( var i = 0, len = list.length; i < len; i++ ) {
         // PORT NOTE: This local variable didn't exist in Java.
@@ -18382,12 +18464,13 @@ Console.parseAll_ = function ( list ) {
         if ( Object.prototype.toString.call( it ) !==
             "[object String]" )
             throw new TypeError();
-        result.push( ArcParser.readFirstObjectFromString( "" + it ) );
+        result.push(
+            ArcParser_st.readFirstObjectFromString( "" + it ) );
     }
     return result;
 };
 
-Console.loadAllAsync_ = function (
+Console_st.loadAllAsync_ = function (
     vm, arcPath, files, then, opt_sync ) {
     
     var thisSync = true;
@@ -18396,7 +18479,7 @@ Console.loadAllAsync_ = function (
         if ( i === n )
             return void then();
         var file = files[ i ];
-        if ( !Console.loadFileAsync( vm, arcPath, file,
+        if ( !Console_st.loadFileAsync( vm, arcPath, file,
                 function ( e ) {
                 if ( e ) return void then( e );
                 next( i + 1 );
@@ -18407,7 +18490,7 @@ Console.loadAllAsync_ = function (
     return thisSync;
 };
 
-Console.interpretAllAsync_ = function (
+Console_st.interpretAllAsync_ = function (
     vm, expressionsToEval, then, opt_sync ) {
     
     var sb = [];
@@ -18425,26 +18508,27 @@ Console.interpretAllAsync_ = function (
     function read( e, expression ) {
         if ( e ) return void then( e );
         if ( expression === null ) return void then();
-        if ( !Console.interpretAsync_( vm, expression, function (
+        if ( !Console_st.interpretAsync_( vm, expression, function (
             e ) {
             
             if ( e ) return void then( e );
-            if ( !ArcParser.readObjectAsync( input, read, opt_sync ) )
+            if ( !ArcParser_st.readObjectAsync(
+                input, read, opt_sync ) )
                 achievedSync = false;
         }, opt_sync ) )
             achievedSync = false;
     }
-    if ( !ArcParser.readObjectAsync( input, read, opt_sync ) )
+    if ( !ArcParser_st.readObjectAsync( input, read, opt_sync ) )
         achievedSync = false;
     return achievedSync;
 };
 
-Console.replAsync_ = function ( vm, then, opt_sync ) {
+Console_st.replAsync_ = function ( vm, then, opt_sync ) {
     System_out_print( "arc> " );
     var achievedSync = true;
     var done = false;
     while ( !done ) {
-        if ( !ArcParser.readObjectAsync( System_in, function (
+        if ( !ArcParser_st.readObjectAsync( System_in, function (
                 e, expression ) {
                 
                 if ( e ) {
@@ -18452,7 +18536,7 @@ Console.replAsync_ = function ( vm, then, opt_sync ) {
                         return void then( e );
                     printStackTrace( e );
                     if ( !achievedSync )
-                        Console.replAsync_( vm, then, opt_sync );
+                        Console_st.replAsync_( vm, then, opt_sync );
                     return;
                 }
                 if ( expression === null ) {
@@ -18461,12 +18545,13 @@ Console.replAsync_ = function ( vm, then, opt_sync ) {
                         then();
                     return;
                 }
-                if ( !Console.interpretAsync_( vm, expression,
+                if ( !Console_st.interpretAsync_( vm, expression,
                         function ( e ) {
                         
                         if ( e ) return void then( e );
                         if ( !achievedSync )
-                            Console.replAsync_( vm, then, opt_sync );
+                            Console_st.replAsync_(
+                                vm, then, opt_sync );
                     }, opt_sync ) )
                     achievedSync = false;
             }, opt_sync ) )
@@ -18479,10 +18564,10 @@ Console.replAsync_ = function ( vm, then, opt_sync ) {
     return true;
 };
 
-Console.interpretAsync_ = function (
+Console_st.interpretAsync_ = function (
     vm, expression, then, opt_sync ) {
     
-    return Console.compileAndEvalAsync_( vm, expression,
+    return Console_st.compileAndEvalAsync_( vm, expression,
         function ( e, result ) {
         
         if ( e ) {
@@ -18501,7 +18586,9 @@ Console.interpretAsync_ = function (
 // PORT TODO: See if this should be changed to consume only a constant
 // number of stack frames, rather than a number proportional to
 // arcPath.length.
-Console.findAsync = function ( arcPath, filePath, then, opt_sync ) {
+Console_st.findAsync = function (
+    arcPath, filePath, then, opt_sync ) {
+    
     // PORT NOTE: The original used File.separator.
     // PORT TODO: See if we should stop hardcoding the path separator.
     var options = [];
@@ -18518,7 +18605,7 @@ Console.findAsync = function ( arcPath, filePath, then, opt_sync ) {
                 "Could not find " + filePath + " under " +
                 JSON.stringify( arcPath ) ) );
         var option = options[ i ];
-        if ( !Console.isValidSourceFileAsync_( option,
+        if ( !Console_st.isValidSourceFileAsync_( option,
                 function ( e, valid ) {
                 if ( e ) return void then( e );
                 if ( valid )
@@ -18531,7 +18618,7 @@ Console.findAsync = function ( arcPath, filePath, then, opt_sync ) {
     return thisSync;
 };
 
-Console.loadFileAsync = function (
+Console_st.loadFileAsync = function (
     vm, arcPath, path, then, opt_sync ) {
     
     var thisSync = true;
@@ -18539,7 +18626,7 @@ Console.loadFileAsync = function (
     function finish( f ) {
         if ( !System_fs.inFileAsync( f, function ( e, stream ) {
                 if ( e ) return void then( e );
-                if ( !Console.loadAsync(
+                if ( !Console_st.loadAsync(
                     vm, stream, then, opt_sync ) )
                     thisSync = false;
             }, opt_sync ) )
@@ -18548,12 +18635,14 @@ Console.loadFileAsync = function (
     // PORT TODO: Stop checking if the path is valid if it isn't
     // absolute. To accomplish this, we may want to add a System_fs
     // interface for normalizing paths. Confer with the original.
-    if ( !Console.isValidSourceFileAsync_( f, function ( e, valid ) {
+    if ( !Console_st.isValidSourceFileAsync_( f, function (
+            e, valid ) {
+            
             if ( e ) return void then( e );
             if ( valid ) {
                 finish( f );
             } else {
-                if ( !Console.findAsync( arcPath, path,
+                if ( !Console_st.findAsync( arcPath, path,
                         function ( e, f ) {
                         
                         if ( e ) return void then( e );
@@ -18569,17 +18658,19 @@ Console.loadFileAsync = function (
 // PORT TODO: See if this should be changed to consume only a constant
 // number of stack frames, rather than a number proportional to the
 // number of commands available in the stream without blocking.
-Console.loadAsync = function ( vm, stream, then, opt_sync ) {
+Console_st.loadAsync = function ( vm, stream, then, opt_sync ) {
     var thisSync = true;
-    if ( !ArcParser.readObjectAsync( stream, function ( e, command ) {
+    if ( !ArcParser_st.readObjectAsync( stream, function (
+            e, command ) {
+            
             if ( e ) return void then( e );
             if ( command === null )
                 return void then();
-            if ( !Console.compileAndEvalAsync_( vm, command,
+            if ( !Console_st.compileAndEvalAsync_( vm, command,
                     function ( e, result ) {
                     
                     if ( e ) return void then( e );
-                    if ( !Console.loadAsync(
+                    if ( !Console_st.loadAsync(
                         vm, stream, then, opt_sync ) )
                         thisSync = false;
                 }, opt_sync ) )
@@ -18591,70 +18682,72 @@ Console.loadAsync = function ( vm, stream, then, opt_sync ) {
 
 // PORT NOTE: This was an anonymous class in Java.
 /** @constructor */
-Console.Anon_mkVisitor_ = function ( owner ) {
-    Visitor.call( this );
+Console_st.Anon_mkVisitor_ = function ( owner ) {
     this.owner_ = owner;
 };
 
-Console.Anon_mkVisitor_.prototype = new Visitor();
-Console.Anon_mkVisitor_.prototype.className =
+Console_st.Anon_mkVisitor_.prototype = new Visitor();
+Console_st.Anon_mkVisitor_.prototype.className =
     "Console.Anon_mkVisitor_";
 
-Console.Anon_mkVisitor_.prototype.acceptInstruction = function ( o ) {
+Console_st.Anon_mkVisitor_.prototype.acceptInstruction = function (
+    o ) {
+    
     o.belongsTo( this.owner_ );
 };
 
-Console.mkVisitor_ = function ( owner ) {
-    return new Console.Anon_mkVisitor_( owner );
+Console_st.mkVisitor_ = function ( owner ) {
+    return new Console_st.Anon_mkVisitor_( owner );
 };
 
-Console.compileAndEvalAsync_ = function (
+Console_st.compileAndEvalAsync_ = function (
     vm, expression, then, opt_sync ) {
     
-    vm.pushFrame( new Console.CompileAndEval( expression ) );
+    vm.pushFrame( new Console_st.CompileAndEval( expression ) );
     return vm.threadAsync( then, opt_sync );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Console.CompileAndEval = function ( expression ) {
+Console_st.CompileAndEval = function ( expression ) {
     Instruction.call( this );
     this.expression_ = expression;
     // ASYNC PORT TODO: Come up with a better owner for this.
     this.belongsTo(
-        ArcString.make( "Console.compileAndEvalAsync_" ) );
+        ArcString_st.make( "Console.compileAndEvalAsync_" ) );
 };
 
-Console.CompileAndEval.prototype = new Instruction();
-Console.CompileAndEval.prototype.className = "Console.CompileAndEval";
+Console_st.CompileAndEval.prototype = new Instruction();
+Console_st.CompileAndEval.prototype.className =
+    "Console.CompileAndEval";
 
-Console.CompileAndEval.prototype.operate = function ( vm ) {
-    vm.pushFrame( new Console.AndEval() );
-    Compiler.compile( vm, this.expression_, [] );
+Console_st.CompileAndEval.prototype.operate = function ( vm ) {
+    vm.pushFrame( new Console_st.AndEval() );
+    Compiler_st.compile( vm, this.expression_, [] );
 };
 
 // ASYNC PORT NOTE: This didn't exist in Java.
 /** @constructor */
-Console.AndEval = function () {
+Console_st.AndEval = function () {
     Instruction.call( this );
     // ASYNC PORT TODO: Come up with a better owner for this.
     this.belongsTo(
-        ArcString.make( "Console.compileAndEvalAsync_" ) );
+        ArcString_st.make( "Console.compileAndEvalAsync_" ) );
 };
 
-Console.AndEval.prototype = new Instruction();
-Console.AndEval.prototype.className = "Console.AndEval";
+Console_st.AndEval.prototype = new Instruction();
+Console_st.AndEval.prototype.className = "Console.AndEval";
 
-Console.AndEval.prototype.operate = function ( vm ) {
+Console_st.AndEval.prototype.operate = function ( vm ) {
     var expression = vm.popA().reduce();
     var i = [];
     expression.addInstructions( i );
-    var instructions = Pair.buildFrom1( i );
-    instructions.visit( Console.mkVisitor_( expression ) );
+    var instructions = Pair_st.buildFrom1( i );
+    instructions.visit( Console_st.mkVisitor_( expression ) );
     vm.pushInvocation2( null, instructions );
 };
 
-Console.isValidSourceFileAsync_ = function ( f, then, opt_sync ) {
+Console_st.isValidSourceFileAsync_ = function ( f, then, opt_sync ) {
     return System_fs.fileExistsAsync( f, then, opt_sync );
 };
 
@@ -18672,8 +18765,7 @@ Console.isValidSourceFileAsync_ = function ( f, then, opt_sync ) {
 
 /** @constructor */
 function NewThread() {
-    Builtin.call( this );
-    this.init( "new-thread" );
+    this.initBuiltin( "new-thread" );
 }
 
 NewThread.prototype = new Builtin();
@@ -18719,28 +18811,28 @@ Places that need to be changed if input is to be asynchronous:
 that's all of them)
 
 
-*|ComplexArgs.evalOptional_()
-*|  ComplexArgs.complex_()
+*|ComplexArgs_st.evalOptional_()
+*|  ComplexArgs_st.complex_()
 *|    ComplexArgs.prototype.invoke3()
 *|Bind_A_Oother.prototype.invokeN1()
 *|Bind_Oother.prototype.invokeN0()
 *|ArcObject.prototype.invokeAndWait()
-*|  Compiler.compilePair()
-*|    Compiler.compile()
-*|      AssignmentBuilder.build()
-*|      FunctionParameterListBuilder.buildParams_()
-*|        FunctionParameterListBuilder.build()
-*|          FunctionBodyBuilder.build()
-*|      IfBuilder.build()
-*|      InvocationBuilder.build()
-*|      PairExpander.expand()
-*|        FunctionBodyBuilder.build()
-*|      QuasiQuoteCompiler.compileUnquote_()
-*|        QuasiQuoteCompiler.compile()
+*|  Compiler_st.compilePair()
+*|    Compiler_st.compile()
+*|      AssignmentBuilder_st.build()
+*|      FunctionParameterListBuilder_st.buildParams_()
+*|        FunctionParameterListBuilder_st.build()
+*|          FunctionBodyBuilder_st.build()
+*|      IfBuilder_st.build()
+*|      InvocationBuilder_st.build()
+*|      PairExpander_st.expand()
+*|        FunctionBodyBuilder_st.build()
+*|      QuasiQuoteCompiler_st.compileUnquote_()
+*|        QuasiQuoteCompiler_st.compile()
 *|      Eval.prototype.invoke()
-*|  Compiler.atString_()
-*|    Compiler.compile()
-*|  Macex.prototype.invoke()
+*|  Compiler_st.atString_()
+*|    Compiler_st.compile()
+*|  Macex_st.prototype.invoke()
 *|Tagged.prototype.stringify_()
 *|  Tagged.prototype.toString()
 *|VM.prototype.thread2()

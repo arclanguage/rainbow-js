@@ -23,14 +23,14 @@
 // Replace the contents of this file with this to get a Closure
 // Compiler result that's only 98 KB:
 
-//Console.compileAndEvalAsync_( new VM(),
-//    ArcParser.readFirstObjectFromString(
+//Console_st.compileAndEvalAsync_( new VM(),
+//    ArcParser_st.readFirstObjectFromString(
 //        "((fn a a) ((fn a a) 4 3 2) 1)" ),
 //    function ( e, r ) { alert( r ); }, !!"sync" );
 
 // Replace it with this to get a 13 KB result:
 
-//alert( ArcParser.readFirstObjectFromString( "((1 2 3) 4)" ) );
+//alert( ArcParser_st.readFirstObjectFromString( "((1 2 3) 4)" ) );
 
 // TODO: The 98 KB bloat is probably because of the fact that the
 // fields of the "classes" object are all calculated strings, which
@@ -56,7 +56,7 @@
 
 // Rainbow.js extensions (just the one for now, since it allows usage
 // of window.eval)
-Symbol.make( "window" ).setValue( new JsObject( window ) );
+Symbol_st.make( "window" ).setValue( new JsObject( window ) );
 
 
 function keyCode( event ) {
@@ -175,7 +175,7 @@ handle( window, "load", function () {
     // NOTE: We could say '"noLibs: location.hash !== "#libs"' here,
     // except that that causes two failed HTTP requests and one
     // successful one for each library.
-    Console.mainAsync( { "noLibs": true, "e": [
+    Console_st.mainAsync( { "noLibs": true, "e": [
         "(assign load-from-web" +
         "  (fn ()" +
         "    ( (fn (eof f loop)" +
