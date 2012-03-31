@@ -586,12 +586,16 @@ LexicalClosure.prototype.size = function () {
 
 /** @constructor */
 function ParseException() {
-    Error.call( this );
 }
 
 // PORT TODO: Figure out a way to do this inheritance and also get a
 // real stack trace.
 ParseException.prototype = new Error();
+
+ParseException.prototype.init = function () {
+    Error.call( this );
+    return this;
+};
 
 
 // ===================================================================
@@ -909,7 +913,7 @@ ArcParser_st.readFirstObjectFromString = function ( s ) {
             if ( e ) throw e;
             result = o;
         }, !!"sync" ) )
-        throw new ParseException();
+        throw new ParseException().init();
     return result;
 };
 
@@ -1018,7 +1022,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
         }
         function err( opt_error ) {
             if ( opt_error === void 0 )
-                opt_error = new ParseException();
+                opt_error = new ParseException().init();
             then( opt_error );
         }
         function finishInterpolation() {
@@ -1125,7 +1129,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                         else if ( soFar.length === 1 )
                             code( soFar.charCodeAt( 0 ) );
                         else
-                            then( new ParseException() );
+                            then( new ParseException().init() );
                     } else {
                         if ( !readChar( function ( e, c ) {
                                 if ( e ) return void then( e );
@@ -1151,7 +1155,8 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                     if ( e ) return void then( e );
                     if ( c === null || /[^01-9a-fA-F]/.test( c ) ) {
                         if ( soFar === "" )
-                            return void then( new ParseException() );
+                            return void then(
+                                new ParseException().init() );
                         then( null, Rational_st.make1(
                             parseInt( soFar, 16 ) ) );
                     } else {
@@ -1177,7 +1182,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
             if ( !readChar( function ( e, c ) {
                     if ( e ) return void then( e );
                     if ( c === null ) {
-                        then( new ParseException() );
+                        then( new ParseException().init() );
                     } else if ( c === "|" ) {
                         then( null, Symbol_st.make( soFar ) );
                     } else {
@@ -1201,7 +1206,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                     if ( !peekChar( function ( e, c ) {
                             if ( e ) return void then( e );
                             if ( c === null ) {
-                                then( new ParseException() );
+                                then( new ParseException().init() );
                             } else if ( c === end ) {
                                 if ( !readChar( function ( e, c ) {
                                         if ( e )
@@ -1261,8 +1266,8 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                                                     soFar, then );
                                         } else {
                                             then(
-                                                new ParseException()
-                                            );
+                                                new ParseException().
+                                                    init() );
                                         }
                                     } ) )
                                     thisSync = false;
@@ -1350,7 +1355,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                             } ) )
                             thisSync = false;
                     } else {
-                        then( new ParseException() );
+                        then( new ParseException().init() );
                     }
                 } ) )
                 thisSync = false;
@@ -1359,7 +1364,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
             if ( !readObject( function ( e, o ) {
                     if ( e ) return void then( e );
                     if ( o === null )
-                        then( new ParseException() );
+                        then( new ParseException().init() );
                     else
                         then( null, Pair_st.buildFrom1(
                             [ Symbol_st.mkSym( quoteName ), o ] ) );
@@ -1370,7 +1375,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
             if ( !peekChar( function ( e, c2 ) {
                     if ( e ) return void then( e );
                     if ( c2 === null ) {
-                        then( new ParseException() );
+                        then( new ParseException().init() );
                     } else if ( c2 === "@" ) {
                         if ( !readChar( function ( e, c2 ) {
                                 if ( e ) return void then( e );
@@ -1445,9 +1450,16 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
 };
 
 
-// PORT NOTE: In Java, this was protected.
 /** @constructor */
-function Symbol( name, parseableName ) {
+function Symbol() {
+}
+var Symbol_st = {};
+
+Symbol.prototype = new ArcObject();
+Symbol.prototype.className = "Symbol";
+
+// PORT NOTE: In Java, this was protected.
+Symbol.prototype.init = function ( name, parseableName ) {
     this.name_ = name;
     this.parseableName_ = parseableName;
     // PORT TODO: Find an equivalent for this Java.
@@ -1455,11 +1467,8 @@ function Symbol( name, parseableName ) {
     this.hash_ = name;
     this.value_ = null;
     this.coerceFrom_ = null;
-}
-var Symbol_st = {};
-
-Symbol.prototype = new ArcObject();
-Symbol.prototype.className = "Symbol";
+    return this;
+};
 
 Symbol.prototype.addInstructions = function ( i ) {
     i.push( new FreeSym( this ) );
@@ -1501,7 +1510,7 @@ Symbol_st.nu = function ( s, parseableName ) {
     if ( Symbol_st.map_.has( s ) )
         return Symbol_st.map_.get( s );
     
-    var result = new Symbol( s, parseableName );
+    var result = new Symbol().init( s, parseableName );
     Symbol_st.map_.put( s, result );
     return result;
 };
@@ -1862,7 +1871,7 @@ Pair.prototype.nth = function ( index ) {
 Pair_st.nth_ = function ( p, index ) {
     while ( 0 < index ) {
         if ( p.cdr() instanceof Nil )
-            throw new Pair_st.OOB();
+            throw new Pair_st.OOB().init();
         p = p.cdr();
         index--;
     }
@@ -1885,9 +1894,12 @@ Pair.prototype.profileName = function () {
 // real stack trace.
 /** @constructor */
 Pair_st.OOB = function () {
-    Error.call( this );
 };
 Pair_st.OOB.prototype = new Error();
+Pair_st.OOB.prototype.init = function () {
+    Error.call( this );
+    return this;
+};
 
 Pair.prototype.isSpecial = function () {
     return this.car() instanceof Symbol &&
@@ -2036,14 +2048,18 @@ Pair_st.specials_ = {
 
 
 /** @constructor */
-function Nil( rep ) {
-    this.init0();
-    this.rep_ = rep;
+function Nil() {
 }
 var Nil_st = {};
 
 Nil.prototype = new Pair();
 Nil.prototype.className = "Nil";
+
+Nil.prototype.initNil = function ( rep ) {
+    this.init0();
+    this.rep_ = rep;
+    return this;
+};
 
 Nil.prototype.addInstructions = function ( i ) {
     i.push( new Literal( Nil_st.NIL ) );
@@ -2151,8 +2167,8 @@ Nil.prototype.longerThan = function ( i ) {
 };
 
 Nil_st.TYPE = Symbol_st.TYPE;
-Nil_st.NIL = new Nil( "nil" );
-Nil_st.EMPTY_LIST = new Nil( "()" );
+Nil_st.NIL = new Nil().initNil( "nil" );
+Nil_st.EMPTY_LIST = new Nil().initNil( "()" );
 
 
 // PORT NOTE: This was private in Java.
@@ -2163,7 +2179,7 @@ function Truth() {
 }
 var Truth_st = {};
 
-Truth.prototype = new Symbol( "t", "t" );
+Truth.prototype = new Symbol().init( "t", "t" );
 Truth.prototype.className = "Truth";
 
 Truth.prototype.literal = function () {
@@ -2913,7 +2929,7 @@ Complex_st.parse = function ( number ) {
                 matches[ 2 ] + (matches[ 3 ] || "1") ).
                 value() );
     else
-        throw new ParseException();
+        throw new ParseException().init();
 };
 
 Complex.prototype.isInteger = function () {
