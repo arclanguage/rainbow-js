@@ -463,7 +463,8 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
             },
             makeDirectoriesAsync: function ( path, then, opt_sync ) {
                 // TODO: Implement this.
-                then( new ArcError( "No make-directory*." ) );
+                then(
+                    new ArcError().initAE( "No make-directory*." ) );
                 return true;
             },
             mvFileAsync: function (

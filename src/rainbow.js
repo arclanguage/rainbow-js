@@ -52,7 +52,7 @@
 //};
 //var System_fs = {
 //    dirAsync: function ( path, then, opt_sync ) {
-//        then( new ArcError( "No filesystem." ) );
+//        then( new ArcError().initAE( "No filesystem." ) );
 //        // This would have done then( null, arcListOfDirs ) on
 //        // success.
 //        return true;
@@ -66,19 +66,19 @@
 //        return true;
 //    },
 //    inFileAsync: function ( path, then, opt_sync ) {
-//        then( new ArcError( "No filesystem." ) );
+//        then( new ArcError().initAE( "No filesystem." ) );
 //        // This would have done then( null, inputStream ) on
 //        // success, where inputStream is like stdin.
 //        return true;
 //    },
 //    outFileAsync: function ( path, append, then, opt_sync ) {
-//        then( new ArcError( "No filesystem." ) );
+//        then( new ArcError().initAE( "No filesystem." ) );
 //        // This would have done then( null, outputStream ) on
 //        // success, where outputStream is like stdout.
 //        return true;
 //    },
 //    makeDirectoryAsync: function ( path, then, opt_sync ) {
-//        then( new ArcError( "No filesystem." ) );
+//        then( new ArcError().initAE( "No filesystem." ) );
 //        // This would have done then( null, true ) on success,
 //        // then( null, false ) on noncritical failure(?), had an
 //        // error if the file already existed and wasn't a directory,
@@ -88,7 +88,7 @@
 //        return true;
 //    },
 //    makeDirectoriesAsync: function ( path, then, opt_sync ) {
-//        then( new ArcError( "No filesystem." ) );
+//        then( new ArcError().initAE( "No filesystem." ) );
 //        // This would have done then( null, true ) on success,
 //        // then( null, false ) on noncritical failure(?), had an
 //        // error if the file already existed and wasn't a directory,
@@ -100,12 +100,12 @@
 //        return true;
 //    },
 //    mvFileAsync: function ( fromPath, toPath, then, opt_sync ) {
-//        then( new ArcError( "No filesystem." ) );
+//        then( new ArcError().initAE( "No filesystem." ) );
 //        // This would have done then( null ) on success.
 //        return true;
 //    },
 //    rmFileAsync: function ( path, then, opt_sync ) {
-//        then( new ArcError( "No filesystem." ) );
+//        then( new ArcError().initAE( "No filesystem." ) );
 //        // This would have done then( null ) on success.
 //        return true;
 //    }
@@ -488,20 +488,24 @@ StringMap.prototype.has = function ( k ) {
 // from ArcError.java
 // ===================================================================
 
-// PORT NOTE: We've found and removed all uses of
-// new ArcError( Exception );
 /** @constructor */
-function ArcError( message, opt_e ) {
-    Error.call( this, message );
-    this.message = message;
-    this.stack = new Error().stack;
-    this.e_ = opt_e;
-    this.arcStack_ = [];
+function ArcError() {
 }
 
 // PORT TODO: Figure out a way to do this inheritance and also get a
 // real stack trace.
 ArcError.prototype = new Error();
+
+// PORT NOTE: We've found and removed all uses of
+// new ArcError( Exception );
+ArcError.prototype.initAE = function ( message, opt_e ) {
+    Error.call( this, message );
+    this.message = message;
+    this.stack = new Error().stack;
+    this.e_ = opt_e;
+    this.arcStack_ = [];
+    return this;
+};
 
 ArcError.prototype.getMessage = function () {
     return this.message;
@@ -527,7 +531,7 @@ function LexicalClosure( length, parent ) {
 
 LexicalClosure.prototype.add = function ( value ) {
     if ( this.bindings_.length <= this.count_ )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't add " + value + " to bindings: already full " +
             "(" + this.count_ + ") " +
             Pair_st.buildFrom1( this.bindings_ ) );
@@ -615,7 +619,7 @@ ArcObject.prototype.literal = function () {
 };
 
 ArcObject.prototype.addInstructions = function ( i ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "addInstructions not defined on " + this + ", a " +
         this.className );
 };
@@ -629,7 +633,7 @@ ArcObject.prototype.invoke = function ( vm, args ) {
         throw new TypeError();
     var fn = typeDispatcherTable.value( this.type() );
     if ( fn instanceof Nil )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "No handler for " + this.type() + " in call* table: " +
             "called " + this + " with args " + args );
     fn.invoke( vm, new Pair().init2( this, args ) );
@@ -655,17 +659,17 @@ ArcObject.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
 };
 
 ArcObject.prototype.len = function () {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "len: expects one string, list or hash argument, got " +
         this.type() );
 };
 
 ArcObject.prototype.scar = function () {
-    throw new ArcError( "Can't set car of " + this.type() );
+    throw new ArcError().initAE( "Can't set car of " + this.type() );
 };
 
 ArcObject.prototype.sref = function ( value, index ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "Can't sref " + this + "( a " + this.type() + "), other " +
         "args were " + value + ", " + index );
 };
@@ -679,11 +683,11 @@ ArcObject.prototype.xcar = function () {
 };
 
 ArcObject.prototype.car = function () {
-    throw new ArcError( "Can't take car of " + this );
+    throw new ArcError().initAE( "Can't take car of " + this );
 };
 
 ArcObject.prototype.cdr = function () {
-    throw new ArcError( "Can't take cdr of " + this );
+    throw new ArcError().initAE( "Can't take cdr of " + this );
 };
 
 ArcObject.prototype.isCar = function ( s ) {
@@ -760,19 +764,19 @@ ArcObject.prototype.invokeAndWait = function ( vm, args ) {
 //    try {
 //        return vm.thread();
 //    } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-//        throw new ArcError(
+//        throw new ArcError().initAE(
 //           "error invoking " + this + " with args " + orig + ": " + e,
 //           e );
 //    }
 //};
 
 ArcObject.prototype.hasLen = function ( i ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "has length: not a proper list: ends with " + this );
 };
 
 ArcObject.prototype.longerThan = function ( i ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "longer than: not a proper list: ends with " + this );
 };
 
@@ -807,17 +811,17 @@ ArcObject.prototype.profileName = function () {
 };
 
 ArcObject.prototype.add = function ( other ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "add not implemented for " + this.type() + " " + this );
 };
 
 ArcObject.prototype.sqrt = function () {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "sqrt not implemented for " + this.type() + " " + this );
 };
 
 ArcObject.prototype.multiply = function ( argObject ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "multiply not implemented for " + this.type() + " " + this );
 };
 
@@ -1460,7 +1464,7 @@ Symbol.prototype.addInstructions = function ( i ) {
 Symbol_st.mkSym = function ( name ) {
     var result = Symbol_st.make( name );
     if ( !(result instanceof Symbol) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "can't make symbol from \"" + name + "\"" );
     else
         return result;
@@ -1543,7 +1547,7 @@ Symbol.prototype.setValue = function ( value ) {
 
 Symbol.prototype.value = function () {
     if ( this.value_ === null )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Symbol " + this.name_ + " is not bound" );
     return this.value_;
 };
@@ -1559,7 +1563,7 @@ Symbol_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "Symbol, got " + argument );
     }
@@ -1601,10 +1605,10 @@ Pair.prototype.init0 = function () {
 
 Pair.prototype.init2 = function ( car, cdr ) {
     if ( car === null )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't create Pair with null car: use NIL instead" );
     if ( cdr === null )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't create Pair with null cdr: use NIL instead" );
     this.car_ = car;
     this.cdr_ = cdr;
@@ -1727,7 +1731,8 @@ Pair_st.internalParse_ = function ( items ) {
 };
 
 Pair_st.illegalDot_ = function ( items ) {
-    throw new ArcError( "Error: illegal use of \".\" in " + items );
+    throw new ArcError().initAE(
+        "Error: illegal use of \".\" in " + items );
 };
 
 Pair_st.buildFrom_ = function ( items, last, n ) {
@@ -1785,7 +1790,7 @@ Pair.prototype.size = function () {
         var rest = this.cdr_;
         while ( !(rest instanceof Nil) ) {
             if ( rest.isNotPair() )
-                throw new ArcError(
+                throw new ArcError().initAE(
                     "cannot take size: not a proper list: " + this );
             result++;
             rest = rest.cdr();
@@ -1795,7 +1800,7 @@ Pair.prototype.size = function () {
 };
 
 Pair.prototype.compareTo = function ( right ) {
-    throw new ArcError( "Pair.compareTo:unimplemented" );
+    throw new ArcError().initAE( "Pair.compareTo:unimplemented" );
 };
 
 Pair.prototype.copyTo = function ( c ) {
@@ -1803,7 +1808,7 @@ Pair.prototype.copyTo = function ( c ) {
     if ( this.cdr() instanceof Nil )
         return c;
     else if ( !(this.cdr() instanceof Pair) )
-        throw new ArcError( "Not a list: " + this );
+        throw new ArcError().initAE( "Not a list: " + this );
     this.cdr().copyTo( c );
     return c;
 };
@@ -1847,7 +1852,7 @@ Pair.prototype.nth = function ( index ) {
             throw new TypeError();
         return result;
     } catch ( oob ) { if ( !(oob instanceof Pair_st.OOB) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Error: index " + index + " too large for list " + this );
     }
 };
@@ -1946,7 +1951,7 @@ Pair_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a cons, " +
             "got " + argument );
     }
@@ -1978,7 +1983,7 @@ Pair.prototype.add = function ( other ) {
         other.copyTo( list );
         return Pair_st.buildFrom1( list );
     } else {
-        throw new ArcError(
+        throw new ArcError().initAE(
             "+ : expects cons, got " + other.type() + " " + other );
     }
 };
@@ -2043,7 +2048,7 @@ Nil.prototype.addInstructions = function ( i ) {
 };
 
 Nil.prototype.invoke = function ( vm, args ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "Function dispatch on inappropriate object: " + this + " " +
         "with args " + args );
 };
@@ -2172,7 +2177,7 @@ Truth.prototype.toString = function () {
 };
 
 Truth.prototype.compareTo = function ( right ) {
-    throw new ArcError( "Truth.compareTo:unimplemented" );
+    throw new ArcError().initAE( "Truth.compareTo:unimplemented" );
 };
 
 Truth.prototype.type = function () {
@@ -2200,7 +2205,7 @@ Truth.prototype.unwrap = function () {
 };
 
 Truth.prototype.setValue = function ( value ) {
-    throw new ArcError( "error: can't rebind t!" );
+    throw new ArcError().initAE( "error: can't rebind t!" );
 };
 
 Truth.prototype.value = function ( other ) {
@@ -2291,7 +2296,7 @@ ArcObject_st.ConvertError.prototype.operate = function ( vm ) {
     vm.clearError();
     vm.setAp( this.ap_ );
     
-    throw new ArcError(
+    throw new ArcError().initAE(
         "error invoking " + this.owner() + " with args " +
         this.orig_ + ": " + error, error );
 };
@@ -2367,7 +2372,7 @@ ArcCharacter_st.makeFromString = function ( representation ) {
         var intValue = ArcCharacter_st.parseInt_( representation );
         return make( intValue );
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't make character from " + representation );
     }
 };
@@ -2430,7 +2435,7 @@ ArcCharacter_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "character, got " + argument );
     }
@@ -2533,11 +2538,11 @@ ArcString.prototype.invoke = function ( vm, args ) {
     var string = this;
     var index = Rational_st.cast( args.car(), this );
     if ( !index.isInteger() )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "string-ref: expects exact integer: got " + index );
     var i = ~~index.toInt();
     if ( !(0 <= i || i < string.value.length()) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "string-ref: index " + i + " out of range " +
             "[0, " + (string.value_.length - 1) + "] for string " +
             this.toString() );
@@ -2677,7 +2682,7 @@ ArcString_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "string, got " + argument );
     }
@@ -2731,7 +2736,7 @@ ArcException_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected an " +
             "exception, got " + argument );
     }
@@ -2780,7 +2785,7 @@ ArcNumber.prototype.negate = void 0;
 ArcNumber.prototype.round = void 0;
 
 ArcNumber.prototype.roundJava = function () {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "round[closest] not implemented for " +
         this.className + "(" + this + ")" );
 };
@@ -2813,14 +2818,14 @@ ArcNumber_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "number, got " + argument );
     }
 };
 
 ArcNumber.prototype.mod = function ( other ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "mod: not implemented for " +
         this.className + "(" + this + ")" );
 };
@@ -2863,7 +2868,7 @@ ArcThreadLocal_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "thread-local, got " + argument );
     }
@@ -2914,11 +2919,11 @@ Complex.prototype.isInteger = function () {
 };
 
 Complex.prototype.toDouble = function () {
-    throw new ArcError( "Cannot convert complex to double" );
+    throw new ArcError().initAE( "Cannot convert complex to double" );
 };
 
 Complex.prototype.toInt = function () {
-    throw new ArcError( "Cannot convert complex to int" );
+    throw new ArcError().initAE( "Cannot convert complex to int" );
 };
 
 Complex.prototype.negate = function () {
@@ -2938,14 +2943,15 @@ Complex_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "complex number, got " + argument );
     }
 };
 
 Complex.prototype.round = function () {
-    return new ArcError( "Can't convert " + this + " to integer" );
+    return new ArcError().initAE(
+        "Can't convert " + this + " to integer" );
 };
 
 Complex.prototype.imaginaryPart = function () {
@@ -3010,7 +3016,7 @@ Complex.prototype.add = function ( other ) {
     else if ( other instanceof Real )
         return this.plusReal( other );
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "+: expects a number, got " + other.type() + " " +
             other );
 };
@@ -3076,7 +3082,7 @@ Complex.prototype.exp = function () {
 };
 
 Complex.prototype.compareTo = function ( right ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "Compare: complex numbers are unordered and cannot be " +
         "compared" );
 };
@@ -3087,7 +3093,8 @@ Complex_st.make = function ( o ) {
     else if ( o instanceof ArcNumber )
         return new Complex( o.toDouble(), 0 );
     else
-        throw new ArcError( "Can't make complex number from " + o );
+        throw new ArcError().initAE(
+            "Can't make complex number from " + o );
 };
 
 Complex.prototype.isSame = function ( other ) {
@@ -3117,7 +3124,7 @@ Complex_st.ZERO = new Complex( 0, 0 );
 /** @constructor */
 function Rational( numerator, denominator ) {
     if ( denominator === 0 && numerator !== 0 )
-        throw new ArcError( "/: division by zero" );
+        throw new ArcError().initAE( "/: division by zero" );
     var gcd = this.gcd_( numerator, denominator );
     this.numerator_ = numerator / gcd;
     this.denominator_ = denominator / gcd;
@@ -3179,7 +3186,7 @@ Rational.prototype.gcd_ = function ( a, b ) {
 
 Rational.prototype.mod = function ( other ) {
     if ( !this.isInteger() || !other.isInteger() )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "modulo: expects integer, got " +
             "(" + this + " " + other + ")" );
     var divisor = other.toInt();
@@ -3247,7 +3254,7 @@ Rational_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "Rational, got " + argument );
     }
@@ -3303,7 +3310,7 @@ Rational.prototype.multiply = function ( other ) {
     else if ( other instanceof Rational )
         return this.times( other );
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "*: expects a number, got " + other.type() + " " +
             other );
 };
@@ -3316,7 +3323,7 @@ Rational.prototype.add = function ( other ) {
     else if ( other instanceof Rational )
         return this.plus( other );
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "+: expects a number, got " + other.type() + " " +
             other );
 };
@@ -3458,7 +3465,7 @@ Real.prototype.multiply = function ( other ) {
     else if ( other instanceof ArcNumber )
         return this.multiplyNumber( other );
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "*: expects a number, got " + other.type() + " " +
             other );
 };
@@ -3471,7 +3478,7 @@ Real.prototype.add = function ( other ) {
     else if ( other instanceof Real )
         return this.plus( other );
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "+: expects a number, got " + other.type() + " " +
             other );
 };
@@ -3566,7 +3573,7 @@ Tagged.prototype.stringify_ = function () {
             if ( e ) throw e;
             ourResult = result;
         }, !!"sync" ) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "An asynchronous operation was attempted during a " +
             "toString()." );
     return "" + JsObject_st.unwrap( ourResult );
@@ -3600,7 +3607,7 @@ Tagged_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "Tagged, got " + argument );
     }
@@ -3669,7 +3676,8 @@ JsObject_st.getClassInstance = function ( className ) {
     for ( var i = 0, len = className.length; i < len; i++ ) {
         var part = className[ i ];
         if ( !(part in result) )
-            throw new ArcError( "Can't find class " + className );
+            throw new ArcError().initAE(
+                "Can't find class " + className );
         result = result[ className[ i ] ];
     }
     return new JsObject( result );
@@ -3701,7 +3709,7 @@ JsObject_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "java-object, got " + argument );
     }
@@ -3714,7 +3722,7 @@ JsObject_st.invokeMethod_ = function ( target, methodName, args ) {
     var method = Object( target )[ methodName ];
     if ( Object.prototype.toString.call( method ) !==
         "[object Function]" )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Field " + methodName + " is not a method on " + target );
     return method.apply( target, JsObject_st.unwrapList1_( args ) );
 };
@@ -3784,7 +3792,7 @@ JsObject.prototype.close = function () {
     // PORT TODO: The Java version takes this opportunity to close raw
     // InputStream and OutputStream objects. Handle any analogous
     // JavaScript objects here.
-    throw new ArcError( "close: unexpected object: " + this );
+    throw new ArcError().initAE( "close: unexpected object: " + this );
 };
 
 // PORT TODO: See if this should be "js-object" instead.
@@ -3946,7 +3954,7 @@ Hash_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a hash, " +
             "got " + argument + ", a " + argument.type() );
     }
@@ -4052,7 +4060,7 @@ VM.prototype.threadAsync = function ( then, opt_sync ) {
                 for (
                     var i = 0, len = stackTrace.length; i < len; i++ )
                     msg += "\n" + stackTrace[ i ].profileName();
-            then( new ArcError(
+            then( new ArcError().initAE(
                 "Unhandled exception on " +
                 "thread#" + self.threadId + ": " +
                 ae.getOriginal().message + msg, ae.getOriginal() ) );
@@ -7149,7 +7157,7 @@ BoundSymbol.prototype.inline5 = function (
         return arg;
     } else if ( unnest ) {
         if ( this.nesting === 0 )
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "can't unnest " + this + ", looking for " + p + " " +
                 "to inline with " + arg );
         return this.unnest();
@@ -7175,7 +7183,7 @@ BoundSymbol.prototype.replaceBoundSymbols = function (
     else if ( index === this.index )
         return new StackSymbol( this.name, index );
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "error: parameter index mismatch: expected " +
             index + ", got " + this.index );
 };
@@ -7206,7 +7214,8 @@ SingleAssignment.prototype.take = function ( o ) {
         if ( o instanceof Symbol || o instanceof BoundSymbol )
             this.name = o;
         else
-            throw new ArcError( "assign: can't assign to " + o );
+            throw new ArcError().initAE(
+                "assign: can't assign to " + o );
     } else if ( this.expression === null ) {
         this.expression = o;
     } else {
@@ -7234,7 +7243,7 @@ SingleAssignment.prototype.addMyInstructions = function ( i, last ) {
         Assign_Free_st.addInstructions(
             i, this.name, this.expression, last );
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "what kind of symbol is " + this.name + "??" );
 };
 
@@ -7259,7 +7268,7 @@ SingleAssignment.prototype.inline5 = function (
     var sa = new SingleAssignment( null );
     if ( this.name instanceof BoundSymbol
         && p.isSameBoundSymbol( this.name ) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't inline " + p + " -> " + arg + "; assignment" );
     sa.name = this.name;
     sa.expression = this.expression.inline5(
@@ -7273,7 +7282,7 @@ SingleAssignment.prototype.inline3 = function ( p, arg, paramIndex ) {
     var sa = new SingleAssignment( null );
     if ( this.name instanceof StackSymbol
         && p.isSameStackSymbol( this.name ) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't inline " + p + " -> " + arg + "; assignment" );
     sa.name = this.name;
     sa.expression = this.expression.inline3( p, arg, paramIndex );
@@ -7351,11 +7360,13 @@ LastAssignment.prototype.take = function ( o ) {
         if ( o instanceof Symbol || o instanceof BoundSymbol )
             this.name = o;
         else
-            throw new ArcError( "assign: can't assign to " + o );
+            throw new ArcError().initAE(
+                "assign: can't assign to " + o );
     } else if ( this.expression === null ) {
         this.expression = o;
     } else {
-        throw new ArcError( "assign: error: unexpected " + o );
+        throw new ArcError().initAE(
+            "assign: error: unexpected " + o );
     }
 };
 
@@ -7379,7 +7390,7 @@ LastAssignment.prototype.inline5 = function (
     var sa = new LastAssignment();
     if ( this.name instanceof BoundSymbol
         && p.isSameBoundSymbol( this.name ) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't inline " + p + " -> " + arg + "; assignment" );
     sa.name = this.name.inline5(
         p, arg, unnest, nesting, paramIndex );
@@ -7392,7 +7403,7 @@ LastAssignment.prototype.inline3 = function ( p, arg, paramIndex ) {
     var sa = new LastAssignment();
     if ( this.name instanceof StackSymbol
         && p.isSameStackSymbol( this.name ) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't inline " + p + " -> " + arg + "; assignment" );
     sa.name = this.name.inline3( p, arg, paramIndex );
     sa.expression = this.expression.inline3( p, arg, paramIndex );
@@ -7452,12 +7463,12 @@ Assignment.prototype.addInstructions = function ( i ) {
 
 Assignment.prototype.prepare = function ( size ) {
     if ( size % 2 !== 0 )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "assign: requires even number of arguments" );
     
     size = size / 2 - 1;
     if ( size < 0 )
-        throw new ArcError( "assign: nothing to assign" );
+        throw new ArcError().initAE( "assign: nothing to assign" );
     
     this.assignment = new LastAssignment();
     while ( 0 < size ) {
@@ -7541,7 +7552,7 @@ Else.prototype.type = function () {
 };
 
 Else.prototype.add = function ( c ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "Internal error: if clause: unexpected extra condition: " +
         c );
 };
@@ -7550,7 +7561,7 @@ Else.prototype.take = function ( expression ) {
     if ( this.ifExpression === null )
         this.ifExpression = expression;
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Internal error: if clause: unexpected: " + expression );
 };
 
@@ -7824,7 +7835,7 @@ IfThen.prototype.addInstructions = function ( i ) {
                     this.next );
         }
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Couldn't instantiate " + classname + ": " + e, e );
     }
 };
@@ -7839,7 +7850,7 @@ IfThen_st.loadHandler = function ( classname ) {
     }
     var m = C.addInstructions;
     if ( m === void 0 )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "couldn't find handler method " +
             "'addInstructions(List,ArcObject,ArcObject,ArcObject) " +
             "on " + classname );
@@ -8093,7 +8104,7 @@ Invocation.prototype.reduce = function () {
                 try {
                     var newfn = fn.curry( param, arg, true );
                 } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-                    throw new ArcError(
+                    throw new ArcError().initAE(
                         "couldn't curry " + param + "->" + arg + " " +
                         "for " + fn + " in expression " +
                         this + ": " + e, e );
@@ -8127,7 +8138,7 @@ Invocation.prototype.addOptimisedHandler_ = function ( i ) {
             this.addOptimisedInstructions_( i, new C( this.parts ) );
             return true;
         } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "couldn't create optimiser " + cname, e );
         }
     } else {
@@ -8272,7 +8283,7 @@ Invocation.prototype.inline5 = function (
             inlined.push( pt.car().inline5(
                 p, arg, unnest, nesting, paramIndex ) );
         } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "couldn't inline " + p + "->" + arg + "(unnest:" +
                 unnest + ";nesting:" + nesting + ") in " +
                 this + " : " + e, e );
@@ -8292,7 +8303,7 @@ Invocation.prototype.inline3 = function ( p, arg, paramIndex ) {
         try {
             inlined.push( pt.car().inline3( p, arg, paramIndex ) );
         } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "couldn't inline " + p + "->" + arg + ") in " +
                 this + " : " + e, e );
         }
@@ -9441,7 +9452,8 @@ AssignmentBuilder_st.BuildAssignment1.prototype.operate = function (
     try {
         this.body_.mustBePairOrNil();
     } catch ( e ) { if ( !(e instanceof Pair_st.NotPair) ) throw e;
-        throw new ArcError( "assign: unexpected: " + this.body_ );
+        throw new ArcError().initAE(
+            "assign: unexpected: " + this.body_ );
     }
     
     vm.pushFrame( new AssignmentBuilder_st.BuildAssignment2(
@@ -9486,7 +9498,8 @@ AssignmentBuilder_st.BuildAssignment2.prototype.operate = function (
 //            body.mustBePairOrNil();
 //        } catch ( e ) {
 //            if ( !(e instanceof Pair_st.NotPair) ) throw e;
-//            throw new ArcError( "assign: unexpected: " + body );
+//            throw new ArcError().initAE(
+//                "assign: unexpected: " + body );
 //        }
 //        assignment.take( Compiler_st.compile(
 //            vm, body.car(), lexicalBindings ).reduce() );
@@ -9905,7 +9918,7 @@ FunctionBodyBuilder_st.Finish.prototype.operate = function ( vm ) {
         vm.clearError();
         vm.setAp( this.ap_ );
         
-        throw new ArcError(
+        throw new ArcError().initAE(
             "building function fn " + this.parameterList_ + " " +
             this.body_ + ": " + error, error );
     }
@@ -9945,7 +9958,7 @@ FunctionBodyBuilder_st.Finish.prototype.operate = function ( vm ) {
 //        var expandedBody =
 //            PairExpander_st.expand( vm, body, lexicalBindings );
 //    } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-//        throw new ArcError(
+//        throw new ArcError().initAE(
 //            "building function fn " + parameterList + " " +
 //            body + ": " + e, e );
 //    }
@@ -9975,7 +9988,7 @@ FunctionBodyBuilder_st.buildFunctionBody = function (
             throw new TypeError();
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Couldn't instantiate " + cname + ": " + e, e );
     }
 };
@@ -9995,7 +10008,7 @@ FunctionBodyBuilder_st.buildStackFunctionBody = function (
     // ClassNotFoundException and NoSuchMethodException.
     var Cons = classes[ cname ];
     if ( Cons === void 0 )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "no stack-based function implementation for " +
             parameterList + "; couldn't find " + cname );
     
@@ -10008,7 +10021,7 @@ FunctionBodyBuilder_st.buildStackFunctionBody = function (
             throw new TypeError();
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Couldn't instantiate " + cname + ": " + e, e );
     }
 };
@@ -10035,7 +10048,7 @@ FunctionBodyBuilder_st.convertToStackParams = function ( ifn ) {
             throw new TypeError();
         return result;
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Couldn't instantiate " + cname + ": " + e, e );
     }
 };
@@ -10425,7 +10438,7 @@ FunctionParameterListBuilder_st.curryStack = function (
     try {
         return Pair_st.buildFrom2( list, last );
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "couldn't curry params " + params + ", got list " +
             list + " and last " + last );
     }
@@ -10453,7 +10466,7 @@ FunctionParameterListBuilder_st.curryBound = function (
     try {
         return Pair_st.buildFrom2( list, last );
     } catch ( e ) { if ( !(e instanceof Error) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "couldn't curry params " + params + ", got list " +
             list + " and last " + last );
     }
@@ -10572,7 +10585,8 @@ IfBuilder_st.BuildIf1.prototype.operate = function ( vm ) {
     try {
         this.body_.mustBePairOrNil();
     } catch ( e ) { if ( !(e instanceof Pair_st.NotPair) ) throw e;
-        throw new ArcError( "if: unexpected: " + this.body_ );
+        throw new ArcError().initAE(
+            "if: unexpected: " + this.body_ );
     }
     
     vm.pushFrame( new IfBuilder_st.BuildIf2(
@@ -10632,7 +10646,7 @@ IfBuilder_st.BuildIf2.prototype.operate = function ( vm ) {
 //        } catch ( notPair ) {
 //            if ( !(notPair instanceof Pair_st.NotPair) )
 //                throw notPair;
-//            throw new ArcError( "if: unexpected: " + body );
+//            throw new ArcError().initAE( "if: unexpected: " + body );
 //        }
 //        clause.take( Compiler_st.compile(
 //            vm, body.car(), lexicalBindings ).reduce() );
@@ -10689,7 +10703,7 @@ InvocationBuilder_st.BuildInvocation.prototype.operate = function (
         this.body_.mustBePairOrNil();
     } catch ( notPair ) {
         if ( !(notPair instanceof Pair_st.NotPair) ) throw notPair;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "can't compile " + this.original_ + "; not a proper " +
             "list" );
     }
@@ -10728,7 +10742,7 @@ InvocationBuilder_st.ReducePush.prototype.operate = function ( vm ) {
 //        } catch ( notPair ) {
 //            if ( !(notPair instanceof Pair_st.NotPair) )
 //                throw notPair;
-//            throw new ArcError(
+//            throw new ArcError().initAE(
 //                "can't compile " + original + "; not a proper list" );
 //        }
 //        list.push( Compiler_st.compile(
@@ -11239,7 +11253,7 @@ Builtin.prototype.initBuiltin = function ( name ) {
 
 // PORT TODO: Rename all uses of .invoke( Pair ).
 Builtin.prototype.invokePair = function ( args ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "Builtin:invoke(args):provide implementation! " +
         this.name() + " args " + args );
 };
@@ -11263,7 +11277,7 @@ Builtin_st.checkMaxArgCount = function (
         System_out_println(
             functionClass + " got args " + args + " was expecting " +
             "expecting at most " + maxArgs );
-        throw new ArcError(
+        throw new ArcError().initAE(
             functionClass.toLowerCase() + " expects at most " +
             maxArgs + " arguments: given " + args );
     }
@@ -11271,7 +11285,7 @@ Builtin_st.checkMaxArgCount = function (
 
 Builtin_st.checkMinArgCount = function ( args, functionClass, min ) {
     if ( args.size() < min ) {
-        throw new ArcError(
+        throw new ArcError().initAE(
             functionClass.toLowerCase() + " expects at least " +
             min + " arguments: given " + args );
     }
@@ -11281,7 +11295,7 @@ Builtin_st.checkExactArgsCount = function (
     args, argCount, functionClass ) {
     
     if ( args.len() !== argCount ) {
-        throw new ArcError(
+        throw new ArcError().initAE(
             functionClass.toLowerCase() + " expects " +
             argCount + " arguments: given " + args );
     }
@@ -11376,10 +11390,10 @@ Evaluation_st.ssExpand = function ( expression ) {
 // spelling is correct, too.)
 /** @constructor */
 Evaluation_st.UnknownSytax = function ( symbol ) {
-    ArcError.call( this, "Unknown syntax " + symbol );
+    this.initAE( "Unknown syntax " + symbol );
 };
 
-Evaluation_st.UnknownSytax.prototype = new ArcError( void 0 );
+Evaluation_st.UnknownSytax.prototype = new ArcError();
 Evaluation_st.UnknownSytax.prototype.className =
     "Evaluation.UnknownSytax";
 
@@ -11704,7 +11718,7 @@ InterpretedFunction.prototype.invoke = function ( vm, args ) {
 
 // TODO: Rename all uses of .invoke( VM, LexicalClosure, Pair ).
 InterpretedFunction.prototype.invoke3 = function ( vm, lc, args ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "error: invoke(vm, lc, args) not implemented in " +
         this.className + "; " + this );
 };
@@ -11754,7 +11768,8 @@ InterpretedFunction.prototype.isIdFn = function () {
 };
 
 InterpretedFunction.prototype.compareTo = function ( right ) {
-    throw new ArcError( "Can't compare " + this + " to " + right );
+    throw new ArcError().initAE(
+        "Can't compare " + this + " to " + right );
 };
 
 InterpretedFunction.prototype.toString = function () {
@@ -11816,7 +11831,7 @@ InterpretedFunction.prototype.requireNotNil = function (
 InterpretedFunction.prototype.throwArgMismatchError = function (
     args ) {
     
-    throw new ArcError(
+    throw new ArcError().initAE(
         "args " + args + " doesn't match signature for " + this );
 };
 
@@ -11920,7 +11935,7 @@ InterpretedFunction.prototype.checkArgsLength = function (
     expected, args ) {
     
     if ( !args.hasLen( expected ) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "error: " + this + " expects " + expected + " args, " +
             "got " + args );
 };
@@ -12081,7 +12096,7 @@ ComplexArgs_st.BuildComplex.prototype.operate = function ( vm ) {
             nextArg.mustBePairOrNil();
         } catch ( e ) {
             if ( !(e instanceof Pair_st.NotPair) ) throw e;
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "Expected list argument for destructuring " +
                 "parameter " + nextParameter + ", got " +
                 nextArg );
@@ -12129,7 +12144,7 @@ ComplexArgs_st.AddToLc.prototype.operate = function ( vm ) {
 //                nextArg.mustBePairOrNil();
 //            } catch ( e ) {
 //                if ( !(e instanceof Pair_st.NotPair) ) throw e;
-//                throw new ArcError(
+//                throw new ArcError().initAE(
 //                    "Expected list argument for destructuring " +
 //                    "parameter " + nextParameter + ", got " +
 //                    nextArg );
@@ -12301,7 +12316,7 @@ Bind.prototype.invoke3 = function ( vm, lc, args ) {
         args.mustBeNil();
     } catch ( notNil ) {
         if ( !(notNil instanceof ArcObject_st.NotNil) ) throw notNil;
-        throw new ArcError( "expected 0 args, got " + args );
+        throw new ArcError().initAE( "expected 0 args, got " + args );
     }
     vm.pushInvocation2( lc, this.instructions_ );
 };
@@ -12334,7 +12349,7 @@ Bind_A_stForClasses.of = function (
 };
 
 Bind_A.prototype.invokeN0 = function ( vm, lc ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "function " + this + " expects 1 arg, got none" );
 };
 
@@ -12354,7 +12369,7 @@ Bind_A.prototype.invoke3 = function ( vm, lc, args ) {
         args.cdr().mustBeNil();
     } catch ( notNil ) {
         if ( !(notNil instanceof ArcObject_st.NotNil) ) throw notNil;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "expected 1 arg, got " + args + " calling " + this );
     }
     this.invokeN1( vm, lc, args.car() );
@@ -12388,11 +12403,12 @@ Bind_A_A_stForClasses.of = function (
 };
 
 Bind_A_A.prototype.invokeN0 = function ( vm, lc ) {
-    throw new ArcError( "error: expected 2 args, got none" );
+    throw new ArcError().initAE( "error: expected 2 args, got none" );
 };
 
 Bind_A_A.prototype.invokeN1 = function ( vm, lc, arg ) {
-    throw new ArcError( "error: expected 2 args, got 1: " + arg );
+    throw new ArcError().initAE(
+        "error: expected 2 args, got 1: " + arg );
 };
 
 Bind_A_A.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
@@ -12410,7 +12426,7 @@ Bind_A_A.prototype.invoke3 = function ( vm, lc, args ) {
         args.cdr().cdr().mustBeNil();
     } catch ( notNil ) {
         if ( !(notNil instanceof ArcObject_st.NotNil) ) throw notNil;
-        throw new ArcError( "expected 2 args, got " + args );
+        throw new ArcError().initAE( "expected 2 args, got " + args );
     }
     this.invokeN2( vm, lc, args.car(), args.cdr().car() );
 };
@@ -12489,11 +12505,12 @@ Bind_A_A_R_stForClasses.of = function (
 };
 
 Bind_A_A_R.prototype.invokeN0 = function ( vm, lc ) {
-    throw new ArcError( "error: expected at least 2 arg, got none" );
+    throw new ArcError().initAE(
+        "error: expected at least 2 arg, got none" );
 };
 
 Bind_A_A_R.prototype.invokeN1 = function ( vm, lc, arg ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "error: expected at least 2 args, got one: " + arg );
 };
 
@@ -12782,7 +12799,8 @@ Bind_A_R_stForClasses.of = function (
 };
 
 Bind_A_R.prototype.invokeN0 = function ( vm, lc ) {
-    throw new ArcError( "error: expected at least 1 arg, got none" );
+    throw new ArcError().initAE(
+        "error: expected at least 1 arg, got none" );
 };
 
 Bind_A_R.prototype.invoke3 = function ( vm, lc, args ) {
@@ -12854,7 +12872,7 @@ Bind_D_A_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
         args.cdr().mustBeNil();
     } catch ( notNil ) {
         if ( !(notNil instanceof ArcObject_st.NotNil) ) throw notNil;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "expected 1 arg, got extra " + args.cdr() + " calling " +
             this );
     }
@@ -12979,7 +12997,7 @@ Bind_Obound.prototype.invoke3 = function ( vm, lc, args ) {
         } catch ( notNil ) {
             if ( !(notNil instanceof ArcObject_st.NotNil) )
                 throw notNil;
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "expected 0 or 1 args, got extra " +
                 args.cdr() + " calling " + this );
         }
@@ -13061,7 +13079,7 @@ Bind_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
         } catch ( notNil ) {
             if ( !(notNil instanceof ArcObject_st.NotNil) )
                 throw notNil;
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "expected 0 or 1 args, got extra " +
                 args.cdr() + " calling " + this );
         }
@@ -13140,7 +13158,7 @@ Bind_Oother.prototype.invoke3 = function ( vm, lc, args ) {
         } catch ( notNil ) {
             if ( !(notNil instanceof ArcObject_st.NotNil) )
                 throw notNil;
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "expected 0 or 1 args, got extra " +
                 args.cdr() + " calling " + this );
         }
@@ -14005,7 +14023,7 @@ Uniq.prototype.invokePair = function ( args ) {
         args.mustBeNil();
     } catch ( notNil ) {
         if ( !(notNil instanceof ArcObject_st.NotNil) )
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "uniq: expects no args, got " + args );
     }
     // PORT NOTE: This was synchronized on Uniq.class in Java.
@@ -14049,7 +14067,7 @@ Err.prototype = new Builtin();
 Err.prototype.className = "Err";
 
 Err.prototype.invokePair = function ( args ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         ArcString_st.cast( args.car(), this ).value() );
 };
 
@@ -14130,11 +14148,12 @@ Apply.prototype = new Builtin();
 Apply.prototype.className = "Apply";
 
 Apply.prototype.invokef0 = function ( vm ) {
-    throw new ArcError( "apply: expects at least 2 args, got none" );
+    throw new ArcError().initAE(
+        "apply: expects at least 2 args, got none" );
 };
 
 Apply.prototype.invokef1 = function ( vm, arg ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "apply: expects at least 2 args, got " + arg );
 };
 
@@ -14247,7 +14266,7 @@ SSExpand_st.expand = function ( s ) {
     else if ( Evaluation_st.isListListQuoted( symbol ) )
         return SSExpand_st.expandExpression_( symbol );
     else
-        throw new ArcError( "Unknown syntax " + symbol );
+        throw new ArcError().initAE( "Unknown syntax " + symbol );
 };
 
 SSExpand_st.expandAndf_ = function ( symbol ) {
@@ -14315,7 +14334,7 @@ SSExpand_st.readValueString_ = function ( s ) {
     try {
         return ArcParser_st.readFirstObjectFromString( s );
     } catch ( e ) { if ( !(e instanceof ParseException) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Couldn't read value of symbol: " + s, e );
     }
 };
@@ -14341,7 +14360,7 @@ SSExpand_st.expandExpression_ = function ( symbol ) {
             tokens[ i ].replace( /#p/g, "%" ).replace( /#h/g, "#" ) );
         if ( SSExpand_st.isSpecialListSyntax_( sym ) ) {
             if ( wasSep )
-                throw new ArcError( "Bad syntax " + symbol );
+                throw new ArcError().initAE( "Bad syntax " + symbol );
             else
                 wasSep = true;
         } else {
@@ -14795,7 +14814,8 @@ Divide.prototype.className = "Divide";
 
 Divide.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil )
-        throw new ArcError( "Function `/` expected at least 1 arg" );
+        throw new ArcError().initAE(
+            "Function `/` expected at least 1 arg" );
     
     return Maths_st.precision( args ).divide( args );
 };
@@ -15236,7 +15256,7 @@ Quotient.prototype.invokePair = function ( args ) {
     var top = Rational_st.cast( args.car(), this );
     var bottom = Rational_st.cast( args.cdr().car(), this );
     if ( !(top.isInteger() && bottom.isInteger()) )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Type error: " + this + " : expected integer, got " +
             args );
     // PORT NOTE: In Java, this was just integer division.
@@ -15269,7 +15289,7 @@ Rand.prototype.invokePair = function ( args ) {
         if ( !(r instanceof ArcNumber) )
             throw new TypeError();
         if ( !r.isInteger() )
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "rand: requires one exact integer argument, got " +
                 args );
         // PORT TODO: Fix this and the Java version so that they're
@@ -15340,7 +15360,7 @@ Subtract.prototype = new Builtin();
 Subtract.prototype.className = "Subtract";
 
 Subtract.prototype.invokef1 = function ( vm ) {
-    throw new ArcError( "- : expected at least 1 arg" );
+    throw new ArcError().initAE( "- : expected at least 1 arg" );
 };
 
 Subtract.prototype.invokef1 = function ( vm, arg ) {
@@ -15359,7 +15379,8 @@ Subtract.prototype.invokef2 = function ( vm, arg1, arg2 ) {
 
 Subtract.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil )
-        throw new ArcError( "Function `-` expected at least 1 arg" );
+        throw new ArcError().initAE(
+            "Function `-` expected at least 1 arg" );
     
     // PORT NOTE: This local variable didn't exist in Java.
     var car = args.car();
@@ -15443,7 +15464,7 @@ Bound.prototype = new Builtin();
 Bound.prototype.className = "Bound";
 
 Bound.prototype.invokef0 = function ( vm ) {
-    throw new ArcError( "bound: requires 1 arg" );
+    throw new ArcError().initAE( "bound: requires 1 arg" );
 };
 
 Bound.prototype.invokef1 = function ( vm, arg ) {
@@ -15759,7 +15780,7 @@ RainbowProfileReport.prototype.createInvocationReport_ = function (
             if ( c === 0 )
                 c = o1.name.localeCompare( o2.name );
             if ( c === 0 )
-                throw new ArcError(
+                throw new ArcError().initAE(
                     "can't compare " + o1.name + " with " + o2.name );
             return c;
         } );
@@ -16064,7 +16085,7 @@ CCC.prototype.className = "CCC";
 
 CCC.prototype.invokef1 = function ( vm, fn ) {
     if ( fn instanceof Nil )
-        throw new ArcError( "Can't ccc nil!" );
+        throw new ArcError().initAE( "Can't ccc nil!" );
     var e = new CCC_st.ContinuationWrapper( vm );
     
     
@@ -16364,9 +16385,9 @@ Coerce.prototype.invokef2 = function ( vm, arg, toType ) {
         coercer.invokef1( vm, arg );
     } catch ( e ) {
         if ( e instanceof Typing_st.CantCoerce )
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "Can't coerce " + arg + " to " + toType );
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't coerce " + arg + " ( a " + arg.type() + " ) to " +
             toType, e );
     }
@@ -16389,9 +16410,9 @@ Coerce.prototype.invokef3 = function ( vm, arg, toType, base ) {
         coercer.invokef2( vm, arg, base );
     } catch ( e ) {
         if ( e instanceof Typing_st.CantCoerce )
-            throw new ArcError(
+            throw new ArcError().initAE(
                 "Can't coerce " + arg + " to " + toType );
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Can't coerce " + arg + " ( a " + arg.type() + " ) to " +
             toType, e );
     }
@@ -16404,7 +16425,7 @@ Coerce.prototype.invoke = function ( vm, args ) {
         this.invokef3( vm,
             args.car(), args.cdr().car(), args.cdr().cdr().car() );
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "coerce expects 2 or 3 args, got " + args );
 };
 
@@ -16774,12 +16795,12 @@ Typing_st.Coercion.prototype.type = function () {
 };
 
 Typing_st.Coercion.prototype.coerce1 = function ( original ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "not implemented: " + name + ".coerce 1 arg" );
 };
 
 Typing_st.Coercion.prototype.coerce2 = function ( original, base ) {
-    throw new ArcError(
+    throw new ArcError().initAE(
         "not implemented: " + name + ".coerce 2 args" );
 };
 
@@ -16982,8 +17003,8 @@ Input.prototype.className = "Input";
 Input.prototype.readByteAsync = function ( then, opt_sync ) {
     return this.original_.readByteAsync( function ( e, theByte ) {
         if ( e )
-            return then(
-                new ArcError( "Cannot read byte from " + this, e ) );
+            return then( new ArcError().initAE(
+                "Cannot read byte from " + this, e ) );
         if ( theByte === null )
             return then( null, ArcObject_st.NIL );
         return then( null, Rational_st.make1( theByte ) );
@@ -16993,7 +17014,8 @@ Input.prototype.readByteAsync = function ( then, opt_sync ) {
 Input.prototype.readCharacterAsync = function ( then, opt_sync ) {
     return this.original_.readCharCodeAsync( function ( e, result ) {
         if ( e )
-            return then( new ArcError( "reading character: " + e ) );
+            return then(
+                new ArcError().initAE( "reading character: " + e ) );
         if ( result === null )
             return then( null, ArcObject_st.NIL );
         return then( null, ArcCharacter_st.makeFromCharCode( result ) );
@@ -17017,8 +17039,8 @@ Input.prototype.readObjectAsync = function ( eof, then, opt_sync ) {
         e, result ) {
         
         if ( e )
-            return then(
-                new ArcError( "Can't parse input: " + e, e ) );
+            return then( new ArcError().initAE(
+                "Can't parse input: " + e, e ) );
         if ( result === null )
             return then( null, eof );
         else
@@ -17050,7 +17072,7 @@ Input_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected " +
             "input-port, got " + argument );
     }
@@ -17091,7 +17113,7 @@ Output.prototype.unwrap = function () {
 // PORT NOTE: We've renamed all uses of Output.writeByte( Rational ).
 Output.prototype.writeRational = function ( rational ) {
     if ( !rational.isInteger() )
-        throw new ArcError(
+        throw new ArcError().initAE(
             "write byte: expected byte, got " + rational );
     this.writeByte( rational.toInt() );
 };
@@ -17116,7 +17138,7 @@ Output_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected " +
             "output-port, got " + argument );
     }
@@ -17249,7 +17271,7 @@ StringOutputPort_st.cast = function ( argument, caller ) {
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
-        throw new ArcError(
+        throw new ArcError().initAE(
             "Wrong argument type: " + caller + " expected a " +
             "StringOutputPort, got " + argument );
     }
@@ -17345,7 +17367,7 @@ IO_st.close = function ( port ) {
     else if ( port instanceof JsObject )
         port.close();
     else
-        throw new ArcError(
+        throw new ArcError().initAE(
             "close: expected Input or Output object; got " + port );
 };
 
@@ -18752,7 +18774,8 @@ NewThread.prototype = new Builtin();
 NewThread.prototype.className = "NewThread";
 
 NewThread.prototype.invokePair = function ( args ) {
-    throw new ArcError( "Rainbow.js doesn't support new-thread." );
+    throw new ArcError().initAE(
+        "Rainbow.js doesn't support new-thread." );
 };
 
 

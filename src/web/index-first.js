@@ -270,7 +270,7 @@ var System_err = rainbowStderr.o;
 
 var System_fs = {
     dirAsync: function ( path, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
+        then( new ArcError().initAE( "No filesystem." ) );
         return true;
     },
     dirExistsAsync: function ( path, then, opt_sync ) {
@@ -279,7 +279,7 @@ var System_fs = {
     },
     fileExistsAsync: function ( path, then, opt_sync ) {
         if ( opt_sync )
-            return then( new ArcError(
+            return then( new ArcError().initAE(
                 "Can't access the Web synchronously." ) ), true;
         var req = new XMLHttpRequest();
         
@@ -312,7 +312,7 @@ var System_fs = {
     },
     inFileAsync: function ( path, then, opt_sync ) {
         if ( opt_sync )
-            return then( new ArcError(
+            return then( new ArcError().initAE(
                 "Can't access the Web synchronously." ) ), true;
         var req = new XMLHttpRequest();
         
@@ -326,7 +326,7 @@ var System_fs = {
 //            req = new XDomainRequest();
 //            req.open( "GET", path );
 //        } else {
-//            then( new ArcError( "No AJAX." ) );
+//            then( new ArcError().initAE( "No AJAX." ) );
 //            return true;
 //        }
         
@@ -334,7 +334,7 @@ var System_fs = {
         // support addEventListener() or attachEvent() on
         // XMLHttpRequest.
         req.onerror = function () {
-            then( new ArcError(
+            then( new ArcError().initAE(
                 "Couldn't open page: " + path + " because of " +
                 "error: " + req.statusText ) );
         };
@@ -347,23 +347,23 @@ var System_fs = {
         return false;
     },
     outFileAsync: function ( path, append, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
+        then( new ArcError().initAE( "No filesystem." ) );
         return true;
     },
     makeDirectoryAsync: function ( path, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
+        then( new ArcError().initAE( "No filesystem." ) );
         return true;
     },
     makeDirectoriesAsync: function ( path, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
+        then( new ArcError().initAE( "No filesystem." ) );
         return true;
     },
     mvFileAsync: function ( fromPath, toPath, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
+        then( new ArcError().initAE( "No filesystem." ) );
         return true;
     },
     rmFileAsync: function ( path, then, opt_sync ) {
-        then( new ArcError( "No filesystem." ) );
+        then( new ArcError().initAE( "No filesystem." ) );
         return true;
     }
 };
