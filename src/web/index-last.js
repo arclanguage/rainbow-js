@@ -23,7 +23,7 @@
 // Replace the contents of this file with this to get a Closure
 // Compiler result that's only 98 KB:
 
-//Console_st.compileAndEvalAsync_( new VM(),
+//Console_st.compileAndEvalAsync_( new VM().init(),
 //    ArcParser_st.readFirstObjectFromString(
 //        "((fn a a) ((fn a a) 4 3 2) 1)" ),
 //    function ( e, r ) { alert( r ); }, !!"sync" );
@@ -56,7 +56,7 @@
 
 // Rainbow.js extensions (just the one for now, since it allows usage
 // of window.eval)
-Symbol_st.make( "window" ).setValue( new JsObject( window ) );
+Symbol_st.make( "window" ).setValue( new JsObject().init( window ) );
 
 
 function keyCode( event ) {

@@ -339,8 +339,8 @@ var System_fs = {
                 "error: " + req.statusText ) );
         };
         req.onload = function () {
-            then( null,
-                new StringInputPort( req.responseText ).unwrap() );
+            then( null, new StringInputPort().init(
+                req.responseText ).unwrap() );
         };
         
         req.send( null );
