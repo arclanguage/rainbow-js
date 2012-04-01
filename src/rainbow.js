@@ -4810,7 +4810,7 @@ Close_Instruction.prototype.init = function ( ifn ) {
 };
 
 Close_Instruction.prototype.operate = function ( vm ) {
-    vm.pushA( new Closure( this.ifn_, vm.lc() ) );
+    vm.pushA( new Closure().init( this.ifn_, vm.lc() ) );
 };
 
 Close_Instruction.prototype.toString = function () {
@@ -7315,13 +7315,17 @@ Invoke_N_st.Other.prototype.getInvokee = function ( vm ) {
 // Needed late: StackSym Symbol
 
 /** @constructor */
-function StackSymbol( name, index ) {
-    this.name = name;
-    this.index_ = index;
+function StackSymbol() {
 }
 
 StackSymbol.prototype = new ArcObject();
 StackSymbol.prototype.className = "StackSymbol";
+
+StackSymbol.prototype.init = function ( name, index ) {
+    this.name = name;
+    this.index_ = index;
+    return this;
+};
 
 StackSymbol.prototype.get = function ( vm ) {
     return vm.param( this.index_ );
@@ -7352,7 +7356,7 @@ StackSymbol.prototype.inline3 = function ( p, arg, paramIndex ) {
     if ( this.isSameStackSymbol( p ) )
         return arg;
     else if ( paramIndex < this.index_ )
-        return new StackSymbol( this.name, this.index - 1 );
+        return new StackSymbol().init( this.name, this.index - 1 );
     else
         return this;
 };
@@ -7453,7 +7457,7 @@ BoundSymbol.prototype.replaceBoundSymbols = function (
     if ( index === void 0 )
         return this.unnest();
     else if ( index === this.index )
-        return new StackSymbol( this.name, index );
+        return new StackSymbol().init( this.name, index );
     else
         throw new ArcError().initAE(
             "error: parameter index mismatch: expected " +
@@ -7472,14 +7476,18 @@ BoundSymbol_st.TYPE = Symbol_st.mkSym( "bound-symbol" );
 
 // PORT TODO: Remove all uses of the zero-arg SingleAssignment().
 /** @constructor */
-function SingleAssignment( next ) {
-    this.name = null;
-    this.expression = null;
-    this.next_ = next;
+function SingleAssignment() {
 }
 
 SingleAssignment.prototype = new ArcObject();
 SingleAssignment.prototype.className = "SingleAssignment";
+
+SingleAssignment.prototype.initSingleAssignment = function ( next ) {
+    this.name = null;
+    this.expression = null;
+    this.next_ = next;
+    return this;
+};
 
 SingleAssignment.prototype.take = function ( o ) {
     if ( this.name === null ) {
@@ -7537,7 +7545,7 @@ SingleAssignment.prototype.hasClosures = function () {
 SingleAssignment.prototype.inline5 = function (
     p, arg, unnest, nesting, paramIndex ) {
     
-    var sa = new SingleAssignment( null );
+    var sa = new SingleAssignment().initSingleAssignment( null );
     if ( this.name instanceof BoundSymbol
         && p.isSameBoundSymbol( this.name ) )
         throw new ArcError().initAE(
@@ -7551,7 +7559,7 @@ SingleAssignment.prototype.inline5 = function (
 };
 
 SingleAssignment.prototype.inline3 = function ( p, arg, paramIndex ) {
-    var sa = new SingleAssignment( null );
+    var sa = new SingleAssignment().initSingleAssignment( null );
     if ( this.name instanceof StackSymbol
         && p.isSameStackSymbol( this.name ) )
         throw new ArcError().initAE(
@@ -7563,7 +7571,7 @@ SingleAssignment.prototype.inline3 = function ( p, arg, paramIndex ) {
 };
 
 SingleAssignment.prototype.nest = function ( threshold ) {
-    var sa = new SingleAssignment( null );
+    var sa = new SingleAssignment().initSingleAssignment( null );
     sa.name = this.name.nest( threshold );
     sa.expression = this.expression.nest( threshold );
     sa.next_ = this.next_.nest( threshold );
@@ -7573,7 +7581,7 @@ SingleAssignment.prototype.nest = function ( threshold ) {
 SingleAssignment.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
-    var sa = new SingleAssignment( null );
+    var sa = new SingleAssignment().initSingleAssignment( null );
     sa.name = this.name.replaceBoundSymbols( lexicalBindings );
     sa.expression =
         this.expression.replaceBoundSymbols( lexicalBindings );
@@ -7621,11 +7629,14 @@ SingleAssignment.prototype.assignsTo = function ( name ) {
 
 /** @constructor */
 function LastAssignment() {
-    SingleAssignment.call( this, null );
 }
 
-LastAssignment.prototype = new SingleAssignment( null );
+LastAssignment.prototype = new SingleAssignment();
 LastAssignment.prototype.className = "LastAssignment";
+
+LastAssignment.prototype.init = function () {
+    return this.initSingleAssignment( null );
+};
 
 LastAssignment.prototype.take = function ( o ) {
     if ( this.name === null ) {
@@ -7659,7 +7670,7 @@ LastAssignment.prototype.hasClosures = function () {
 LastAssignment.prototype.inline5 = function (
     p, arg, unnest, nesting, paramIndex ) {
     
-    var sa = new LastAssignment();
+    var sa = new LastAssignment().init();
     if ( this.name instanceof BoundSymbol
         && p.isSameBoundSymbol( this.name ) )
         throw new ArcError().initAE(
@@ -7672,7 +7683,7 @@ LastAssignment.prototype.inline5 = function (
 };
 
 LastAssignment.prototype.inline3 = function ( p, arg, paramIndex ) {
-    var sa = new LastAssignment();
+    var sa = new LastAssignment().init();
     if ( this.name instanceof StackSymbol
         && p.isSameStackSymbol( this.name ) )
         throw new ArcError().initAE(
@@ -7683,7 +7694,7 @@ LastAssignment.prototype.inline3 = function ( p, arg, paramIndex ) {
 };
 
 LastAssignment.prototype.nest = function ( threshold ) {
-    var sa = new LastAssignment();
+    var sa = new LastAssignment().init();
     sa.name = this.name.nest( threshold );
     sa.expression = this.expression.nest( threshold );
     return sa;
@@ -7692,7 +7703,7 @@ LastAssignment.prototype.nest = function ( threshold ) {
 LastAssignment.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
-    var sa = new LastAssignment();
+    var sa = new LastAssignment().init();
     sa.name = this.name.replaceBoundSymbols( lexicalBindings );
     sa.expression =
         this.expression.replaceBoundSymbols( lexicalBindings );
@@ -7715,11 +7726,15 @@ LastAssignment.prototype.visit = function ( v ) {
 
 /** @constructor */
 function Assignment() {
-    this.assignment = null;
 }
 
 Assignment.prototype = new ArcObject();
 Assignment.prototype.className = "Assignment";
+
+Assignment.prototype.init = function () {
+    this.assignment = null;
+    return this;
+};
 
 Assignment.prototype.type = function () {
     return Symbol_st.mkSym( "assignment" );
@@ -7742,9 +7757,10 @@ Assignment.prototype.prepare = function ( size ) {
     if ( size < 0 )
         throw new ArcError().initAE( "assign: nothing to assign" );
     
-    this.assignment = new LastAssignment();
+    this.assignment = new LastAssignment().init();
     while ( 0 < size ) {
-        this.assignment = new SingleAssignment( this.assignment );
+        this.assignment = new SingleAssignment().initSingleAssignment(
+            this.assignment );
         size--;
     }
 };
@@ -7764,20 +7780,20 @@ Assignment.prototype.hasClosures = function () {
 Assignment.prototype.inline5 = function (
     p, arg, unnest, nesting, paramIndex ) {
     
-    var a = new Assignment();
+    var a = new Assignment().init();
     a.assignment = this.assignment.inline5(
         p, arg, unnest, nesting, paramIndex );
     return a;
 };
 
 Assignment.prototype.inline3 = function ( p, arg, paramIndex ) {
-    var a = new Assignment();
+    var a = new Assignment().init();
     a.assignment = this.assignment.inline3( p, arg, paramIndex );
     return a;
 };
 
 Assignment.prototype.nest = function ( threshold ) {
-    var a = new Assignment();
+    var a = new Assignment().init();
     a.assignment = this.assignment.nest( threshold );
     return a;
 };
@@ -7791,7 +7807,7 @@ Assignment.prototype.visit = function ( v ) {
 Assignment.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
-    var a = new Assignment();
+    var a = new Assignment().init();
     // PORT NOTE: This local variable didn't exist in Java.
     var newAssignment =
         this.assignment.replaceBoundSymbols( lexicalBindings );
@@ -8302,12 +8318,16 @@ IfThen_st.handlers = {};
 // Needed late: Literal Symbol
 
 /** @constructor */
-function Quotation( quoted ) {
-    this.quoted_ = quoted;
+function Quotation() {
 }
 
 Quotation.prototype = new ArcObject();
 Quotation.prototype.className = "Quotation";
+
+Quotation.prototype.init = function ( quoted ) {
+    this.quoted_ = quoted;
+    return this;
+};
 
 Quotation.prototype.addInstructions = function ( i ) {
     i.push( new Literal().init( this.quoted_ ) );
@@ -9688,7 +9708,7 @@ var AssignmentBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 AssignmentBuilder_st.build = function ( vm, body, lexicalBindings ) {
-    var assignment = new Assignment();
+    var assignment = new Assignment().init();
     assignment.prepare( body.len() );
     
     var i = new Literal().init( assignment );
@@ -9765,7 +9785,7 @@ AssignmentBuilder_st.BuildAssignment2.prototype.operate = function (
 //AssignmentBuilder_st.build = function (
 //    vm, body, lexicalBindings ) {
 //    
-//    var assignment = new Assignment();
+//    var assignment = new Assignment().init();
 //    assignment.prepare( body.len() );
 //    while ( !(body instanceof Nil) ) {
 //        try {
@@ -9887,7 +9907,8 @@ Compiler_st.compilePair = function (
     } else {
         var fun = expression.car();
         if ( Symbol_st.is( "quote", fun ) ) {
-            vm.pushA( new Quotation( expression.cdr().car() ) );
+            vm.pushA(
+                new Quotation().init( expression.cdr().car() ) );
         } else if ( fun === QuasiQuoteCompiler_st.QUASIQUOTE ) {
             vm.pushFrame( new Compiler_st.WrapQuasiQuotation() );
             QuasiQuoteCompiler_st.compile(
@@ -9988,7 +10009,7 @@ Compiler_st.WrapQuasiQuotation.prototype.operate = function ( vm ) {
 //    } else {
 //        var fun = expression.car();
 //        if ( Symbol_st.is( "quote", fun ) ) {
-//            return new Quotation( expression.cdr().car() );
+//            return new Quotation().init( expression.cdr().car() );
 //        } else if ( fun === QuasiQuoteCompiler_st.QUASIQUOTE ) {
 //            return new QuasiQuotation( QuasiQuoteCompiler_st.compile(
 //                vm, expression.cdr().car(), lexicalBindings, 1 ) );
@@ -11598,13 +11619,17 @@ Builtin_st.TYPE = Symbol_st.mkSym( "fn" );
 // Needed late: Builtin
 
 /** @constructor */
-function Closure( expression, lc ) {
-    this.expression_ = expression;
-    this.lc_ = lc;
+function Closure() {
 }
 
 Closure.prototype = new ArcObject();
 Closure.prototype.className = "Closure";
+
+Closure.prototype.init = function ( expression, lc ) {
+    this.expression_ = expression;
+    this.lc_ = lc;
+    return this;
+};
 
 Closure.prototype.invokef0 = function ( vm ) {
     this.expression_.invokeN0( vm, this.lc_ );
@@ -12497,7 +12522,7 @@ StackFunctionSupport.prototype.inlineableArg_ = function (
     param, arg ) {
     
     var paramIndex = this.lexicalBindings[ param.name() ];
-    var p = new StackSymbol( param, paramIndex );
+    var p = new StackSymbol().init( param, paramIndex );
     return (arg.literal()
         || arg instanceof Quotation
         || arg instanceof Symbol
@@ -12514,7 +12539,7 @@ StackFunctionSupport.prototype.curry = function (
     param, arg, requiresNesting ) {
     
     var paramIndex = this.lexicalBindings[ param.name() ];
-    var p = new StackSymbol( param, paramIndex );
+    var p = new StackSymbol().init( param, paramIndex );
     var newParams = FunctionParameterListBuilder_st.curryStack(
         this.parameterList_, p, arg, paramIndex );
     var lexicalBindings = {};
@@ -14310,11 +14335,14 @@ Uniq_st.count_ = 0;
 
 /** @constructor */
 function Details() {
-    this.initBuiltin( "details" );
 }
 
 Details.prototype = new Builtin();
 Details.prototype.className = "Details";
+
+Details.prototype.init = function () {
+    return this.initBuiltin( "details" );
+};
 
 Details.prototype.invokePair = function ( args ) {
     return ArcException_st.cast( args.car(), this ).message();
@@ -14329,11 +14357,14 @@ Details.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Err() {
-    this.initBuiltin( "err" );
 }
 
 Err.prototype = new Builtin();
 Err.prototype.className = "Err";
+
+Err.prototype.init = function () {
+    return this.initBuiltin( "err" );
+};
 
 Err.prototype.invokePair = function ( args ) {
     throw new ArcError().initAE(
@@ -14349,11 +14380,14 @@ Err.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function OnErr() {
-    this.initBuiltin( "on-err" );
 }
 
 OnErr.prototype = new Builtin();
 OnErr.prototype.className = "OnErr";
+
+OnErr.prototype.init = function () {
+    return this.initBuiltin( "on-err" );
+};
 
 OnErr.prototype.invoke = function ( vm, args ) {
     var c = new Catch().init( args.car(), vm.getAp() );
@@ -14411,11 +14445,14 @@ Protect.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Apply() {
-    this.initBuiltin( "apply" );
 }
 
 Apply.prototype = new Builtin();
 Apply.prototype.className = "Apply";
+
+Apply.prototype.init = function () {
+    return this.initBuiltin( "apply" );
+};
 
 Apply.prototype.invokef0 = function ( vm ) {
     throw new ArcError().initAE(
@@ -14705,11 +14742,14 @@ SSyntax_st.isSpecial = function ( symbol ) {
 
 /** @constructor */
 function JavaDebug() {
-    this.initBuiltin( "java-debug" );
 }
 
 JavaDebug.prototype = new Builtin();
 JavaDebug.prototype.className = "JavaDebug";
+
+JavaDebug.prototype.init = function () {
+    return this.initBuiltin( "java-debug" );
+};
 
 JavaDebug.prototype.invokePair = function ( args ) {
     return args.car();
@@ -14749,11 +14789,14 @@ JavaInvoke.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Car() {
-    this.initBuiltin( "car" );
 }
 
 Car.prototype = new Builtin();
 Car.prototype.className = "Car";
+
+Car.prototype.init = function () {
+    return this.initBuiltin( "car" );
+};
 
 Car.prototype.invokef1 = function ( vm, arg ) {
     vm.pushA( arg.car() );
@@ -14772,11 +14815,14 @@ Car.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Cdr() {
-    this.initBuiltin( "cdr" );
 }
 
 Cdr.prototype = new Builtin();
 Cdr.prototype.className = "Cdr";
+
+Cdr.prototype.init = function () {
+    return this.initBuiltin( "cdr" );
+};
 
 Cdr.prototype.invokef1 = function ( vm, arg ) {
     vm.pushA( arg.cdr() );
@@ -14796,11 +14842,14 @@ Cdr.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Cons() {
-    this.initBuiltin( "cons" );
 }
 
 Cons.prototype = new Builtin();
 Cons.prototype.className = "Cons";
+
+Cons.prototype.init = function () {
+    return this.initBuiltin( "cons" );
+};
 
 Cons.prototype.invokef2 = function ( vm, arg1, arg2 ) {
     vm.pushA( new Pair().init2( arg1, arg2 ) );
@@ -14820,11 +14869,14 @@ Cons.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Len() {
-    this.initBuiltin( "len" );
 }
 
 Len.prototype = new Builtin();
 Len.prototype.className = "Len";
+
+Len.prototype.init = function () {
+    return this.initBuiltin( "len" );
+};
 
 Len.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -14840,11 +14892,14 @@ Len.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function NewString() {
-    this.initBuiltin( "newstring" );
 }
 
 NewString.prototype = new Builtin();
 NewString.prototype.className = "NewString";
+
+NewString.prototype.init = function () {
+    return this.initBuiltin( "newstring" );
+};
 
 NewString.prototype.invokePair = function ( args ) {
     var n = args.car();
@@ -14872,11 +14927,14 @@ NewString.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Scar() {
-    this.initBuiltin( "scar" );
 }
 
 Scar.prototype = new Builtin();
 Scar.prototype.className = "Scar";
+
+Scar.prototype.init = function () {
+    return this.initBuiltin( "scar" );
+};
 
 Scar.prototype.invokef2 = function ( args, arg1, arg2 ) {
     vm.pushA( arg1.scar( arg2 ) );
@@ -14894,11 +14952,14 @@ Scar.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Scdr() {
-    this.initBuiltin( "scdr" );
 }
 
 Scdr.prototype = new Builtin();
 Scdr.prototype.className = "Scdr";
+
+Scdr.prototype.init = function () {
+    return this.initBuiltin( "scdr" );
+};
 
 Scdr.prototype.invokePair = function ( args ) {
     var target = args.car();
@@ -14919,11 +14980,14 @@ Scdr.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Acos() {
-    this.initBuiltin( "acos" );
 }
 
 Acos.prototype = new Builtin();
 Acos.prototype.className = "Acos";
+
+Acos.prototype.init = function () {
+    return this.initBuiltin( "acos" );
+};
 
 Acos.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -14989,11 +15053,14 @@ Add_st.sum = function ( args ) {
 
 /** @constructor */
 function Asin() {
-    this.initBuiltin( "asin" );
 }
 
 Asin.prototype = new Builtin();
 Asin.prototype.className = "Asin";
+
+Asin.prototype.init = function () {
+    return this.initBuiltin( "asin" );
+};
 
 Asin.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -15011,11 +15078,14 @@ Asin.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Atan() {
-    this.initBuiltin( "atan" );
 }
 
 Atan.prototype = new Builtin();
 Atan.prototype.className = "Atan";
+
+Atan.prototype.init = function () {
+    return this.initBuiltin( "atan" );
+};
 
 Atan.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -15033,11 +15103,14 @@ Atan.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function ComplexParts() {
-    this.initBuiltin( "complex-parts" );
 }
 
 ComplexParts.prototype = new Builtin();
 ComplexParts.prototype.className = "ComplexParts";
+
+ComplexParts.prototype.init = function () {
+    return this.initBuiltin( "complex-parts" );
+};
 
 ComplexParts.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -15054,11 +15127,14 @@ ComplexParts.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Cosine() {
-    this.initBuiltin( "cos" );
 }
 
 Cosine.prototype = new Builtin();
 Cosine.prototype.className = "Cosine";
+
+Cosine.prototype.init = function () {
+    return this.initBuiltin( "cos" );
+};
 
 Cosine.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -15076,11 +15152,14 @@ Cosine.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Divide() {
-    this.initBuiltin( "/" );
 }
 
 Divide.prototype = new Builtin();
 Divide.prototype.className = "Divide";
+
+Divide.prototype.init = function () {
+    return this.initBuiltin( "/" );
+};
 
 Divide.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil )
@@ -15099,11 +15178,14 @@ Divide.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Expt() {
-    this.initBuiltin( "expt" );
 }
 
 Expt.prototype = new Builtin();
 Expt.prototype.className = "Expt";
+
+Expt.prototype.init = function () {
+    return this.initBuiltin( "expt" );
+};
 
 Expt.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 2 );
@@ -15136,11 +15218,14 @@ Expt.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Logarithm() {
-    this.initBuiltin( "log" );
 }
 
 Logarithm.prototype = new Builtin();
 Logarithm.prototype.className = "Logarithm";
+
+Logarithm.prototype.init = function () {
+    return this.initBuiltin( "log" );
+};
 
 Logarithm.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -15420,11 +15505,14 @@ Maths_st.rationalOps_ = new Maths_st.Anon_rationalOps_();
 
 /** @constructor */
 function Mod() {
-    this.initBuiltin( "mod" );
 }
 
 Mod.prototype = new Builtin();
 Mod.prototype.className = "Mod";
+
+Mod.prototype.init = function () {
+    return this.initBuiltin( "mod" );
+};
 
 Mod.prototype.invokef2 = function ( vm, arg1, arg2 ) {
     // PORT NOTE: This was a cast in Java.
@@ -15450,11 +15538,14 @@ Mod.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Multiply() {
-    this.initBuiltin( "*" );
 }
 
 Multiply.prototype = new Builtin();
 Multiply.prototype.className = "Multiply";
+
+Multiply.prototype.init = function () {
+    return this.initBuiltin( "*" );
+};
 
 Multiply.prototype.invokef0 = function ( vm ) {
     vm.pushA( Rational_st.ONE );
@@ -15493,11 +15584,14 @@ Multiply.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function PolarCoordinates() {
-    this.initBuiltin( "polar-coordinates" );
 }
 
 PolarCoordinates.prototype = new Builtin();
 PolarCoordinates.prototype.className = "PolarCoordinates";
+
+PolarCoordinates.prototype.init = function () {
+    return this.initBuiltin( "polar-coordinates" );
+};
 
 PolarCoordinates.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -15515,11 +15609,14 @@ PolarCoordinates.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Quotient() {
-    this.initBuiltin( "quotient" );
 }
 
 Quotient.prototype = new Builtin();
 Quotient.prototype.className = "Quotient";
+
+Quotient.prototype.init = function () {
+    return this.initBuiltin( "quotient" );
+};
 
 Quotient.prototype.invokePair = function ( args ) {
     Builtin_st.checkExactArgsCount( args, 2, this.className );
@@ -15544,11 +15641,14 @@ Quotient.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Rand() {
-    this.initBuiltin( "rand" );
 }
 
 Rand.prototype = new Builtin();
 Rand.prototype.className = "Rand";
+
+Rand.prototype.init = function () {
+    return this.initBuiltin( "rand" );
+};
 
 Rand.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil ) {
@@ -15578,11 +15678,14 @@ Rand.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Sine() {
-    this.initBuiltin( "sin" );
 }
 
 Sine.prototype = new Builtin();
 Sine.prototype.className = "Sine";
+
+Sine.prototype.init = function () {
+    return this.initBuiltin( "sin" );
+};
 
 Sine.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -15599,11 +15702,14 @@ Sine.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Sqrt() {
-    this.initBuiltin( "sqrt" );
 }
 
 Sqrt.prototype = new Builtin();
 Sqrt.prototype.className = "Sqrt";
+
+Sqrt.prototype.init = function () {
+    return this.initBuiltin( "sqrt" );
+};
 
 Sqrt.prototype.invokef1 = function ( vm, arg ) {
     vm.pushA( arg.sqrt() );
@@ -15623,11 +15729,14 @@ Sqrt.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Subtract() {
-    this.initBuiltin( "-" );
 }
 
 Subtract.prototype = new Builtin();
 Subtract.prototype.className = "Subtract";
+
+Subtract.prototype.init = function () {
+    return this.initBuiltin( "-" );
+};
 
 Subtract.prototype.invokef1 = function ( vm ) {
     throw new ArcError().initAE( "- : expected at least 1 arg" );
@@ -15677,11 +15786,14 @@ Subtract.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Tangent() {
-    this.initBuiltin( "tan" );
 }
 
 Tangent.prototype = new Builtin();
 Tangent.prototype.className = "Tangent";
+
+Tangent.prototype.init = function () {
+    return this.initBuiltin( "tan" );
+};
 
 Tangent.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -15727,11 +15839,14 @@ Trunc.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Bound() {
-    this.initBuiltin( "bound" );
 }
 
 Bound.prototype = new Builtin();
 Bound.prototype.className = "Bound";
+
+Bound.prototype.init = function () {
+    return this.initBuiltin( "bound" );
+};
 
 Bound.prototype.invokef0 = function ( vm ) {
     throw new ArcError().initAE( "bound: requires 1 arg" );
@@ -15759,11 +15874,14 @@ Bound.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Exact() {
-    this.initBuiltin( "exact" );
 }
 
 Exact.prototype = new Builtin();
 Exact.prototype.className = "Exact";
+
+Exact.prototype.init = function () {
+    return this.initBuiltin( "exact" );
+};
 
 Exact.prototype.invokePair = function ( args ) {
     var arg = ArcNumber_st.cast( args.car(), this );
@@ -15780,11 +15898,14 @@ Exact.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function GreaterThan() {
-    this.initBuiltin( ">" );
 }
 
 GreaterThan.prototype = new Builtin();
 GreaterThan.prototype.className = "GreaterThan";
+
+GreaterThan.prototype.init = function () {
+    return this.initBuiltin( ">" );
+};
 
 GreaterThan.prototype.invokef0 = function ( vm ) {
     vm.pushA( ArcObject_st.T );
@@ -15830,11 +15951,14 @@ GreaterThan.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Is() {
-    this.initBuiltin( "is" );
 }
 
 Is.prototype = new Builtin();
 Is.prototype.className = "Is";
+
+Is.prototype.init = function () {
+    return this.initBuiltin( "is" );
+};
 
 Is.prototype.invokef0 = function ( vm ) {
     vm.pushA( ArcObject_st.T );
@@ -15871,11 +15995,14 @@ Is.prototype.checkIs_ = function ( test, args ) {
 
 /** @constructor */
 function LessThan() {
-    this.initBuiltin( "<" );
 }
 
 LessThan.prototype = new Builtin();
 LessThan.prototype.className = "LessThan";
+
+LessThan.prototype.init = function () {
+    return this.initBuiltin( "<" );
+};
 
 LessThan.prototype.invokef0 = function ( vm ) {
     vm.pushA( ArcObject_st.T );
@@ -15919,11 +16046,14 @@ LessThan.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function RainbowDebug() {
-    this.initBuiltin( "rainbow-debug" );
 }
 
 RainbowDebug.prototype = new Builtin();
 RainbowDebug.prototype.className = "RainbowDebug";
+
+RainbowDebug.prototype.init = function () {
+    return this.initBuiltin( "rainbow-debug" );
+};
 
 RainbowDebug.prototype.invoke = function ( vm, args ) {
     vm.setInterceptor( VMInterceptor_st.DEBUG );
@@ -15939,11 +16069,14 @@ RainbowDebug.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function RainbowProfile() {
-    this.initBuiltin( "rainbow-profile" );
 }
 
 RainbowProfile.prototype = new Builtin();
 RainbowProfile.prototype.className = "RainbowProfile";
+
+RainbowProfile.prototype.init = function () {
+    return this.initBuiltin( "rainbow-profile" );
+};
 
 RainbowProfile.prototype.invokef0 = function ( vm ) {
     this.profile( vm );
@@ -15971,11 +16104,14 @@ RainbowProfile.prototype.profile = function ( target ) {
 
 /** @constructor */
 function RainbowProfileReport() {
-    this.initBuiltin( "rainbow-profile-report" );
 }
 
 RainbowProfileReport.prototype = new Builtin();
 RainbowProfileReport.prototype.className = "RainbowProfileReport";
+
+RainbowProfileReport.prototype.init = function () {
+    return this.initBuiltin( "rainbow-profile-report" );
+};
 
 RainbowProfileReport.prototype.invokef0 = function ( vm ) {
     vm.pushA( this.report( vm ) );
@@ -16071,11 +16207,14 @@ RainbowProfileReport.prototype.createInvocationReport_ = function (
 
 /** @constructor */
 function CurrentGcMilliseconds() {
-    this.initBuiltin( "current-gc-milliseconds" );
 }
 
 CurrentGcMilliseconds.prototype = new Builtin();
 CurrentGcMilliseconds.prototype.className = "CurrentGcMilliseconds";
+
+CurrentGcMilliseconds.prototype.init = function () {
+    return this.initBuiltin( "current-gc-milliseconds" );
+};
 
 CurrentGcMilliseconds.prototype.invoke = function ( vm, args ) {
     vm.pushA( Rational_st.make1( 1 ) );
@@ -16090,12 +16229,15 @@ CurrentGcMilliseconds.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function CurrentProcessMilliseconds() {
-    this.initBuiltin( "current-process-milliseconds" );
 }
 
 CurrentProcessMilliseconds.prototype = new Builtin();
 CurrentProcessMilliseconds.prototype.className =
     "CurrentProcessMilliseconds";
+
+CurrentProcessMilliseconds.prototype.init = function () {
+    return this.initBuiltin( "current-process-milliseconds" );
+};
 
 CurrentProcessMilliseconds.prototype.invoke = function ( vm, args ) {
     vm.pushA( Rational_st.make1( 1 ) );
@@ -16142,11 +16284,14 @@ Declare_st.atstrings = Symbol_st.mkSym( "atstrings" );
 
 /** @constructor */
 function MSec() {
-    this.initBuiltin( "msec" );
 }
 
 MSec.prototype = new Builtin();
 MSec.prototype.className = "MSec";
+
+MSec.prototype.init = function () {
+    return this.initBuiltin( "msec" );
+};
 
 MSec.prototype.invokePair = function ( args ) {
     return Rational_st.make1( new Date().getTime() );
@@ -16161,11 +16306,14 @@ MSec.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Seconds() {
-    this.initBuiltin( "seconds" );
 }
 
 Seconds.prototype = new Builtin();
 Seconds.prototype.className = "Seconds";
+
+Seconds.prototype.init = function () {
+    return this.initBuiltin( "seconds" );
+};
 
 Seconds.prototype.invokePair = function ( args ) {
     // PORT NOTE: In Java, this was just integer division.
@@ -16183,11 +16331,14 @@ Seconds.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function MapTable() {
-    this.initBuiltin( "maptable" );
 }
 
 MapTable.prototype = new Builtin();
 MapTable.prototype.className = "MapTable";
+
+MapTable.prototype.init = function () {
+    return this.initBuiltin( "maptable" );
+};
 
 MapTable.prototype.invokef2 = function ( vm, f, hash ) {
     vm.pushA( hash );
@@ -16213,11 +16364,14 @@ MapTable.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Sref() {
-    this.initBuiltin( "sref" );
 }
 
 Sref.prototype = new Builtin();
 Sref.prototype.className = "Sref";
+
+Sref.prototype.init = function () {
+    return this.initBuiltin( "sref" );
+};
 
 Sref.prototype.invokef3 = function ( vm, arg1, arg2, arg3 ) {
     vm.pushA( arg1.sref( arg2, arg3 ) );
@@ -16237,11 +16391,14 @@ Sref.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Table() {
-    this.initBuiltin( "table" );
 }
 
 Table.prototype = new Builtin();
 Table.prototype.className = "Table";
+
+Table.prototype.init = function () {
+    return this.initBuiltin( "table" );
+};
 
 Table.prototype.invoke = function ( vm, args ) {
     var hash = new Hash().init();
@@ -16322,11 +16479,14 @@ AtomicInvoke_st.entryCount_ = 0;
 
 /** @constructor */
 function BreakThread() {
-    this.initBuiltin( "break-thread" );
 }
 
 BreakThread.prototype = new Builtin();
 BreakThread.prototype.className = "BreakThread";
+
+BreakThread.prototype.init = function () {
+    return this.initBuiltin( "break-thread" );
+};
 
 BreakThread.prototype.invokePair = function ( args ) {
     var victim = args.car();
@@ -16477,11 +16637,14 @@ CCC_st.ContinuationWrapper.prototype.toString = function () {
 
 /** @constructor */
 function CurrentThread() {
-    this.initBuiltin( "current-thread" );
 }
 
 CurrentThread.prototype = new Builtin();
 CurrentThread.prototype.className = "CurrentThread";
+
+CurrentThread.prototype.init = function () {
+    return this.initBuiltin( "current-thread" );
+};
 
 CurrentThread.prototype.invoke = function ( vm, args ) {
     vm.pushA( vm );
@@ -16496,11 +16659,14 @@ CurrentThread.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Dead() {
-    this.initBuiltin( "dead" );
 }
 
 Dead.prototype = new Builtin();
 Dead.prototype.className = "Dead";
+
+Dead.prototype.init = function () {
+    return this.initBuiltin( "dead" );
+};
 
 Dead.prototype.invoke = function ( vm, args ) {
     var victim = args.car();
@@ -16522,11 +16688,14 @@ Dead.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function KillThread() {
-    this.initBuiltin( "kill-thread" );
 }
 
 KillThread.prototype = new Builtin();
 KillThread.prototype.className = "KillThread";
+
+KillThread.prototype.init = function () {
+    return this.initBuiltin( "kill-thread" );
+};
 
 KillThread.prototype.invoke = function ( vm, args ) {
     var victim = args.car();
@@ -16546,11 +16715,14 @@ KillThread.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function NewThreadLocal() {
-    this.initBuiltin( "thread-local" );
 }
 
 NewThreadLocal.prototype = new Builtin();
 NewThreadLocal.prototype.className = "NewThreadLocal";
+
+NewThreadLocal.prototype.init = function () {
+    return this.initBuiltin( "thread-local" );
+};
 
 NewThreadLocal.prototype.invokePair = function ( args ) {
     return new ArcThreadLocal().init();
@@ -16565,11 +16737,14 @@ NewThreadLocal.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function ThreadLocalGet() {
-    this.initBuiltin( "thread-local-ref" );
 }
 
 ThreadLocalGet.prototype = new Builtin();
 ThreadLocalGet.prototype.className = "ThreadLocalGet";
+
+ThreadLocalGet.prototype.init = function () {
+    return this.initBuiltin( "thread-local-ref" );
+};
 
 ThreadLocalGet.prototype.invokePair = function ( args ) {
     var tl = ArcThreadLocal_st.cast( args.car(), this );
@@ -16585,11 +16760,14 @@ ThreadLocalGet.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function ThreadLocalSet() {
-    this.initBuiltin( "thread-local-set" );
 }
 
 ThreadLocalSet.prototype = new Builtin();
 ThreadLocalSet.prototype.className = "ThreadLocalSet";
+
+ThreadLocalSet.prototype.init = function () {
+    return this.initBuiltin( "thread-local-set" );
+};
 
 ThreadLocalSet.prototype.invokePair = function ( args ) {
     var tl = ArcThreadLocal_st.cast( args.car(), this );
@@ -16607,11 +16785,14 @@ ThreadLocalSet.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Annotate() {
-    this.initBuiltin( "annotate" );
 }
 
 Annotate.prototype = new Builtin();
 Annotate.prototype.className = "Annotate";
+
+Annotate.prototype.init = function () {
+    return this.initBuiltin( "annotate" );
+};
 
 Annotate.prototype.invokePair = function ( args ) {
     var type = args.car();
@@ -16631,12 +16812,16 @@ Annotate.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Coerce() {
-    this.initBuiltin( "coerce" );
-    Typing_st.init();
 }
 
 Coerce.prototype = new Builtin();
 Coerce.prototype.className = "Coerce";
+
+Coerce.prototype.init = function () {
+    this.initBuiltin( "coerce" );
+    Typing_st.init();
+    return this;
+};
 
 Coerce.prototype.invokef2 = function ( vm, arg, toType ) {
     var fromType = arg.type();
@@ -16708,11 +16893,14 @@ Coerce.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function Rep() {
-    this.initBuiltin( "rep" );
 }
 
 Rep.prototype = new Builtin();
 Rep.prototype.className = "Rep";
+
+Rep.prototype.init = function () {
+    return this.initBuiltin( "rep" );
+};
 
 Rep.prototype.invokePair = function ( args ) {
     var arg = args.car();
@@ -16730,11 +16918,14 @@ Rep.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Type() {
-    this.initBuiltin( "type" );
 }
 
 Type.prototype = new Builtin();
 Type.prototype.className = "Type";
+
+Type.prototype.init = function () {
+    return this.initBuiltin( "type" );
+};
 
 Type.prototype.invokef1 = function ( vm, arg ) {
     vm.pushA( arg.type() );
@@ -17106,11 +17297,11 @@ var Environment_st = {};
 
 Environment_st.init = function () {
     // system
-    new MSec();
-    new Seconds();
+    new MSec().init();
+    new Seconds().init();
 //    new TimeDate();
-    new CurrentProcessMilliseconds();
-    new CurrentGcMilliseconds();
+    new CurrentProcessMilliseconds().init();
+    new CurrentGcMilliseconds().init();
 //    new PipeFrom();
 //    new ShellInvoke();
 //    new WhichOS();
@@ -17123,31 +17314,31 @@ Environment_st.init = function () {
     Symbol_st.mkSym( "pi" ).setValue( new Real().init( Math.PI ) );
     Symbol_st.mkSym( "e" ).setValue( new Real().init( Math.E ) );
     new Trunc();
-    new Expt();
-    new Rand();
-    new Sqrt();
-    new Quotient();
-    new Mod();
+    new Expt().init();
+    new Rand().init();
+    new Sqrt().init();
+    new Quotient().init();
+    new Mod().init();
     new Add();
-    new Subtract();
-    new Multiply();
-    new Divide();
-    new Sine();
-    new Cosine();
-    new Tangent();
-    new Asin();
-    new Acos();
-    new Atan();
-    new Logarithm();
-    new ComplexParts();
+    new Subtract().init();
+    new Multiply().init();
+    new Divide().init();
+    new Sine().init();
+    new Cosine().init();
+    new Tangent().init();
+    new Asin().init();
+    new Acos().init();
+    new Atan().init();
+    new Logarithm().init();
+    new ComplexParts().init();
     new MakeComplex();
-    new PolarCoordinates();
+    new PolarCoordinates().init();
     
     // typing
-    new Type();
-    new Annotate();
-    new Rep();
-    new Coerce();
+    new Type().init();
+    new Annotate().init();
+    new Rep().init();
+    new Coerce().init();
     
     // java integration
 //    new JavaNew();
@@ -17155,76 +17346,76 @@ Environment_st.init = function () {
     new JavaInvoke();
 //    new JavaStaticInvoke();
 //    new JavaStaticField();
-    new JavaDebug();
+    new JavaDebug().init();
 //    new JavaImplement();
     
     // threading
-    new NewThread();
-    new KillThread();
+    new NewThread().init();
+    new KillThread().init();
     // TODO: break-thread just duplicates kill-thread, should do
     // something else
-    new BreakThread();
+    new BreakThread().init();
 //    new Sleep();
-    new Dead();
+    new Dead().init();
     new AtomicInvoke();
     new CCC();
-    new NewThreadLocal();
-    new ThreadLocalGet();
-    new ThreadLocalSet();
+    new NewThreadLocal().init();
+    new ThreadLocalGet().init();
+    new ThreadLocalSet().init();
     
     new Uniq();
     new Macex();
     
     // errors
     new Protect();
-    new Err();
-    new OnErr();
-    new Details();
+    new Err().init();
+    new OnErr().init();
+    new Details().init();
     
     // lists
-    new NewString();
-    new Car();
-    new Cdr();
-    new Scar();
-    new Scdr();
-    new Cons();
-    new Len();
+    new NewString().init();
+    new Car().init();
+    new Cdr().init();
+    new Scar().init();
+    new Scdr().init();
+    new Cons().init();
+    new Len().init();
     
     // predicates
-    new Bound();
-    new LessThan();
-    new GreaterThan();
-    new Exact();
-    new Is();
+    new Bound().init();
+    new LessThan().init();
+    new GreaterThan().init();
+    new Exact().init();
+    new Is().init();
     
     // evaluation
-    new Apply();
+    new Apply().init();
     new Eval();
     new SSExpand();
     new SSyntax();
     
     // tables
-    new Table();
-    new MapTable();
-    new Sref();
+    new Table().init();
+    new MapTable().init();
+    new Sref().init();
 //    new Hash().init();  // PORT NOTE: Unnecessary.
     
     // IO
-    new CallWStdIn();
-    new CallWStdOut();
-    new StdIn();
-    new StdOut();
-    new StdErr();
-    new Disp();
-    new Write();
+    new CallWStdIn().init();
+    new CallWStdOut().init();
+    new StdIn().init();
+    new StdOut().init();
+    new StdErr().init();
+    new Disp().init();
+    new Write().init();
     new Sread();
-    new WriteB();
-    new WriteC();
+    new WriteB().init();
+    new WriteC().init();
     new ReadB();
     new ReadC();
-    new FlushOut();
-    new Close_Builtin();
-    new ForceClose();
+    new FlushOut().init();
+    new Close_Builtin().init();
+    new ForceClose().init();
     
 //    new OpenSocket();
 //    new ClientIp();
@@ -17242,14 +17433,14 @@ Environment_st.init = function () {
     new MakeDirectory();
     new MakeDirectories();
     
-    new InString();
-    new OutString();
-    new Inside();
+    new InString().init();
+    new OutString().init();
+    new Inside().init();
     
     // rainbow-specific
-    new RainbowDebug();
-    new RainbowProfile();
-    new RainbowProfileReport();
+    new RainbowDebug().init();
+    new RainbowProfile().init();
+    new RainbowProfileReport().init();
 };
 
 
@@ -17675,11 +17866,14 @@ IO_st.closeAll = function ( args ) {
 
 /** @constructor */
 function Close_Builtin() {
-    this.initBuiltin( "close" );
 }
 
 Close_Builtin.prototype = new Builtin();
 Close_Builtin.prototype.className = "Close_Builtin";
+
+Close_Builtin.prototype.init = function () {
+    return this.initBuiltin( "close" );
+};
 
 Close_Builtin.prototype.invokePair = function ( args ) {
     return IO_st.closeAll( args );
@@ -17694,11 +17888,14 @@ Close_Builtin.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Disp() {
-    this.initBuiltin( "disp" );
 }
 
 Disp.prototype = new Builtin();
 Disp.prototype.className = "Disp";
+
+Disp.prototype.init = function () {
+    return this.initBuiltin( "disp" );
+};
 
 Disp.prototype.invokef1 = function ( vm, arg ) {
     this.disp_( IO_st.stdOut(), arg );
@@ -17724,11 +17921,14 @@ Disp.prototype.disp_ = function ( out, o ) {
 
 /** @constructor */
 function FlushOut() {
-    this.initBuiltin( "flushout" );
 }
 
 FlushOut.prototype = new Builtin();
 FlushOut.prototype.className = "FlushOut";
+
+FlushOut.prototype.init = function () {
+    return this.initBuiltin( "flushout" );
+};
 
 FlushOut.prototype.invokePair = function ( args ) {
     IO_st.stdOut().flush();
@@ -17747,11 +17947,14 @@ FlushOut.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function ForceClose() {
-    this.initBuiltin( "force-close" );
 }
 
 ForceClose.prototype = new Builtin();
 ForceClose.prototype.className = "ForceClose";
+
+ForceClose.prototype.init = function () {
+    return this.initBuiltin( "force-close" );
+};
 
 ForceClose.prototype.invokePair = function ( args ) {
     return IO_st.closeAll( args );
@@ -17768,11 +17971,14 @@ ForceClose.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function StdErr() {
-    this.initBuiltin( "stderr" );
 }
 
 StdErr.prototype = new Builtin();
 StdErr.prototype.className = "StdErr";
+
+StdErr.prototype.init = function () {
+    return this.initBuiltin( "stderr" );
+};
 
 StdErr.prototype.invokePair = function ( args ) {
     return IO_st.STD_ERR;
@@ -17789,11 +17995,14 @@ StdErr.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function StdIn() {
-    this.initBuiltin( "stdin" );
 }
 
 StdIn.prototype = new Builtin();
 StdIn.prototype.className = "StdIn";
+
+StdIn.prototype.init = function () {
+    return this.initBuiltin( "stdin" );
+};
 
 StdIn.prototype.invokePair = function ( args ) {
     Builtin_st.checkExactArgsCount( args, 0, this.className );
@@ -17811,11 +18020,14 @@ StdIn.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function StdOut() {
-    this.initBuiltin( "stdout" );
 }
 
 StdOut.prototype = new Builtin();
 StdOut.prototype.className = "StdOut";
+
+StdOut.prototype.init = function () {
+    return this.initBuiltin( "stdout" );
+};
 
 StdOut.prototype.invokePair = function ( args ) {
     return IO_st.stdOut();
@@ -17830,11 +18042,14 @@ StdOut.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Write() {
-    this.initBuiltin( "write" );
 }
 
 Write.prototype = new Builtin();
 Write.prototype.className = "Write";
+
+Write.prototype.init = function () {
+    return this.initBuiltin( "write" );
+};
 
 Write.prototype.invokePair = function ( args ) {
     IO_st.chooseOutputPort( args.cdr().car(), this ).write(
@@ -17851,11 +18066,14 @@ Write.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function WriteB() {
-    this.initBuiltin( "writeb" );
 }
 
 WriteB.prototype = new Builtin();
 WriteB.prototype.className = "WriteB";
+
+WriteB.prototype.init = function () {
+    return this.initBuiltin( "writeb" );
+};
 
 WriteB.prototype.invokePair = function ( args ) {
     IO_st.chooseOutputPort( args.cdr().car(), this ).writeRational(
@@ -17872,11 +18090,14 @@ WriteB.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function WriteC() {
-    this.initBuiltin( "writec" );
 }
 
 WriteC.prototype = new Builtin();
 WriteC.prototype.className = "WriteC";
+
+WriteC.prototype.init = function () {
+    return this.initBuiltin( "writec" );
+};
 
 WriteC.prototype.invokePair = function ( args ) {
     IO_st.chooseOutputPort( args.cdr().car(), this ).writeChar(
@@ -17893,11 +18114,14 @@ WriteC.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function InString() {
-    this.initBuiltin( "instring" );
 }
 
 InString.prototype = new Builtin();
 InString.prototype.className = "InString";
+
+InString.prototype.init = function () {
+    return this.initBuiltin( "instring" );
+};
 
 InString.prototype.invokePair = function ( args ) {
     return new StringInputPort(
@@ -17913,11 +18137,14 @@ InString.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function Inside() {
-    this.initBuiltin( "inside" );
 }
 
 Inside.prototype = new Builtin();
 Inside.prototype.className = "Inside";
+
+Inside.prototype.init = function () {
+    return this.initBuiltin( "inside" );
+};
 
 Inside.prototype.invokePair = function ( args ) {
     var sop = StringOutputPort_st.cast( args.car(), this );
@@ -17933,11 +18160,14 @@ Inside.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function OutString() {
-    this.initBuiltin( "outstring" );
 }
 
 OutString.prototype = new Builtin();
 OutString.prototype.className = "OutString";
+
+OutString.prototype.init = function () {
+    return this.initBuiltin( "outstring" );
+};
 
 OutString.prototype.invokePair = function ( args ) {
     return new StringOutputPort();
@@ -17952,11 +18182,14 @@ OutString.prototype.invokePair = function ( args ) {
 
 /** @constructor */
 function CallWStdIn() {
-    this.initBuiltin( "call-w/stdin" );
 }
 
 CallWStdIn.prototype = new Builtin();
 CallWStdIn.prototype.className = "CallWStdIn";
+
+CallWStdIn.prototype.init = function () {
+    return this.initBuiltin( "call-w/stdin" );
+};
 
 CallWStdIn.prototype.invoke = function ( vm, args ) {
     var i = new SetThreadLocal().init( IO_st.stdIn_, IO_st.stdIn() );
@@ -17975,11 +18208,14 @@ CallWStdIn.prototype.invoke = function ( vm, args ) {
 
 /** @constructor */
 function CallWStdOut() {
-    this.initBuiltin( "call-w/stdout" );
 }
 
 CallWStdOut.prototype = new Builtin();
 CallWStdOut.prototype.className = "CallWStdOut";
+
+CallWStdOut.prototype.init = function () {
+    return this.initBuiltin( "call-w/stdout" );
+};
 
 CallWStdOut.prototype.invoke = function ( vm, args ) {
     var i =
@@ -19038,11 +19274,14 @@ Console_st.isValidSourceFileAsync_ = function ( f, then, opt_sync ) {
 
 /** @constructor */
 function NewThread() {
-    this.initBuiltin( "new-thread" );
 }
 
 NewThread.prototype = new Builtin();
 NewThread.prototype.className = "NewThread";
+
+NewThread.prototype.init = function () {
+    return this.initBuiltin( "new-thread" );
+};
 
 NewThread.prototype.invokePair = function ( args ) {
     throw new ArcError().initAE(
