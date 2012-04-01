@@ -751,7 +751,7 @@ ArcObject.prototype.invokeAndWait = function ( vm, args ) {
     var i = new Invoke_N_st.Other( len );
     i.belongsTo( this );
     vm.pushFrame( i );
-    var i2 = new Literal( this );
+    var i2 = new Literal().init( this );
     i2.belongsTo( this );
     vm.pushFrame( i2 );
 };
@@ -1291,13 +1291,13 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                         else if ( soFar === "+nan.0" )
                             then( null, Real_st.nan() );
                         else if ( soFar === "+i" )
-                            then( null, new Complex( 0, 1 ) );
+                            then( null, new Complex().init( 0, 1 ) );
                         else if ( soFar === "-i" )
-                            then( null, new Complex( 0, -1 ) );
+                            then( null, new Complex().init( 0, -1 ) );
                         else if ( matches =
                             /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
                                 exec( soFar ) )
-                            then( null, new Complex(
+                            then( null, new Complex().init(
                                 Real_st.parse( matches[ 1 ] ).value(),
                                 Real_st.parse( matches[ 2 ] +
                                     (matches[ 3 ] || "1") ).value()
@@ -1471,7 +1471,7 @@ Symbol.prototype.initSymbol = function ( name, parseableName ) {
 };
 
 Symbol.prototype.addInstructions = function ( i ) {
-    i.push( new FreeSym( this ) );
+    i.push( new FreeSym().init( this ) );
 };
 
 Symbol_st.mkSym = function ( name ) {
@@ -2062,7 +2062,7 @@ Nil.prototype.initNil = function ( rep ) {
 };
 
 Nil.prototype.addInstructions = function ( i ) {
-    i.push( new Literal( Nil_st.NIL ) );
+    i.push( new Literal().init( Nil_st.NIL ) );
 };
 
 Nil.prototype.invoke = function ( vm, args ) {
@@ -2188,7 +2188,7 @@ Truth.prototype.literal = function () {
 };
 
 Truth.prototype.addInstructions = function ( i ) {
-    i.push( new Literal( Truth_st.T ) );
+    i.push( new Literal().init( Truth_st.T ) );
 };
 
 Truth.prototype.toString = function () {
@@ -2355,7 +2355,7 @@ LiteralObject.prototype.literal = function () {
 };
 
 LiteralObject.prototype.addInstructions = function ( i ) {
-    i.push( new Literal( this ) );
+    i.push( new Literal().init( this ) );
 };
 
 LiteralObject.prototype.profileName = function () {
@@ -2565,13 +2565,17 @@ ArcCharacter_st.named_ = [
 // Needed late: Builtin Rational ArcError ArcCharacter Typing
 
 /** @constructor */
-function ArcString( value ) {
-    this.value_ = value;
+function ArcString() {
 }
 var ArcString_st = {};
 
 ArcString.prototype = new LiteralObject();
 ArcString.prototype.className = "ArcString";
+
+ArcString.prototype.init = function ( value ) {
+    this.value_ = value;
+    return this;
+};
 
 ArcString.prototype.invoke = function ( vm, args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
@@ -2654,7 +2658,7 @@ ArcString.prototype.unwrap = function () {
 };
 
 ArcString_st.make = function ( element ) {
-    return new ArcString( element );
+    return new ArcString().init( element );
 };
 
 ArcString.prototype.setValue = function ( s ) {
@@ -2740,15 +2744,19 @@ ArcString_st.TYPE = Symbol_st.mkSym( "string" );
 // PORT NOTE: We didn't port the zero-arg ArcException(), and there
 // are no uses of it.
 /** @constructor */
-function ArcException( e, operating, stackTrace ) {
-    this.operating_ = operating;
-    this.original_ = e;
-    this.stackTrace_ = stackTrace;
+function ArcException() {
 }
 var ArcException_st = {};
 
 ArcException.prototype = new LiteralObject();
 ArcException.prototype.className = "ArcException";
+
+ArcException.prototype.init = function ( e, operating, stackTrace ) {
+    this.operating_ = operating;
+    this.original_ = e;
+    this.stackTrace_ = stackTrace;
+    return this;
+};
 
 ArcException.prototype.type = function () {
     return ArcException_st.TYPE;
@@ -2882,12 +2890,16 @@ ArcNumber_st.NUM_TYPE = Symbol_st.mkSym( "num" );
 
 /** @constructor */
 function ArcThreadLocal() {
-    this.value_ = null;
 }
 var ArcThreadLocal_st = {};
 
 ArcThreadLocal.prototype = new LiteralObject();
 ArcThreadLocal.prototype.className = "ArcThreadLocal";
+
+ArcThreadLocal.prototype.init = function () {
+    this.value_ = null;
+    return this;
+};
 
 ArcThreadLocal.prototype.set = function ( value ) {
     this.value_ = value;
@@ -2926,26 +2938,30 @@ ArcThreadLocal_st.TYPE = Symbol_st.mkSym( "thread-local" );
 // PORT NOTE: We've gotten rid of all uses of Complex that passed
 // ArcNumbers instead of primitives.
 /** @constructor */
-function Complex( real, imaginary ) {
-    this.real_ = real;
-    this.imaginary_ = imaginary;
+function Complex() {
 }
 var Complex_st = {};
 
 Complex.prototype = new ArcNumber();
 Complex.prototype.className = "Complex";
 
+Complex.prototype.init = function ( real, imaginary ) {
+    this.real_ = real;
+    this.imaginary_ = imaginary;
+    return this;
+};
+
 // PORT NOTE: The Java version used ComplexParser here.
 Complex_st.parse = function ( number ) {
     var matches;
     if ( soFar === "+i" )
-        return new Complex( 0, 1 );
+        return new Complex().init( 0, 1 );
     else if ( soFar === "-i" )
-        return new Complex( 0, -1 );
+        return new Complex().init( 0, -1 );
     else if ( matches =
         /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
             exec( soFar ) )
-        return new Complex(
+        return new Complex().init(
             Real_st.parse( matches[ 1 ] ).value(),
             Real_st.parse(
                 matches[ 2 ] + (matches[ 3 ] || "1") ).
@@ -2967,13 +2983,13 @@ Complex.prototype.toInt = function () {
 };
 
 Complex.prototype.negate = function () {
-    return new Complex( -this.real_, -this.imaginary_ );
+    return new Complex().init( -this.real_, -this.imaginary_ );
 };
 
 Complex.prototype.toString = function () {
-    return new Real( this.real_ ).toString() +
+    return new Real().init( this.real_ ).toString() +
         (this.imaginary_ < 0 ? "" : "+") +
-        new Real( this.imaginary_ ).toString() + "i";
+        new Real().init( this.imaginary_ ).toString() + "i";
 };
 
 Complex_st.cast = function ( argument, caller ) {
@@ -2995,18 +3011,18 @@ Complex.prototype.round = function () {
 };
 
 Complex.prototype.imaginaryPart = function () {
-    return new Real( this.imaginary_ );
+    return new Real().init( this.imaginary_ );
 };
 
 Complex.prototype.realPart = function () {
-    return new Real( this.real_ );
+    return new Real().init( this.real_ );
 };
 
 // PORT NOTE: We've renamed all calls to
 // Complex.multiply( ArcNumber ).
 Complex.prototype.multiplyByNumber = function ( other ) {
     var d = argument.toDouble();
-    return new Complex( this.real_ * d, this.imaginary_ * d );
+    return new Complex().init( this.real_ * d, this.imaginary_ * d );
 };
 
 Complex.prototype.multiply = function ( other ) {
@@ -3017,7 +3033,8 @@ Complex.prototype.multiply = function ( other ) {
         if ( !(other instanceof ArcNumber) )
             throw new TypeError();
         var d = other.toDouble();
-        return new Complex( this.real_ * d, this.imaginary_ * d );
+        return new Complex().init(
+            this.real_ * d, this.imaginary_ * d );
     }
 };
 
@@ -3029,22 +3046,22 @@ Complex.prototype.timesComplex = function ( c ) {
     var i1 = this.imaginary_;
     var i2 = c.imaginary_;
     
-    return new Complex( r1 * r2 - i1 * i2, r1 * i2 + r2 * i1 );
+    return new Complex().init( r1 * r2 - i1 * i2, r1 * i2 + r2 * i1 );
 };
 
 // PORT NOTE: We've renamed all uses of Complex.plus().
 Complex.prototype.plusComplex = function ( other ) {
-    return new Complex( this.real_ + other.real_,
+    return new Complex().init( this.real_ + other.real_,
         this.imaginary_ + other.imaginary_ );
 };
 
 Complex.prototype.plusRational = function ( other ) {
-    return new Complex(
+    return new Complex().init(
         this.real_ + other.toDouble(), this.imaginary_ );
 };
 
 Complex.prototype.plusReal = function ( other ) {
-    return new Complex(
+    return new Complex().init(
         this.real_ + other.toDouble(), this.imaginary_ );
 };
 
@@ -3072,14 +3089,14 @@ Complex.prototype.inverse = function () {
         this.real_ * this.real_ + this.imaginary_ * this.imaginary_;
     var r = this.real_ / denominator;
     var i = -this.imaginary_ / denominator;
-    return new Complex( r, i );
+    return new Complex().init( r, i );
 };
 
 Complex.prototype.timesDouble = function ( scalar ) {
     var r = this.real_ * scalar;
     var i = this.imaginary_ * scalar;
     
-    return new Complex( r, i );
+    return new Complex().init( r, i );
 };
 
 Complex.prototype.radius = function () {
@@ -3092,7 +3109,8 @@ Complex.prototype.theta = function () {
 };
 
 Complex.prototype.log = function () {
-    return new Complex( Math.log( this.radius() ), this.theta() );
+    return new Complex().init(
+        Math.log( this.radius() ), this.theta() );
 };
 
 Complex.prototype.expt = function ( exponent ) {
@@ -3116,7 +3134,7 @@ Complex.prototype.exp = function () {
     // e^(x+iy) = e^x . e^iy = e^x . (cos y + i.sin y)
     
     var e_x = Math.exp( this.real_ );
-    return new Complex(
+    return new Complex().init(
         e_x * Math.cos( this.imaginary_ ),
         e_x * Math.sin( this.imaginary_ ) );
 };
@@ -3131,7 +3149,7 @@ Complex_st.make = function ( o ) {
     if ( o instanceof Complex )
         return o;
     else if ( o instanceof ArcNumber )
-        return new Complex( o.toDouble(), 0 );
+        return new Complex().init( o.toDouble(), 0 );
     else
         throw new ArcError().initAE(
             "Can't make complex number from " + o );
@@ -3146,7 +3164,7 @@ Complex.prototype.isSame = function ( other ) {
             other.toDouble() === this.real_;
 };
 
-Complex_st.ZERO = new Complex( 0, 0 );
+Complex_st.ZERO = new Complex().init( 0, 0 );
 
 
 // ===================================================================
@@ -3162,17 +3180,21 @@ Complex_st.ZERO = new Complex( 0, 0 );
 // value impossible to write out and read back in. But don't fix it!
 // Get it fixed in the original.
 /** @constructor */
-function Rational( numerator, denominator ) {
-    if ( denominator === 0 && numerator !== 0 )
-        throw new ArcError().initAE( "/: division by zero" );
-    var gcd = this.gcd_( numerator, denominator );
-    this.numerator_ = numerator / gcd;
-    this.denominator_ = denominator / gcd;
+function Rational() {
 }
 var Rational_st = {};
 
 Rational.prototype = new ArcNumber();
 Rational.prototype.className = "Rational";
+
+Rational.prototype.init = function ( numerator, denominator ) {
+    if ( denominator === 0 && numerator !== 0 )
+        throw new ArcError().initAE( "/: division by zero" );
+    var gcd = this.gcd_( numerator, denominator );
+    this.numerator_ = numerator / gcd;
+    this.denominator_ = denominator / gcd;
+    return this;
+};
 
 Rational_st.parse = function ( rep ) {
     var parts = rep.split( "/" );
@@ -3182,16 +3204,16 @@ Rational_st.parse = function ( rep ) {
 
 Rational_st.parseHex = function ( rep ) {
     rep = rep.substring( 2 );
-    return new Rational( parseInt( rep, 16 ), 1 );
+    return new Rational().init( parseInt( rep, 16 ), 1 );
 };
 
 // PORT NOTE: We've renamed all uses of Rational.make().
 Rational_st.make1 = function ( result ) {
-    return new Rational( result, 1 );
+    return new Rational().init( result, 1 );
 };
 
 Rational_st.make2 = function ( a, b ) {
-    return new Rational( a, b );
+    return new Rational().init( a, b );
 };
 
 Rational.prototype.toString = function () {
@@ -3237,7 +3259,7 @@ Rational.prototype.mod = function ( other ) {
 };
 
 Rational.prototype.times = function ( other ) {
-    return new Rational(
+    return new Rational().init(
         this.numerator_ * other.numerator_,
         this.denominator_ * other.denominator_ );
 };
@@ -3255,7 +3277,7 @@ Rational.prototype.negate = function () {
 };
 
 Rational.prototype.invert = function () {
-    return new Rational( this.denominator_, this.numerator_ );
+    return new Rational().init( this.denominator_, this.numerator_ );
 };
 
 Rational.prototype.unwrap = function () {
@@ -3380,24 +3402,28 @@ Rational_st.TEN = Rational_st.make1( 10 );
 // Needed late: Real Complex ArcError
 
 /** @constructor */
-function Real( value ) {
-    this.value_ = value;
+function Real() {
 }
 var Real_st = {};
 
 Real.prototype = new ArcNumber();
 Real.prototype.className = "Real";
 
+Real.prototype.init = function ( value ) {
+    this.value_ = value;
+    return this;
+};
+
 Real_st.positiveInfinity = function () {
-    return new Real( 1 / 0 );
+    return new Real().init( 1 / 0 );
 };
 
 Real_st.negativeInfinity = function () {
-    return new Real( -1 / 0 );
+    return new Real().init( -1 / 0 );
 };
 
 Real_st.nan = function () {
-    return new Real( 0 / 0 );
+    return new Real().init( 0 / 0 );
 };
 
 Real_st.parse = function ( rep ) {
@@ -3405,7 +3431,7 @@ Real_st.parse = function ( rep ) {
 };
 
 Real_st.make = function ( v ) {
-    return new Real( v );
+    return new Real().init( v );
 };
 
 Real.prototype.toString = function () {
@@ -3531,14 +3557,18 @@ Real.prototype.add = function ( other ) {
 // Needed late: Hash Pair Nil
 
 /** @constructor */
-function Tagged( type, rep ) {
-    this.type_ = type;
-    this.rep_ = rep;
+function Tagged() {
 }
 var Tagged_st = {};
 
 Tagged.prototype = new LiteralObject();
 Tagged.prototype.className = "Tagged";
+
+Tagged.prototype.init = function ( type, rep ) {
+    this.type_ = type;
+    this.rep_ = rep;
+    return this;
+};
 
 Tagged.prototype.invoke = function ( vm, args ) {
     // PORT NOTE: This local variable didn't exist in Java.
@@ -3603,7 +3633,7 @@ Tagged.prototype.stringify_ = function () {
     if ( fn instanceof Nil )
         return this.defaultToString();
     
-    var vm = new VM();
+    var vm = new VM().init();
     fn.invoke( vm, Pair_st.buildFrom1( [ rep ] ) );
     // PORT TODO: Find an equivalent for this Java.
 //    return (String) JavaObject.unwrap( vm.thread(), String.class );
@@ -3633,7 +3663,7 @@ Tagged.prototype.stringify_ = function () {
 //    if ( fn instanceof Nil )
 //        return this.defaultToString();
 //    
-//    var vm = new VM();
+//    var vm = new VM().init();
 //    fn.invoke( vm, Pair_st.buildFrom1( [ rep ] ) );
 //    // PORT TODO: Find an equivalent for this Java.
 ////    return (String) JavaObject.unwrap( vm.thread(), String.class );
@@ -3669,13 +3699,17 @@ Tagged_st.TAGGED_WRITE_FN_ = Symbol_st.mkSym( "tagged-writers" );
 // In that case, figure out what we should really call this.
 
 /** @constructor */
-function JsObject( object ) {
-    this.object_ = object;
+function JsObject() {
 }
 var JsObject_st = {};
 
 JsObject.prototype = new LiteralObject();
 JsObject.prototype.className = "JsObject";
+
+JsObject.prototype.init = function ( object ) {
+    this.object_ = object;
+    return this;
+};
 
 // PORT NOTE: A bunch of Java-spedific things have not been ported:
 //
@@ -3720,7 +3754,7 @@ JsObject_st.getClassInstance = function ( className ) {
                 "Can't find class " + className );
         result = result[ className[ i ] ];
     }
-    return new JsObject( result );
+    return new JsObject().init( result );
 };
 */
 
@@ -3816,7 +3850,7 @@ JsObject_st.wrap = function ( o ) {
             return ArcObject_st.NIL;
         }
     } else {
-        return new JsObject( o );
+        return new JsObject().init( o );
     }
 };
 
@@ -3850,17 +3884,21 @@ JsObject_st.TYPE = Symbol_st.mkSym( "java-object" );
 
 /** @constructor */
 function Hash() {
+}
+var Hash_st = {};
+
+Hash.prototype = new LiteralObject();
+Hash.prototype.className = "Hash";
+
+Hash.prototype.init = function () {
     this.name_ = ArcObject_st.NIL;
     this.map_ = new StringMap().init();
     this.firstEntry_ = null;
     this.lastEntry_ = null;
     this.naming_ = new Hash_st.DontName();
     this.len_ = 0;
-}
-var Hash_st = {};
-
-Hash.prototype = new LiteralObject();
-Hash.prototype.className = "Hash";
+    return this;
+};
 
 Hash.prototype.unassigned = function ( name ) {
     if ( this.name_ === name ) {
@@ -3871,7 +3909,7 @@ Hash.prototype.unassigned = function ( name ) {
 
 Hash.prototype.assigned = function ( name ) {
     this.name_ = name;
-    this.naming_ = new Hash_st.DoName( this );
+    this.naming_ = new Hash_st.DoName().init( this );
 };
 
 Hash.prototype.assignedName = function () {
@@ -4010,11 +4048,15 @@ Hash_st.Naming.prototype.unname = void 0;
 
 // PORT NOTE: This was an inner class in Java.
 /** @constructor */
-Hash_st.DoName = function ( this_Hash ) {
-    this.this_Hash_ = this_Hash;
+Hash_st.DoName = function () {
 };
 
 Hash_st.DoName.prototype = new Hash_st.Naming();
+
+Hash_st.DoName.prototype.init = function ( this_Hash ) {
+    this.this_Hash_ = this_Hash;
+    return this;
+};
 
 Hash_st.DoName.prototype.name = function ( o, name ) {
     o.assigned( new Pair().init2( name, this.this_Hash_ ) );
@@ -4046,6 +4088,13 @@ Hash_st.TYPE = Symbol_st.mkSym( "table" );
 
 /** @constructor */
 function VM() {
+}
+var VM_st = {};
+
+VM.prototype = new ArcObject();
+VM.prototype.className = "VM";
+
+VM.prototype.init = function () {
     this.threadId = VM_st.threadCount_++;
     
     this.args = new Array( 100 );
@@ -4072,11 +4121,9 @@ function VM() {
     this.debug_target_frame = 0;
     
     this.operating_ = null;
-}
-var VM_st = {};
-
-VM.prototype = new ArcObject();
-VM.prototype.className = "VM";
+    
+    return this;
+};
 
 // PORT NOTE: We've removed VM.thread( LexicalClosure, Pair ), which
 // was unused.
@@ -4230,7 +4277,8 @@ VM.prototype.handleError_ = function ( e ) {
         this.popFrame();
     }
     
-    this.error_ = new ArcException( e, this.operating_, stackTrace );
+    this.error_ =
+        new ArcException().init( e, this.operating_, stackTrace );
     
     for ( var i = instructions.length - 1; 0 <= i; i-- )
         this.pushInvocation2( lexClosures[ i ], instructions[ i ] );
@@ -4484,7 +4532,7 @@ VM.prototype.type = function () {
 };
 
 VM.prototype.copy = function () {
-    var vm = new VM();
+    var vm = new VM().init();
     this.copyTo( vm );
     return vm;
 };
@@ -4579,12 +4627,16 @@ VM_st.threadCount_ = 0;
 
 /** @constructor */
 function ListBuilder() {
-    this.list_ = [];
-    this.last_ = ArcObject_st.NIL;
 }
 
 ListBuilder.prototype = new ArcObject();
 ListBuilder.prototype.className = "ListBuilder";
+
+ListBuilder.prototype.init = function () {
+    this.list_ = [];
+    this.last_ = ArcObject_st.NIL;
+    return this;
+};
 
 ListBuilder.prototype.append = function ( o ) {
     this.list_.push( o );
@@ -4619,7 +4671,6 @@ ListBuilder.prototype.toString = function () {
 
 /** @constructor */
 function Append() {
-    this.initInstruction();
 }
 
 Append.prototype = new Instruction();
@@ -4647,7 +4698,6 @@ Append.prototype.toString = function () {
 
 /** @constructor */
 function AppendAll() {
-    this.initInstruction();
 }
 
 AppendAll.prototype = new Instruction();
@@ -4678,7 +4728,6 @@ AppendAll.prototype.toString = function () {
 
 /** @constructor */
 function AppendDot() {
-    this.initInstruction();
 }
 
 AppendDot.prototype = new Instruction();
@@ -4706,14 +4755,18 @@ AppendDot.prototype.toString = function () {
 
 /** @constructor */
 function Catch( onerr, ap ) {
-    this.initInstruction();
-    this.onerr_ = onerr;
-    this.ap_ = ap;
 }
 
 Catch.prototype = new Instruction();
 Catch.prototype.implementsOnError = true;
 Catch.prototype.className = "Catch";
+
+Catch.prototype.init = function ( onerr, ap ) {
+    this.initInstruction();
+    this.onerr_ = onerr;
+    this.ap_ = ap;
+    return this;
+};
 
 // ASYNC PORT NOTE: This method of the OnError interface didn't exist
 // in Java. The point is to let certain errors propagate without
@@ -4744,13 +4797,17 @@ Catch.prototype.toString = function () {
 // Needed late: rainbow.functions.Closure
 
 /** @constructor */
-function Close_Instruction( ifn ) {
-    this.initInstruction();
-    this.ifn_ = ifn;
+function Close_Instruction() {
 }
 
 Close_Instruction.prototype = new Instruction();
 Close_Instruction.prototype.className = "Close_Instruction";
+
+Close_Instruction.prototype.init = function ( ifn ) {
+    this.initInstruction();
+    this.ifn_ = ifn;
+    return this;
+};
 
 Close_Instruction.prototype.operate = function ( vm ) {
     vm.pushA( new Closure( this.ifn_, vm.lc() ) );
@@ -4768,14 +4825,18 @@ Close_Instruction.prototype.toString = function () {
 // Needed late: rainbow.functions.Closure
 
 /** @constructor */
-function FinallyInvoke( after ) {
-    this.initInstruction();
-    this.after_ = after;
+function FinallyInvoke() {
 }
 
 FinallyInvoke.prototype = new Instruction();
 FinallyInvoke.prototype.implementsFinally = true;
 FinallyInvoke.prototype.className = "FinallyInvoke";
+
+FinallyInvoke.prototype.init = function ( after ) {
+    this.initInstruction();
+    this.after_ = after;
+    return this;
+};
 
 FinallyInvoke.prototype.operate = function ( vm ) {
     this.after_.invoke( vm, ArcObject_st.NIL );
@@ -4794,7 +4855,6 @@ FinallyInvoke.prototype.toString = function () {
 
 /** @constructor */
 function FinishList() {
-    this.initInstruction();
 }
 
 FinishList.prototype = new Instruction();
@@ -4819,13 +4879,17 @@ FinishList.prototype.toString = function () {
 // Needed early: Instruction
 
 /** @constructor */
-function FreeSym( sym ) {
-    this.initInstruction();
-    this.sym_ = sym;
+function FreeSym() {
 }
 
 FreeSym.prototype = new Instruction();
 FreeSym.prototype.className = "FreeSym";
+
+FreeSym.prototype.init = function ( sym ) {
+    this.initInstruction();
+    this.sym_ = sym;
+    return this;
+};
 
 FreeSym.prototype.operate = function ( vm ) {
     vm.pushA( this.sym_.value() );
@@ -4837,7 +4901,7 @@ FreeSym.prototype.toString = function () {
 
 FreeSym.prototype.toStringWithLc = function ( lc ) {
     return "(free-sym " + this.sym_ + " -> " +
-        this.symValue( sym ) + ")";
+        this.symValue( this.sym_ ) + ")";
 };
 
 
@@ -4848,13 +4912,17 @@ FreeSym.prototype.toStringWithLc = function ( lc ) {
 // Needed implicitly: rainbow.vm.interpreter.BoundSymbol
 
 /** @constructor */
-function LexSym( sym ) {
-    this.initInstruction();
-    this.sym_ = sym;
+function LexSym() {
 }
 
 LexSym.prototype = new Instruction();
 LexSym.prototype.className = "LexSym";
+
+LexSym.prototype.init = function ( sym ) {
+    this.initInstruction();
+    this.sym_ = sym;
+    return this;
+};
 
 LexSym.prototype.operate = function ( vm ) {
     vm.pushA( this.sym_.interpret( vm.lc() ) );
@@ -4876,13 +4944,17 @@ LexSym.prototype.toStringWithLc = function ( lc ) {
 // Needed early: Instruction
 
 /** @constructor */
-function Listify( size ) {
-    this.initInstruction();
-    this.size_ = size;
+function Listify() {
 }
 
 Listify.prototype = new Instruction();
 Listify.prototype.className = "Listify";
+
+Listify.prototype.init = function ( size ) {
+    this.initInstruction();
+    this.size_ = size;
+    return this;
+};
 
 Listify.prototype.operate = function ( vm ) {
     vm.pushA( vm.popArgs( this.size_ ) );
@@ -4900,12 +4972,16 @@ Listify.prototype.toString = function () {
 
 /** @constructor */
 function Literal( arg ) {
-    this.initInstruction();
-    this.arg_ = arg;
 }
 
 Literal.prototype = new Instruction();
 Literal.prototype.className = "Literal";
+
+Literal.prototype.init = function ( arg ) {
+    this.initInstruction();
+    this.arg_ = arg;
+    return this;
+};
 
 Literal.prototype.operate = function ( vm ) {
     vm.pushA( this.arg_ );
@@ -4924,14 +5000,13 @@ Literal.prototype.toString = function () {
 
 /** @constructor */
 function NewList() {
-    this.initInstruction();
 }
 
 NewList.prototype = new Instruction();
 NewList.prototype.className = "NewList";
 
 NewList.prototype.operate = function ( vm ) {
-    vm.pushA( new ListBuilder() );
+    vm.pushA( new ListBuilder().init() );
 };
 
 NewList.prototype.toString = function () {
@@ -4945,13 +5020,17 @@ NewList.prototype.toString = function () {
 // Needed early: Instruction
 
 /** @constructor */
-function PopArg( name ) {
-    this.initInstruction();
-    this.name_ = name;
+function PopArg() {
 }
 
 PopArg.prototype = new Instruction();
 PopArg.prototype.className = "PopArg";
+
+PopArg.prototype.init = function ( name ) {
+    this.initInstruction();
+    this.name_ = name;
+    return this;
+};
 
 PopArg.prototype.operate = function ( vm ) {
     vm.popA();
@@ -4971,15 +5050,19 @@ PopArg.prototype.toString = function () {
 // used for setting the values of IO.stdIn_ and IO.stdOut_.
 
 /** @constructor */
-function SetThreadLocal( tl, value ) {
-    this.initInstruction();
-    this.tl_ = tl;
-    this.value_ = value;
+function SetThreadLocal() {
 }
 
 SetThreadLocal.prototype = new Instruction();
 SetThreadLocal.prototype.implementsFinally = true;
 SetThreadLocal.prototype.className = "SetThreadLocal";
+
+SetThreadLocal.prototype.init = function ( tl, value ) {
+    this.initInstruction();
+    this.tl_ = tl;
+    this.value_ = value;
+    return this;
+};
 
 SetThreadLocal.prototype.operate = function ( vm ) {
     this.tl_.value = this.value_;
@@ -4992,14 +5075,18 @@ SetThreadLocal.prototype.operate = function ( vm ) {
 // Needed early: Instruction
 
 /** @constructor */
-function StackSym( name, index ) {
-    this.initInstruction();
-    this.sym_ = name;
-    this.index_ = index;
+function StackSym() {
 }
 
 StackSym.prototype = new Instruction();
 StackSym.prototype.className = "StackSym";
+
+StackSym.prototype.init = function ( name, index ) {
+    this.initInstruction();
+    this.sym_ = name;
+    this.index_ = index;
+    return this;
+};
 
 StackSym.prototype.operate = function ( vm ) {
     vm.pushParam( this.index_ );
@@ -5017,13 +5104,17 @@ StackSym.prototype.toString = function () {
 // Needed late: Pair Nil PopArg
 
 /** @constructor */
-function TableMapper( fn ) {
-    this.initInstruction();
-    this.fn_ = fn;
+function TableMapper() {
 }
 
 TableMapper.prototype = new Instruction();
 TableMapper.prototype.className = "TableMapper";
+
+TableMapper.prototype.init = function ( fn ) {
+    this.initInstruction();
+    this.fn_ = fn;
+    return this;
+};
 
 TableMapper.prototype.operate = function ( vm ) {
     var list = vm.popA();
@@ -5037,7 +5128,7 @@ TableMapper.prototype.operate = function ( vm ) {
         // PORT NOTE: This was a cast in Java.
         if ( !(args instanceof Pair) )
             throw new TypeError();
-        var i = new PopArg( "map-table-iterator" );
+        var i = new PopArg().init( "map-table-iterator" );
         i.belongsTo( this );
         vm.pushFrame( i );
         this.fn_.invoke( vm, args );
@@ -5058,14 +5149,18 @@ TableMapper.prototype.toString = function () {
 // Quotation Assign_Lex_Other
 
 /** @constructor */
-function Assign_Lex( name ) {
-    this.initInstruction();
-    this.name = name;
+function Assign_Lex() {
 }
 var Assign_Lex_st = {};
 
 Assign_Lex.prototype = new Instruction();
 Assign_Lex.prototype.className = "Assign_Lex";
+
+Assign_Lex.prototype.initAssign = function ( name ) {
+    this.initInstruction();
+    this.name = name;
+    return this;
+};
 
 Assign_Lex_st.addInstructions = function ( i, name, expr, last ) {
     if ( expr instanceof BoundSymbol )
@@ -5090,14 +5185,18 @@ Assign_Lex_st.addInstructions = function ( i, name, expr, last ) {
 // Needed early: Assign_Lex
 
 /** @constructor */
-function Assign_Lex_Free( name, symbol ) {
-    Assign_Lex.call( this, name );
-    this.value = symbol;
+function Assign_Lex_Free() {
 }
 var Assign_Lex_Free_st = {};
 
 Assign_Lex_Free.prototype = new Assign_Lex();
 Assign_Lex_Free.prototype.className = "Assign_Lex_Free";
+
+Assign_Lex_Free.prototype.init = function ( name, symbol ) {
+    this.initAssign( name );
+    this.value = symbol;
+    return this;
+};
 
 Assign_Lex_Free.prototype.operate = function ( vm ) {
     var v = this.value.value();
@@ -5109,9 +5208,10 @@ Assign_Lex_Free_st.addInstructions = function (
     i, name, symbol, last ) {
     
     if ( last )
-        i.push( new Assign_Lex_Free( name, symbol ) );
+        i.push( new Assign_Lex_Free().init( name, symbol ) );
     else
-        i.push( new Assign_Lex_Free_st.Intermediate( name, symbol ) );
+        i.push( new Assign_Lex_Free_st.Intermediate().init(
+            name, symbol ) );
 };
 
 Assign_Lex_Free.prototype.toString = function () {
@@ -5119,8 +5219,7 @@ Assign_Lex_Free.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Lex_Free_st.Intermediate = function ( name, value ) {
-    Assign_Lex_Free.call( this, name, value );
+Assign_Lex_Free_st.Intermediate = function () {
 };
 
 Assign_Lex_Free_st.Intermediate.prototype = new Assign_Lex_Free();
@@ -5138,14 +5237,18 @@ Assign_Lex_Free_st.Intermediate.prototype.operate = function ( vm ) {
 // Needed early: Assign_Lex
 
 /** @constructor */
-function Assign_Lex_Lex( name, value ) {
-    Assign_Lex.call( this, name );
-    this.value = value;
+function Assign_Lex_Lex() {
 }
 var Assign_Lex_Lex_st = {};
 
 Assign_Lex_Lex.prototype = new Assign_Lex();
 Assign_Lex_Lex.prototype.className = "Assign_Lex_Lex";
+
+Assign_Lex_Lex.prototype.init = function ( name, value ) {
+    this.initAssign( name );
+    this.value = value;
+    return this;
+};
 
 Assign_Lex_Lex.prototype.operate = function ( vm ) {
     var v = this.value.interpret( vm.lc() );
@@ -5157,9 +5260,10 @@ Assign_Lex_Lex_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Lex_Lex( name, value ) );
+        i.push( new Assign_Lex_Lex().init( name, value ) );
     else
-        i.push( new Assign_Lex_Lex_st.Intermediate( name, value ) );
+        i.push( new Assign_Lex_Lex_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Lex_Lex.prototype.toString = function () {
@@ -5173,8 +5277,7 @@ Assign_Lex_Lex.prototype.toStringWithLc = function ( lc ) {
 };
 
 /** @constructor */
-Assign_Lex_Lex_st.Intermediate = function ( name, value ) {
-    Assign_Lex_Lex.call( this, name, value );
+Assign_Lex_Lex_st.Intermediate = function () {
 };
 
 Assign_Lex_Lex_st.Intermediate.prototype = new Assign_Lex_Lex();
@@ -5193,14 +5296,18 @@ Assign_Lex_Lex_st.Intermediate.prototype.operate = function ( vm ) {
 // Needed early: Assign_Lex
 
 /** @constructor */
-function Assign_Lex_Literal( name, expr ) {
-    Assign_Lex.call( this, name );
-    this.expr = expr;
+function Assign_Lex_Literal() {
 }
 var Assign_Lex_Literal_st = {};
 
 Assign_Lex_Literal.prototype = new Assign_Lex();
 Assign_Lex_Literal.prototype.className = "Assign_Lex_Literal";
+
+Assign_Lex_Literal.prototype.init = function ( name, expr ) {
+    this.initAssign( name );
+    this.expr = expr;
+    return this;
+};
 
 Assign_Lex_Literal.prototype.operate = function ( vm ) {
     this.name.setSymbolValue( vm.lc(), this.expr );
@@ -5211,10 +5318,10 @@ Assign_Lex_Literal_st.addInstructions = function (
     i, name, expr, last ) {
     
     if ( last )
-        i.push( new Assign_Lex_Literal( name, expr ) );
+        i.push( new Assign_Lex_Literal().init( name, expr ) );
     else
-        i.push(
-            new Assign_Lex_Literal_st.Intermediate( name, expr ) );
+        i.push( new Assign_Lex_Literal_st.Intermediate().init(
+            name, expr ) );
 };
 
 Assign_Lex_Literal.prototype.toString = function () {
@@ -5222,8 +5329,7 @@ Assign_Lex_Literal.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Lex_Literal_st.Intermediate = function ( name, value ) {
-    Assign_Lex_Literal.call( this, name, value );
+Assign_Lex_Literal_st.Intermediate = function () {
 };
 
 Assign_Lex_Literal_st.Intermediate.prototype =
@@ -5244,8 +5350,7 @@ Assign_Lex_Literal_st.Intermediate.prototype.operate = function (
 // Needed early: Assign_Lex
 
 /** @constructor */
-function Assign_Lex_Other( name ) {
-    Assign_Lex.call( this, name );
+function Assign_Lex_Other() {
 }
 var Assign_Lex_Other_st = {};
 
@@ -5270,14 +5375,14 @@ Assign_Lex_Other_st.addInstructions = function (
     
     expr.addInstructions( i );
     if ( last )
-        i.push( new Assign_Lex_Other( name ) );
+        i.push( new Assign_Lex_Other().initAssign( name ) );
     else
-        i.push( new Assign_Lex_Other_st.Intermediate( name ) );
+        i.push( new Assign_Lex_Other_st.Intermediate().initAssign(
+            name ) );
 };
 
 /** @constructor */
-Assign_Lex_Other_st.Intermediate = function ( name ) {
-    Assign_Lex_Other.call( this, name );
+Assign_Lex_Other_st.Intermediate = function () {
 };
 
 Assign_Lex_Other_st.Intermediate.prototype = new Assign_Lex_Other();
@@ -5295,14 +5400,18 @@ Assign_Lex_Other_st.Intermediate.prototype.operate = function ( vm ) {
 // Needed early: Assign_Lex
 
 /** @constructor */
-function Assign_Lex_Stack( name, value ) {
-    Assign_Lex.call( this, name );
-    this.value = value;
+function Assign_Lex_Stack() {
 }
 var Assign_Lex_Stack_st = {};
 
 Assign_Lex_Stack.prototype = new Assign_Lex();
 Assign_Lex_Stack.prototype.className = "Assign_Lex_Stack";
+
+Assign_Lex_Stack.prototype.init = function ( name, value ) {
+    this.initAssign( name );
+    this.value = value;
+    return this;
+};
 
 Assign_Lex_Stack.prototype.operate = function ( vm ) {
     var v = this.value.get( vm );
@@ -5314,9 +5423,10 @@ Assign_Lex_Stack_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Lex_Stack( name, value ) );
+        i.push( new Assign_Lex_Stack().init( name, value ) );
     else
-        i.push( new Assign_Lex_Stack_st.Intermediate( name, value ) );
+        i.push( new Assign_Lex_Stack_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Lex_Stack.prototype.toString = function () {
@@ -5330,8 +5440,7 @@ Assign_Lex_Stack.prototype.toStringWithLc = function ( lc ) {
 };
 
 /** @constructor */
-Assign_Lex_Stack_st.Intermediate = function ( name, value ) {
-    Assign_Lex_Stack.call( this, name, value );
+Assign_Lex_Stack_st.Intermediate = function () {
 };
 
 Assign_Lex_Stack_st.Intermediate.prototype = new Assign_Lex_Stack();
@@ -5352,14 +5461,18 @@ Assign_Lex_Stack_st.Intermediate.prototype.operate = function ( vm ) {
 // Quotation Assign_Free_Other
 
 /** @constructor */
-function Assign_Free( name ) {
-    this.initInstruction();
-    this.name = name;
+function Assign_Free() {
 }
 var Assign_Free_st = {};
 
 Assign_Free.prototype = new Instruction();
 Assign_Free.prototype.className = "Assign_Free";
+
+Assign_Free.prototype.initAssign = function ( name ) {
+    this.initInstruction();
+    this.name = name;
+    return this;
+};
 
 Assign_Free_st.addInstructions = function ( i, name, expr, last ) {
     if ( expr instanceof BoundSymbol )
@@ -5384,14 +5497,18 @@ Assign_Free_st.addInstructions = function ( i, name, expr, last ) {
 // Needed early: Assign_Free
 
 /** @constructor */
-function Assign_Free_Free( name, symbol ) {
-    Assign_Free.call( this, name );
-    this.value = symbol;
+function Assign_Free_Free() {
 }
 var Assign_Free_Free_st = {};
 
 Assign_Free_Free.prototype = new Assign_Free();
 Assign_Free_Free.prototype.className = "Assign_Free_Free";
+
+Assign_Free_Free.prototype.init = function ( name, symbol ) {
+    this.initAssign( name );
+    this.value = symbol;
+    return this;
+};
 
 Assign_Free_Free.prototype.operate = function ( vm ) {
     var v = this.value.value();
@@ -5403,9 +5520,10 @@ Assign_Free_Free_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Free_Free( name, value ) );
+        i.push( new Assign_Free_Free().init( name, value ) );
     else
-        i.push( new Assign_Free_Free_st.Intermediate( name, value ) );
+        i.push( new Assign_Free_Free_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Free_Free.prototype.toString = function () {
@@ -5413,8 +5531,7 @@ Assign_Free_Free.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Free_Free_st.Intermediate = function ( name, value ) {
-    Assign_Free_Free.call( this, name, value );
+Assign_Free_Free_st.Intermediate = function () {
 };
 
 Assign_Free_Free_st.Intermediate.prototype = new Assign_Free_Free();
@@ -5432,14 +5549,18 @@ Assign_Free_Free_st.Intermediate.prototype.operate = function ( vm ) {
 // Needed early: Assign_Free
 
 /** @constructor */
-function Assign_Free_Lex( name, value ) {
-    Assign_Free.call( this, name );
-    this.value = value;
+function Assign_Free_Lex() {
 }
 var Assign_Free_Lex_st = {};
 
 Assign_Free_Lex.prototype = new Assign_Free();
 Assign_Free_Lex.prototype.className = "Assign_Free_Lex";
+
+Assign_Free_Lex.prototype.init = function ( name, value ) {
+    this.initAssign( name );
+    this.value = value;
+    return this;
+};
 
 Assign_Free_Lex.prototype.operate = function ( vm ) {
     var v = this.value.interpret( vm.lc() );
@@ -5451,9 +5572,10 @@ Assign_Free_Lex_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Free_Lex( name, value ) );
+        i.push( new Assign_Free_Lex().init( name, value ) );
     else
-        i.push( new Assign_Free_Lex_st.Intermediate( name, value ) );
+        i.push( new Assign_Free_Lex_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Free_Lex.prototype.toString = function () {
@@ -5461,8 +5583,7 @@ Assign_Free_Lex.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Free_Lex_st.Intermediate = function ( name, value ) {
-    Assign_Free_Lex.call( this, name, value );
+Assign_Free_Lex_st.Intermediate = function () {
 };
 
 Assign_Free_Lex_st.Intermediate.prototype = new Assign_Free_Lex();
@@ -5480,14 +5601,18 @@ Assign_Free_Lex_st.Intermediate.prototype.operate = function ( vm ) {
 // Needed early: Assign_Free
 
 /** @constructor */
-function Assign_Free_Literal( name, expr ) {
-    Assign_Free.call( this, name );
-    this.expr = expr;
+function Assign_Free_Literal() {
 }
 var Assign_Free_Literal_st = {};
 
 Assign_Free_Literal.prototype = new Assign_Free();
 Assign_Free_Literal.prototype.className = "Assign_Free_Literal";
+
+Assign_Free_Literal.prototype.init = function ( name, expr ) {
+    this.initAssign( name );
+    this.expr = expr;
+    return this;
+};
 
 Assign_Free_Literal.prototype.operate = function ( vm ) {
     this.name.setValue( this.expr );
@@ -5498,10 +5623,10 @@ Assign_Free_Literal_st.addInstructions = function (
     i, name, expr, last ) {
     
     if ( last )
-        i.push( new Assign_Free_Literal( name, expr ) );
+        i.push( new Assign_Free_Literal().init( name, expr ) );
     else
-        i.push(
-            new Assign_Free_Literal_st.Intermediate( name, expr ) );
+        i.push( new Assign_Free_Literal_st.Intermediate().init(
+            name, expr ) );
 };
 
 Assign_Free_Literal.prototype.toString = function () {
@@ -5510,8 +5635,7 @@ Assign_Free_Literal.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Free_Literal_st.Intermediate = function ( name, expr ) {
-    Assign_Free_Literal.call( this, name, expr );
+Assign_Free_Literal_st.Intermediate = function () {
 };
 
 Assign_Free_Literal_st.Intermediate.prototype =
@@ -5532,8 +5656,7 @@ Assign_Free_Literal_st.Intermediate.prototype.operate = function (
 // Needed early: Assign_Free
 
 /** @constructor */
-function Assign_Free_Other( name ) {
-    Assign_Free.call( this, name );
+function Assign_Free_Other() {
 }
 var Assign_Free_Other_st = {};
 
@@ -5558,14 +5681,14 @@ Assign_Free_Other_st.addInstructions = function (
     
     expr.addInstructions( i );
     if ( last )
-        i.push( new Assign_Free_Other( name ) );
+        i.push( new Assign_Free_Other().initAssign( name ) );
     else
-        i.push( new Assign_Free_Other_st.Intermediate( name ) );
+        i.push( new Assign_Free_Other_st.Intermediate().initAssign(
+            name ) );
 };
 
 /** @constructor */
-Assign_Free_Other_st.Intermediate = function ( name ) {
-    Assign_Free_Other.call( this, name );
+Assign_Free_Other_st.Intermediate = function () {
 };
 
 Assign_Free_Other_st.Intermediate.prototype = new Assign_Free_Other();
@@ -5585,14 +5708,18 @@ Assign_Free_Other_st.Intermediate.prototype.operate = function (
 // Needed early: Assign_Free
 
 /** @constructor */
-function Assign_Free_Stack( name, value ) {
-    Assign_Free.call( this, name );
-    this.value = value;
+function Assign_Free_Stack() {
 }
 var Assign_Free_Stack_st = {};
 
 Assign_Free_Stack.prototype = new Assign_Free();
 Assign_Free_Stack.prototype.className = "Assign_Free_Stack";
+
+Assign_Free_Stack.prototype.init = function ( name, value ) {
+    this.initAssign( name );
+    this.value = value;
+    return this;
+};
 
 Assign_Free_Stack.prototype.operate = function ( vm ) {
     var v = this.value.get( vm );
@@ -5604,10 +5731,10 @@ Assign_Free_Stack_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Free_Stack( name, value ) );
+        i.push( new Assign_Free_Stack().init( name, value ) );
     else
-        i.push(
-            new Assign_Free_Stack_st.Intermediate( name, value ) );
+        i.push( new Assign_Free_Stack_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Free_Stack.prototype.toString = function () {
@@ -5615,8 +5742,7 @@ Assign_Free_Stack.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Free_Stack_st.Intermediate = function ( name, value ) {
-    Assign_Free_Stack.call( this, name, value );
+Assign_Free_Stack_st.Intermediate = function () {
 };
 
 Assign_Free_Stack_st.Intermediate.prototype = new Assign_Free_Stack();
@@ -5639,14 +5765,18 @@ Assign_Free_Stack_st.Intermediate.prototype.operate = function (
 // Quotation Assign_Stack_Other
 
 /** @constructor */
-function Assign_Stack( name ) {
-    this.initInstruction();
-    this.name = name;
+function Assign_Stack() {
 }
 var Assign_Stack_st = {};
 
 Assign_Stack.prototype = new Instruction();
 Assign_Stack.prototype.className = "Assign_Stack";
+
+Assign_Stack.prototype.initAssign = function ( name ) {
+    this.initInstruction();
+    this.name = name;
+    return this;
+};
 
 Assign_Stack_st.addInstructions = function ( i, name, expr, last ) {
     if ( expr instanceof BoundSymbol )
@@ -5672,14 +5802,18 @@ Assign_Stack_st.addInstructions = function ( i, name, expr, last ) {
 // Needed early: Assign_Stack
 
 /** @constructor */
-function Assign_Stack_Free( name, symbol ) {
-    Assign_Stack.call( this, name );
-    this.value = symbol;
+function Assign_Stack_Free() {
 }
 var Assign_Stack_Free_st = {};
 
 Assign_Stack_Free.prototype = new Assign_Stack();
 Assign_Stack_Free.prototype.className = "Assign_Stack_Free";
+
+Assign_Stack_Free.prototype.init = function ( name, symbol ) {
+    this.initAssign( name );
+    this.value = symbol;
+    return this;
+};
 
 Assign_Stack_Free.prototype.operate = function ( vm ) {
     var v = this.value.value();
@@ -5691,10 +5825,10 @@ Assign_Stack_Free_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Stack_Free( name, value ) );
+        i.push( new Assign_Stack_Free().init( name, value ) );
     else
-        i.push(
-            new Assign_Stack_Free_st.Intermediate( name, value ) );
+        i.push( new Assign_Stack_Free_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Stack_Free.prototype.toString = function () {
@@ -5702,8 +5836,7 @@ Assign_Stack_Free.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Stack_Free_st.Intermediate = function ( name, value ) {
-    Assign_Stack_Free.call( this, name, value );
+Assign_Stack_Free_st.Intermediate = function () {
 };
 
 Assign_Stack_Free_st.Intermediate.prototype = new Assign_Stack_Free();
@@ -5721,14 +5854,18 @@ Assign_Stack_Free_st.Intermediate.prototype.operate = function ( vm ) {
 // Needed early: Assign_Stack
 
 /** @constructor */
-function Assign_Stack_Lex( name, value ) {
-    Assign_Stack.call( this, name );
-    this.value = value;
+function Assign_Stack_Lex() {
 }
 var Assign_Stack_Lex_st = {};
 
 Assign_Stack_Lex.prototype = new Assign_Stack();
 Assign_Stack_Lex.prototype.className = "Assign_Stack_Lex";
+
+Assign_Stack_Lex.prototype.init = function ( name, value ) {
+    this.initAssign( name );
+    this.value = value;
+    return this;
+};
 
 Assign_Stack_Lex.prototype.operate = function ( vm ) {
     var v = this.value.interpret( vm.lc() );
@@ -5740,9 +5877,10 @@ Assign_Stack_Lex_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Stack_Lex( name, value ) );
+        i.push( new Assign_Stack_Lex().init( name, value ) );
     else
-        i.push( new Assign_Stack_Lex_st.Intermediate( name, value ) );
+        i.push( new Assign_Stack_Lex_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Stack_Lex.prototype.toString = function () {
@@ -5750,8 +5888,7 @@ Assign_Stack_Lex.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Stack_Lex_st.Intermediate = function ( name, value ) {
-    Assign_Stack_Lex.call( this, name, value );
+Assign_Stack_Lex_st.Intermediate = function () {
 };
 
 Assign_Stack_Lex_st.Intermediate.prototype = new Assign_Stack_Lex();
@@ -5769,14 +5906,18 @@ Assign_Stack_Lex_st.Intermediate.prototype.operate = function ( vm ) {
 // Needed early: Assign_Stack
 
 /** @constructor */
-function Assign_Stack_Literal( name, value ) {
-    Assign_Stack.call( this, name );
-    this.value = value;
+function Assign_Stack_Literal() {
 }
 var Assign_Stack_Literal_st = {};
 
 Assign_Stack_Literal.prototype = new Assign_Stack();
 Assign_Stack_Literal.prototype.className = "Assign_Stack_Literal";
+
+Assign_Stack_Literal.prototype.init = function ( name, value ) {
+    this.initAssign( name );
+    this.value = value;
+    return this;
+};
 
 Assign_Stack_Literal.prototype.operate = function ( vm ) {
     this.name.set( vm, this.value );
@@ -5787,10 +5928,10 @@ Assign_Stack_Literal_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Stack_Literal( name, value ) );
+        i.push( new Assign_Stack_Literal().init( name, value ) );
     else
-        i.push(
-            new Assign_Stack_Literal_st.Intermediate( name, value ) );
+        i.push( new Assign_Stack_Literal_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Stack_Literal.prototype.toString = function () {
@@ -5798,8 +5939,7 @@ Assign_Stack_Literal.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Stack_Literal_st.Intermediate = function ( name, value ) {
-    Assign_Stack_Literal.call( this, name, value );
+Assign_Stack_Literal_st.Intermediate = function () {
 };
 
 Assign_Stack_Literal_st.Intermediate.prototype =
@@ -5820,8 +5960,7 @@ Assign_Stack_Literal_st.Intermediate.prototype.operate = function (
 // Needed early: Assign_Stack
 
 /** @constructor */
-function Assign_Stack_Other( name ) {
-    Assign_Stack.call( this, name );
+function Assign_Stack_Other() {
 }
 var Assign_Stack_Other_st = {};
 
@@ -5841,14 +5980,14 @@ Assign_Stack_Other_st.addInstructions = function (
     
     expr.addInstructions( i );
     if ( last )
-        i.push( new Assign_Stack_Other( name ) );
+        i.push( new Assign_Stack_Other().initAssign( name ) );
     else
-        i.push( new Assign_Stack_Other_st.Intermediate( name ) );
+        i.push( new Assign_Stack_Other_st.Intermediate().initAssign(
+            name ) );
 };
 
 /** @constructor */
-Assign_Stack_Other_st.Intermediate = function ( name ) {
-    Assign_Stack_Other.call( this, name );
+Assign_Stack_Other_st.Intermediate = function () {
 };
 
 Assign_Stack_Other_st.Intermediate.prototype =
@@ -5869,14 +6008,18 @@ Assign_Stack_Other_st.Intermediate.prototype.operate = function (
 // Needed early: Assign_Stack
 
 /** @constructor */
-function Assign_Stack_Stack( name, value ) {
-    Assign_Stack.call( this, name );
-    this.value = value;
+function Assign_Stack_Stack() {
 }
 var Assign_Stack_Stack_st = {};
 
 Assign_Stack_Stack.prototype = new Assign_Stack();
 Assign_Stack_Stack.prototype.className = "Assign_Stack_Stack";
+
+Assign_Stack_Stack.prototype.init = function ( name, value ) {
+    this.initAssign( name );
+    this.value = value;
+    return this;
+};
 
 Assign_Stack_Stack.prototype.operate = function ( vm ) {
     var v = this.value.get( vm );
@@ -5888,10 +6031,10 @@ Assign_Stack_Stack_st.addInstructions = function (
     i, name, value, last ) {
     
     if ( last )
-        i.push( new Assign_Stack_Stack( name, value ) );
+        i.push( new Assign_Stack_Stack().init( name, value ) );
     else
-        i.push(
-            new Assign_Stack_Stack_st.Intermediate( name, value ) );
+        i.push( new Assign_Stack_Stack_st.Intermediate().init(
+            name, value ) );
 };
 
 Assign_Stack_Stack.prototype.toString = function () {
@@ -5899,8 +6042,7 @@ Assign_Stack_Stack.prototype.toString = function () {
 };
 
 /** @constructor */
-Assign_Stack_Stack_st.Intermediate = function ( name, value ) {
-    Assign_Stack_Stack.call( this, name, value );
+Assign_Stack_Stack_st.Intermediate = function () {
 };
 
 Assign_Stack_Stack_st.Intermediate.prototype =
@@ -5922,17 +6064,21 @@ Assign_Stack_Stack_st.Intermediate.prototype.operate = function (
 // Needed late: Nil
 
 /** @constructor */
-function Cond( thenExpr, elseExpr, sig ) {
-    this.initInstruction();
-    this.thenExpr_ = thenExpr;
-    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
-    this.elseExpr_ = elseExpr;
-    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
+function Cond() {
 }
 var Cond_st = {};
 
 Cond.prototype = new Instruction();
 Cond.prototype.className = "Cond";
+
+Cond.prototype.init = function ( thenExpr, elseExpr, sig ) {
+    this.initInstruction();
+    this.thenExpr_ = thenExpr;
+    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
+    this.elseExpr_ = elseExpr;
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
+    return this;
+};
 
 Cond_st.instructionsFor = function ( expr ) {
     var list = [];
@@ -5964,11 +6110,7 @@ Cond.prototype.toString = function () {
 // Needed late: Nil BoundSymbol rainbow.vm.interpreter.Else
 
 /** @constructor */
-function If_bound_bound_literal( ifExpr, thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.ifExpr_ = ifExpr;
-    this.thenExpr_ = thenExpr;
-    this.elseExpr_ = elseExpr;
+function If_bound_bound_literal() {
 }
 var If_bound_bound_literal_st = {};
 var If_bound_bound_literal_stForClasses = {};
@@ -5977,6 +6119,16 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_bound_bound_literal.prototype = new Instruction();
 If_bound_bound_literal.prototype.className = "If_bound_bound_literal";
+
+If_bound_bound_literal.prototype.init = function (
+    ifExpr, thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.ifExpr_ = ifExpr;
+    this.thenExpr_ = thenExpr;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_bound_bound_literal.prototype.operate = function ( vm ) {
     if ( this.ifExpr_.interpret( vm.lc() ) instanceof Nil )
@@ -6001,10 +6153,10 @@ If_bound_bound_literal_stForClasses.addInstructions = function (
         if ( elseExpr.ifExpression instanceof Nil )
             ifExpr.addInstructions( i );
         else
-            i.push( new If_bound_bound_literal_st.Or(
+            i.push( new If_bound_bound_literal_st.Or().init(
                 ifExpr, elseExpr.ifExpression ) );
     } else {
-        i.push( new If_bound_bound_literal(
+        i.push( new If_bound_bound_literal().init(
             ifExpr, thenExpr, elseExpr.ifExpression ) );
     }
 };
@@ -6015,15 +6167,21 @@ If_bound_bound_literal.prototype.toString = function () {
 };
 
 /** @constructor */
-If_bound_bound_literal_st.Or = function ( a, elseExpr ) {
-    this.initInstruction();
-    this.a_ = a;
-    this.elseExpr_ = elseExpr;
+If_bound_bound_literal_st.Or = function () {
 };
 
 If_bound_bound_literal_st.Or.prototype = new Instruction();
 If_bound_bound_literal_st.Or.prototype.className =
     "If_bound_bound_literal.Or";
+
+If_bound_bound_literal_st.Or.prototype.init = function (
+    a, elseExpr ) {
+    
+    this.initInstruction();
+    this.a_ = a;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_bound_bound_literal_st.Or.prototype.operate = function ( vm ) {
     var cond = this.a_.interpret( vm.lc() );
@@ -6045,12 +6203,7 @@ If_bound_bound_literal_st.Or.prototype.toString = function () {
 // Needed late: Cond Nil BoundSymbol
 
 /** @constructor */
-function If_bound_bound_other( ifExpr, thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.ifExpr_ = ifExpr;
-    this.thenExpr_ = thenExpr;
-    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
-    this.elseExpr_ = elseExpr;
+function If_bound_bound_other() {
 }
 var If_bound_bound_other_st = {};
 var If_bound_bound_other_stForClasses = {};
@@ -6059,6 +6212,17 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_bound_bound_other.prototype = new Instruction();
 If_bound_bound_other.prototype.className = "If_bound_bound_other";
+
+If_bound_bound_other.prototype.init = function (
+    ifExpr, thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.ifExpr_ = ifExpr;
+    this.thenExpr_ = thenExpr;
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_bound_bound_other.prototype.operate = function ( vm ) {
     if ( this.ifExpr_.interpret( vm.lc() ) instanceof Nil )
@@ -6077,9 +6241,10 @@ If_bound_bound_other_stForClasses.addInstructions = function (
     if ( !(thenExpr instanceof BoundSymbol) )
         throw new TypeError();
     if ( ifExpr.isSameBoundSymbol( thenExpr ) ) {
-        i.push( new If_bound_bound_other_st.Or( ifExpr, elseExpr ) );
+        i.push( new If_bound_bound_other_st.Or().init(
+            ifExpr, elseExpr ) );
     } else {
-        i.push( new If_bound_bound_other(
+        i.push( new If_bound_bound_other().init(
             ifExpr, thenExpr, elseExpr ) );
     }
 };
@@ -6095,16 +6260,20 @@ If_bound_bound_other.prototype.toString = function () {
 };
 
 /** @constructor */
-If_bound_bound_other_st.Or = function ( a, elseExpr ) {
-    this.initInstruction();
-    this.a_ = a;
-    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
-    this.elseExpr_ = elseExpr;
+If_bound_bound_other_st.Or = function () {
 };
 
 If_bound_bound_other_st.Or.prototype = new Instruction();
 If_bound_bound_other_st.Or.prototype.className =
     "If_bound_bound_other.Or";
+
+If_bound_bound_other_st.Or.prototype.init = function ( a, elseExpr ) {
+    this.initInstruction();
+    this.a_ = a;
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_bound_bound_other_st.Or.prototype.operate = function ( vm ) {
     var cond = this.a_.interpret( vm.lc() );
@@ -6131,11 +6300,7 @@ If_bound_bound_other_st.Or.prototype.toString = function () {
 // Needed late: Nil rainbow.vm.interpreter.Else BoundSymbol
 
 /** @constructor */
-function If_bound_literal_literal( ifExpr, thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.ifExpr_ = ifExpr;
-    this.thenExpr_ = thenExpr;
-    this.elseExpr_ = elseExpr;
+function If_bound_literal_literal() {
 }
 var If_bound_literal_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -6145,6 +6310,16 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 If_bound_literal_literal.prototype = new Instruction();
 If_bound_literal_literal.prototype.className =
     "If_bound_literal_literal";
+
+If_bound_literal_literal.prototype.init = function (
+    ifExpr, thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.ifExpr_ = ifExpr;
+    this.thenExpr_ = thenExpr;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_bound_literal_literal.prototype.operate = function ( vm ) {
     if ( this.ifExpr_.interpret( vm.lc() ) instanceof Nil )
@@ -6167,7 +6342,7 @@ If_bound_literal_literal_stForClasses.addInstructions = function (
     // PORT NOTE: This was a cast in Java.
     if ( !(ifExpr instanceof BoundSymbol) )
         throw new TypeError();
-    i.push( new If_bound_literal_literal(
+    i.push( new If_bound_literal_literal().init(
         ifExpr, thenExpr, elseExpr.ifExpression ) );
 };
 
@@ -6179,12 +6354,7 @@ If_bound_literal_literal_stForClasses.addInstructions = function (
 // Needed late: Cond Nil BoundSymbol rainbow.vm.interpreter.Else
 
 /** @constructor */
-function If_bound_other_literal( ifExpr, thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.ifExpr_ = ifExpr;
-    this.thenExpr_ = thenExpr;
-    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
-    this.elseExpr_ = elseExpr;
+function If_bound_other_literal() {
 }
 var If_bound_other_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -6192,6 +6362,17 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_bound_other_literal.prototype = new Instruction();
 If_bound_other_literal.prototype.className = "If_bound_other_literal";
+
+If_bound_other_literal.prototype.init = function (
+    ifExpr, thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.ifExpr_ = ifExpr;
+    this.thenExpr_ = thenExpr;
+    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_bound_other_literal.prototype.operate = function ( vm ) {
     if ( this.ifExpr_.interpret( vm.lc() ) instanceof Nil )
@@ -6219,7 +6400,7 @@ If_bound_other_literal_stForClasses.addInstructions = function (
     // PORT NOTE: This was a cast and a local variable in Java.
     if ( !(elseExpr instanceof Else) )
         throw new TypeError();
-    i.push( new If_bound_other_literal(
+    i.push( new If_bound_other_literal().init(
         ifExpr, thenExpr, elseExpr.ifExpression ) );
 };
 
@@ -6231,13 +6412,7 @@ If_bound_other_literal_stForClasses.addInstructions = function (
 // Needed late: Cond Nil BoundSymbol
 
 /** @constructor */
-function If_bound_other_other( ifExpr, thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.ifExpr_ = ifExpr;
-    this.thenExpr_ = thenExpr;
-    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
-    this.elseExpr_ = elseExpr;
-    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
+function If_bound_other_other() {
 }
 var If_bound_other_other_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -6245,6 +6420,18 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_bound_other_other.prototype = new Instruction();
 If_bound_other_other.prototype.className = "If_bound_other_other";
+
+If_bound_other_other.prototype.init = function (
+    ifExpr, thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.ifExpr_ = ifExpr;
+    this.thenExpr_ = thenExpr;
+    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
+    this.elseExpr_ = elseExpr;
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
+    return this;
+};
 
 If_bound_other_other.prototype.operate = function ( vm ) {
     if ( this.ifExpr_.interpret( vm.lc() ) instanceof Nil )
@@ -6269,7 +6456,8 @@ If_bound_other_other_stForClasses.addInstructions = function (
     // PORT NOTE: This was a cast and a local variable in Java.
     if ( !(ifExpr instanceof BoundSymbol) )
         throw new TypeError();
-    i.push( new If_bound_other_other( ifExpr, thenExpr, elseExpr ) );
+    i.push( new If_bound_other_other().init(
+        ifExpr, thenExpr, elseExpr ) );
 };
 
 
@@ -6280,11 +6468,7 @@ If_bound_other_other_stForClasses.addInstructions = function (
 // Needed late: Cond Nil BoundSymbol
 
 /** @constructor */
-function If_other_bound_other( thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
-    this.thenExpr_ = thenExpr;
-    this.elseExpr_ = elseExpr;
+function If_other_bound_other() {
 }
 var If_other_bound_other_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -6292,6 +6476,16 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_other_bound_other.prototype = new Instruction();
 If_other_bound_other.prototype.className = "If_other_bound_other";
+
+If_other_bound_other.prototype.init = function (
+    thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
+    this.thenExpr_ = thenExpr;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_other_bound_other.prototype.operate = function ( vm ) {
     if ( vm.popA() instanceof Nil )
@@ -6316,7 +6510,7 @@ If_other_bound_other_stForClasses.addInstructions = function (
     // PORT NOTE: This was a cast in Java.
     if ( !(thenExpr instanceof BoundSymbol) )
         throw new TypeError();
-    i.push( new If_other_bound_other( thenExpr, elseExpr ) );
+    i.push( new If_other_bound_other().init( thenExpr, elseExpr ) );
 };
 
 
@@ -6327,11 +6521,7 @@ If_other_bound_other_stForClasses.addInstructions = function (
 // Needed late: Cond Nil rainbow.vm.interpreter.Else
 
 /** @constructor */
-function If_other_other_literal( thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
-    this.thenExpr_ = thenExpr;
-    this.elseExpr_ = elseExpr;
+function If_other_other_literal() {
 }
 var If_other_other_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -6339,6 +6529,16 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_other_other_literal.prototype = new Instruction();
 If_other_other_literal.prototype.className = "If_other_other_literal";
+
+If_other_other_literal.prototype.init = function (
+    thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.thenInstructions_ = Cond_st.instructionsFor( thenExpr );
+    this.thenExpr_ = thenExpr;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_other_other_literal.prototype.operate = function ( vm ) {
     if ( vm.popA() instanceof Nil )
@@ -6363,7 +6563,7 @@ If_other_other_literal_stForClasses.addInstructions = function (
     if ( !(elseExpr instanceof Else) )
         throw new TypeError();
     ifExpr.addInstructions( i );
-    i.push( new If_other_other_literal(
+    i.push( new If_other_other_literal().init(
         thenExpr, elseExpr.ifExpression ) );
 };
 
@@ -6375,10 +6575,7 @@ If_other_other_literal_stForClasses.addInstructions = function (
 // Needed late: Nil rainbow.vm.interpreter.Else StackSymbol
 
 /** @constructor */
-function If_other_stack_literal( thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.thenExpr_ = thenExpr;
-    this.elseExpr_ = elseExpr;
+function If_other_stack_literal() {
 }
 var If_other_stack_literal_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -6386,6 +6583,15 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_other_stack_literal.prototype = new Instruction();
 If_other_stack_literal.prototype.className = "If_other_stack_literal";
+
+If_other_stack_literal.prototype.init = function (
+    thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.thenExpr_ = thenExpr;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_other_stack_literal.prototype.operate = function ( vm ) {
     if ( vm.popA() instanceof Nil )
@@ -6408,7 +6614,7 @@ If_other_stack_literal_stForClasses.addInstructions = function (
     // PORT NOTE: This was a cast in Java.
     if ( !(thenExpr instanceof StackSymbol) )
         throw new TypeError();
-    i.push( new If_other_stack_literal(
+    i.push( new If_other_stack_literal().init(
         thenExpr, elseExpr.ifExpression ) );
 };
 
@@ -6420,11 +6626,7 @@ If_other_stack_literal_stForClasses.addInstructions = function (
 // Needed late: Cond Nil StackSymbol
 
 /** @constructor */
-function If_other_stack_other( thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.thenExpr_ = thenExpr;
-    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
-    this.elseExpr_ = elseExpr;
+function If_other_stack_other() {
 }
 var If_other_stack_other_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -6432,6 +6634,16 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_other_stack_other.prototype = new Instruction();
 If_other_stack_other.prototype.className = "If_other_stack_other";
+
+If_other_stack_other.prototype.init = function (
+    thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.thenExpr_ = thenExpr;
+    this.elseInstructions_ = Cond_st.instructionsFor( elseExpr );
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_other_stack_other.prototype.operate = function ( vm ) {
     if ( vm.popA() instanceof Nil )
@@ -6456,7 +6668,7 @@ If_other_stack_other_stForClasses.addInstructions = function (
     // PORT NOTE: This was a cast in Java.
     if ( !(thenExpr instanceof StackSymbol) )
         throw new TypeError();
-    i.push( new If_other_stack_other( thenExpr, elseExpr ) );
+    i.push( new If_other_stack_other().init( thenExpr, elseExpr ) );
 };
 
 
@@ -6467,10 +6679,7 @@ If_other_stack_other_stForClasses.addInstructions = function (
 // Needed late: Nil StackSymbol rainbow.vm.interpreter.Else Symbol
 
 /** @constructor */
-function If_stack_literal_free( ifExpr, thenExpr, elseExpr ) {
-    this.ifExpr_ = ifExpr;
-    this.thenExpr_ = thenExpr;
-    this.elseExpr_ = elseExpr;
+function If_stack_literal_free() {
 }
 var If_stack_literal_free_stForClasses = {};
 classes[ "rainbow.vm.instructions.cond.optimise." +
@@ -6478,6 +6687,16 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_stack_literal_free.prototype = new Instruction();
 If_stack_literal_free.prototype.className = "If_stack_literal_free";
+
+If_stack_literal_free.prototype.init = function (
+    ifExpr, thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.ifExpr_ = ifExpr;
+    this.thenExpr_ = thenExpr;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_stack_literal_free.prototype.operate = function ( vm ) {
     if ( this.ifExpr_.get( vm ) instanceof Nil )
@@ -6504,7 +6723,8 @@ If_stack_literal_free_stForClasses.addInstructions = function (
     // PORT NOTE: This was a cast in Java.
     if ( !(ee instanceof Symbol) )
         throw new TypeError();
-    i.push( new If_stack_literal_free( ifExpr, thenExpr, ee ) );
+    i.push(
+        new If_stack_literal_free().init( ifExpr, thenExpr, ee ) );
 };
 
 
@@ -6515,11 +6735,7 @@ If_stack_literal_free_stForClasses.addInstructions = function (
 // Needed late: Nil StackSymbol rainbow.vm.interpreter.Else
 
 /** @constructor */
-function If_stack_stack_literal( ifExpr, thenExpr, elseExpr ) {
-    this.initInstruction();
-    this.ifExpr_ = ifExpr;
-    this.thenExpr_ = thenExpr;
-    this.elseExpr_ = elseExpr;
+function If_stack_stack_literal() {
 }
 var If_stack_stack_literal_st = {};
 var If_stack_stack_literal_stForClasses = {};
@@ -6528,6 +6744,16 @@ classes[ "rainbow.vm.instructions.cond.optimise." +
 
 If_stack_stack_literal.prototype = new Instruction();
 If_stack_stack_literal.prototype.className = "If_stack_stack_literal";
+
+If_stack_stack_literal.prototype.init = function (
+    ifExpr, thenExpr, elseExpr ) {
+    
+    this.initInstruction();
+    this.ifExpr_ = ifExpr;
+    this.thenExpr_ = thenExpr;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_stack_stack_literal.prototype.operate = function ( vm ) {
     if ( this.ifExpr_.get( vm ) instanceof Nil )
@@ -6557,24 +6783,30 @@ If_stack_stack_literal_stForClasses.addInstructions = function (
         if ( elseExpr.ifExpression instanceof Nil )
             ifExpr.addInstructions( i );
         else
-            i.push( new If_stack_stack_literal_st.Or(
+            i.push( new If_stack_stack_literal_st.Or().init(
                 ifExpr, elseExpr.ifExpression ) );
     } else {
-        i.push( new If_stack_stack_literal(
+        i.push( new If_stack_stack_literal().init(
             ifExpr, thenExpr, elseExpr.ifExpression ) );
     }
 };
 
 /** @constructor */
-If_stack_stack_literal_st.Or = function ( a, elseExpr ) {
-    this.initInstruction();
-    this.a_ = a;
-    this.elseExpr_ = elseExpr;
+If_stack_stack_literal_st.Or = function () {
 };
 
 If_stack_stack_literal_st.Or.prototype = new Instruction();
 If_stack_stack_literal_st.Or.prototype.className =
     "If_stack_stack_literal.Or";
+
+If_stack_stack_literal_st.Or.prototype.init = function (
+    a, elseExpr ) {
+    
+    this.initInstruction();
+    this.a_ = a;
+    this.elseExpr_ = elseExpr;
+    return this;
+};
 
 If_stack_stack_literal_st.Or.prototype.operate = function ( vm ) {
     var cond = this.a_.get( vm );
@@ -7100,7 +7332,7 @@ StackSymbol.prototype.set = function ( vm, newValue ) {
 };
 
 StackSymbol.prototype.addInstructions = function ( i ) {
-    i.push( new StackSym( this.name, this.index_ ) );
+    i.push( new StackSym().init( this.name, this.index_ ) );
 };
 
 StackSymbol.prototype.type = function () {
@@ -7161,7 +7393,7 @@ BoundSymbol.prototype.interpret = function ( lc ) {
 };
 
 BoundSymbol.prototype.addInstructions = function ( i ) {
-    i.push( new LexSym( this ) );
+    i.push( new LexSym().init( this ) );
 };
 
 BoundSymbol.prototype.type = function () {
@@ -7899,7 +8131,7 @@ IfThen_st.loadHandler = function ( classname ) {
 
 IfThen.prototype.defaultAddInstructions = function ( i, sig ) {
     this.ifExpression.addInstructions( i );
-    i.push( new Cond( this.thenExpression, this.next, sig ) );
+    i.push( new Cond().init( this.thenExpression, this.next, sig ) );
 };
 
 IfThen.prototype.reduce = function () {
@@ -8078,7 +8310,7 @@ Quotation.prototype = new ArcObject();
 Quotation.prototype.className = "Quotation";
 
 Quotation.prototype.addInstructions = function ( i ) {
-    i.push( new Literal( this.quoted_ ) );
+    i.push( new Literal().init( this.quoted_ ) );
 };
 
 Quotation.prototype.quoted = function () {
@@ -8484,34 +8716,36 @@ QuasiQuotation.prototype.addInstructions_ = function (
         if ( nesting === 1 ) {
             expr.cdr().car().addInstructions( i );
         } else {
-            i.push( new Literal( QuasiQuoteCompiler_st.UNQUOTE ) );
+            i.push(
+                new Literal().init( QuasiQuoteCompiler_st.UNQUOTE ) );
             this.addInstructions_( i, expr.cdr().car(), nesting - 1 );
-            i.push( new Listify( 2 ) );
+            i.push( new Listify().init( 2 ) );
         }
         return;
     } else if ( QuasiQuotation_st.isUnQuoteSplicing( expr ) ) {
         if ( nesting === 1 ) {
             expr.cdr().car().addInstructions( i );
-            i.push( new AppendAll() );
+            i.push( new AppendAll().initInstruction() );
         } else {
-            i.push( new Literal(
+            i.push( new Literal().init(
                 QuasiQuoteCompiler_st.UNQUOTE_SPLICING ) );
             this.addInstructions_( i, expr.cdr().car(), nesting - 1 );
-            i.push( new Listify( 2 ) );
-            i.push( new Append() );
+            i.push( new Listify().init( 2 ) );
+            i.push( new Append().initInstruction() );
         }
         return;
     } else if ( QuasiQuotation_st.isQuasiQuote( expr ) ) {
-        i.push( new Literal( QuasiQuoteCompiler_st.QUASIQUOTE ) );
+        i.push(
+            new Literal().init( QuasiQuoteCompiler_st.QUASIQUOTE ) );
         this.addInstructions_( i, expr.cdr().car(), nesting + 1 );
-        i.push( new Listify( 2 ) );
+        i.push( new Listify().init( 2 ) );
         return;
     } else if ( expr.isNotPair() ) {
-        i.push( new Literal( expr ) );
+        i.push( new Literal().init( expr ) );
         return;
     }
     
-    i.push( new NewList() );
+    i.push( new NewList().initInstruction() );
     
     while ( !expr.isNotPair() )
         if ( QuasiQuotation_st.isUnQuote( expr )
@@ -8519,7 +8753,7 @@ QuasiQuotation.prototype.addInstructions_ = function (
             // catch post-dot unquotes
             this.addInstructions_( i, expr, nesting );
             expr = expr.cdr().cdr();
-            i.push( new AppendDot() );
+            i.push( new AppendDot().initInstruction() );
         } else {
             var current = expr.car();
             expr = expr.cdr();
@@ -8529,19 +8763,19 @@ QuasiQuotation.prototype.addInstructions_ = function (
                 || QuasiQuotation_st.isQuasiQuote( current )
                 || QuasiQuotation_st.isPair_( current ) ) {
                 this.addInstructions_( i, current, nesting );
-                i.push( new Append() );
+                i.push( new Append().initInstruction() );
             } else {
-                i.push( new Literal( current ) );
-                i.push( new Append() );
+                i.push( new Literal().init( current ) );
+                i.push( new Append().initInstruction() );
             }
         }
     
     if ( !(expr instanceof Nil) ) {
-        i.push( new Literal( expr ) );
-        i.push( new AppendDot() );
+        i.push( new Literal().init( expr ) );
+        i.push( new AppendDot().initInstruction() );
     }
     
-    i.push( new FinishList() );
+    i.push( new FinishList().initInstruction() );
 };
 
 QuasiQuotation_st.isQQPair = function ( expression, car ) {
@@ -9457,7 +9691,7 @@ AssignmentBuilder_st.build = function ( vm, body, lexicalBindings ) {
     var assignment = new Assignment();
     assignment.prepare( body.len() );
     
-    var i = new Literal( assignment );
+    var i = new Literal().init( assignment );
     // ASYNC PORT TODO: Come up with a better owner for this.
     i.belongsTo( ArcString_st.make( "AssignmentBuilder.build" ) );
     vm.pushFrame( i );
@@ -10256,7 +10490,7 @@ FunctionParameterListBuilder_st.BuildParams1.prototype.operate =
     function ( vm ) {
     
     if ( this.parameters_.isNotPair() ) {
-        var i = new Literal( this.parameters_ );
+        var i = new Literal().init( this.parameters_ );
         i.belongsTo( this );
         vm.pushFrame( i );
         return;
@@ -11628,14 +11862,15 @@ InterpretedFunction.prototype.claimInstructions_ = function (
 
 InterpretedFunction.prototype.buildInstructions = function ( i ) {
     if ( this.body.length === 0 )
-        i.push( new Literal( ArcObject_st.NIL ) );
+        i.push( new Literal().init( ArcObject_st.NIL ) );
     else
         for ( var b = 0; b < this.body.length; b++ ) {
             var expr = this.body[ b ];
             var last = b === this.body.length - 1;
             expr.addInstructions( i );
             if ( !last )
-                i.push( new PopArg( "intermediate-fn-expression" ) );
+                i.push( new PopArg().init(
+                    "intermediate-fn-expression" ) );
         }
 };
 
@@ -11765,9 +12000,9 @@ InterpretedFunction.prototype.instructions = function () {
 
 InterpretedFunction.prototype.addInstructions = function ( i ) {
     if ( this.requiresClosure() )
-        i.push( new Close_Instruction( this ) );
+        i.push( new Close_Instruction().init( this ) );
     else
-        i.push( new Literal( this ) );
+        i.push( new Literal().init( this ) );
 };
 
 InterpretedFunction.prototype.literal = function () {
@@ -14121,7 +14356,7 @@ OnErr.prototype = new Builtin();
 OnErr.prototype.className = "OnErr";
 
 OnErr.prototype.invoke = function ( vm, args ) {
-    var c = new Catch( args.car(), vm.getAp() );
+    var c = new Catch().init( args.car(), vm.getAp() );
     c.belongsTo( this );
     vm.pushFrame( c );
     args.cdr().car().invoke( vm, ArcObject_st.NIL );
@@ -14157,9 +14392,10 @@ Protect_st.Anon_v_.prototype.acceptInstruction = function ( o ) {
 
 Protect.prototype.invoke = function ( vm, args ) {
     var instructions = new Pair().init2(
-        new FinallyInvoke( args.cdr().car() ),
+        new FinallyInvoke().init( args.cdr().car() ),
         new Pair().init2(
-            new PopArg( "clear up 'protect/after' return value" ),
+            new PopArg().init(
+                "clear up 'protect/after' return value" ),
             ArcObject_st.NIL ) );
     instructions.visit( this.v_ );
     vm.pushInvocation2( null, instructions );
@@ -14592,7 +14828,7 @@ Len.prototype.className = "Len";
 
 Len.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
-    return new Rational( args.car().len(), 1 );
+    return new Rational().init( args.car().len(), 1 );
 };
 
 
@@ -14693,7 +14929,7 @@ Acos.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
         Math.acos( ArcNumber_st.cast( args.car(), this ).toDouble() );
-    return new Real( result );
+    return new Real().init( result );
 };
 
 
@@ -14763,7 +14999,7 @@ Asin.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
         Math.asin( ArcNumber_st.cast( args.car(), this ).toDouble() );
-    return new Real( result );
+    return new Real().init( result );
 };
 
 
@@ -14785,7 +15021,7 @@ Atan.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
         Math.atan( ArcNumber_st.cast( args.car(), this ).toDouble() );
-    return new Real( result );
+    return new Real().init( result );
 };
 
 
@@ -14828,7 +15064,7 @@ Cosine.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
         Math.cos( ArcNumber_st.cast( args.car(), this ).toDouble() );
-    return new Real( result );
+    return new Real().init( result );
 };
 
 
@@ -14882,12 +15118,12 @@ Expt.prototype.invokePair = function ( args ) {
     if ( base instanceof Complex ) {
         return base.expt( exp );
     } else if ( exp instanceof Complex ) {
-        var complexBase = new Complex( base.toDouble(), 0 );
+        var complexBase = new Complex().init( base.toDouble(), 0 );
         return complexBase.expt( exp );
     } else {
         var value = base.toDouble();
         var exponent = exp.toDouble();
-        return new Real( Math.pow( value, exponent ) );
+        return new Real().init( Math.pow( value, exponent ) );
     }
 };
 
@@ -14912,7 +15148,7 @@ Logarithm.prototype.invokePair = function ( args ) {
     if ( arg instanceof Complex )
         return arg.log();
     else
-        return new Real( Math.log( arg.toDouble() ) );
+        return new Real().init( Math.log( arg.toDouble() ) );
 };
 
 
@@ -14936,7 +15172,7 @@ MakeComplex.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 2 );
     var a = ArcNumber_st.cast( args.car(), this );
     var b = ArcNumber_st.cast( args.cdr().car(), this );
-    return new Complex( a.toDouble(), b.toDouble() );
+    return new Complex().init( a.toDouble(), b.toDouble() );
 };
 
 
@@ -15089,7 +15325,7 @@ Maths_st.Anon_complexOps_.prototype.sum = function ( args ) {
 
 Maths_st.Anon_complexOps_.prototype.multiply = function ( args ) {
     if ( args instanceof Nil )
-        return new Complex( 1, 0 );
+        return new Complex().init( 1, 0 );
     
     // PORT NOTE: This local variable didn't exist in Java.
     var first = Complex_st.make( args.car() );
@@ -15266,8 +15502,8 @@ PolarCoordinates.prototype.className = "PolarCoordinates";
 PolarCoordinates.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var x = Complex_st.cast( args.car(), this );
-    return Pair_st.buildFrom1(
-        [ new Real( x.radius() ), new Real( x.theta() ) ] );
+    return Pair_st.buildFrom1( [ new Real().init( x.radius() ),
+        new Real().init( x.theta() ) ] );
 };
 
 
@@ -15316,7 +15552,7 @@ Rand.prototype.className = "Rand";
 
 Rand.prototype.invokePair = function ( args ) {
     if ( args instanceof Nil ) {
-        return new Real( Maths_st.random.nextDouble() );
+        return new Real().init( Maths_st.random.nextDouble() );
     } else {
         var r = args.car();
         // PORT NOTE: This was a cast in Java.
@@ -15328,7 +15564,7 @@ Rand.prototype.invokePair = function ( args ) {
                 args );
         // PORT TODO: Fix this and the Java version so that they're
         // less biased.
-        return new Rational(
+        return new Rational().init(
             Math.abs( Maths_st.random.nextLong() % r.toInt() ), 1 );
     }
 };
@@ -15352,7 +15588,7 @@ Sine.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
         Math.sin( ArcNumber_st.cast( args.car(), this ).toDouble() );
-    return new Real( result );
+    return new Real().init( result );
 };
 
 
@@ -15451,7 +15687,7 @@ Tangent.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
     var result =
         Math.tan( ArcNumber_st.cast( args.car(), this ).toDouble() );
-    return new Real( result );
+    return new Real().init( result );
 };
 
 
@@ -15479,7 +15715,7 @@ Trunc.prototype.invokePair = function ( args ) {
     if ( !(car instanceof ArcNumber) )
         throw new TypeError();
     var value = car.toDouble();
-    return new Rational( Math.floor( value ), 1 );
+    return new Rational().init( Math.floor( value ), 1 );
 };
 
 
@@ -15753,7 +15989,7 @@ RainbowProfileReport.prototype.invokef1 = function ( vm, arg ) {
 };
 
 RainbowProfileReport.prototype.createReport_ = function ( target ) {
-    var report = new Hash();
+    var report = new Hash().init();
     report.sref(
         this.createInvocationReport_(
             target.profileData.invocationProfile ),
@@ -15959,7 +16195,7 @@ MapTable.prototype.invokef2 = function ( vm, f, hash ) {
     if ( !(hash instanceof Hash) )
         throw new TypeError();
     vm.pushA( hash.toList() );
-    var i = new TableMapper( f );
+    var i = new TableMapper().init( f );
     i.belongsTo( this );
     vm.pushFrame( i );
 };
@@ -16008,10 +16244,10 @@ Table.prototype = new Builtin();
 Table.prototype.className = "Table";
 
 Table.prototype.invoke = function ( vm, args ) {
-    var hash = new Hash();
+    var hash = new Hash().init();
     vm.pushA( hash );
     if ( !(args instanceof Nil) ) {
-        var i = new PopArg( "table-initialiser" );
+        var i = new PopArg().init( "table-initialiser" );
         i.belongsTo( this );
         vm.pushFrame( i );
         var f = args.car();
@@ -16317,7 +16553,7 @@ NewThreadLocal.prototype = new Builtin();
 NewThreadLocal.prototype.className = "NewThreadLocal";
 
 NewThreadLocal.prototype.invokePair = function ( args ) {
-    return new ArcThreadLocal();
+    return new ArcThreadLocal().init();
 };
 
 
@@ -16383,7 +16619,7 @@ Annotate.prototype.invokePair = function ( args ) {
     if ( type === rep.type() )
         return rep;
     else
-        return new Tagged( type, rep );
+        return new Tagged().init( type, rep );
 };
 
 
@@ -16884,8 +17120,8 @@ Environment_st.init = function () {
 //    new Quit();
     
     // maths
-    Symbol_st.mkSym( "pi" ).setValue( new Real( Math.PI ) );
-    Symbol_st.mkSym( "e" ).setValue( new Real( Math.E ) );
+    Symbol_st.mkSym( "pi" ).setValue( new Real().init( Math.PI ) );
+    Symbol_st.mkSym( "e" ).setValue( new Real().init( Math.E ) );
     new Trunc();
     new Expt();
     new Rand();
@@ -16971,7 +17207,7 @@ Environment_st.init = function () {
     new Table();
     new MapTable();
     new Sref();
-    new Hash();
+//    new Hash().init();  // PORT NOTE: Unnecessary.
     
     // IO
     new CallWStdIn();
@@ -17723,7 +17959,7 @@ CallWStdIn.prototype = new Builtin();
 CallWStdIn.prototype.className = "CallWStdIn";
 
 CallWStdIn.prototype.invoke = function ( vm, args ) {
-    var i = new SetThreadLocal( IO_st.stdIn_, IO_st.stdIn() );
+    var i = new SetThreadLocal().init( IO_st.stdIn_, IO_st.stdIn() );
     i.belongsTo( this );
     vm.pushFrame( i );
     IO_st.stdIn_.value = Input_st.cast( args.car(), this );
@@ -17746,7 +17982,8 @@ CallWStdOut.prototype = new Builtin();
 CallWStdOut.prototype.className = "CallWStdOut";
 
 CallWStdOut.prototype.invoke = function ( vm, args ) {
-    var i = new SetThreadLocal( IO_st.stdOut_, IO_st.stdOut() );
+    var i =
+        new SetThreadLocal().init( IO_st.stdOut_, IO_st.stdOut() );
     i.belongsTo( this );
     vm.pushFrame( i );
     IO_st.stdOut_.value = Output_st.cast( args.car(), this );
@@ -18444,14 +18681,14 @@ Console_st.mainAsync = function ( options, then, opt_sync ) {
         Console_st.stackfunctions = false;
     
     Environment_st.init();
-    var vm = new VM();
+    var vm = new VM().init();
 //    vm.setInterceptor( VMInterceptor_st.DEBUG );
     
     Symbol_st.mkSym( "*argv*" ).setValue(
         Pair_st.buildFrom1( programArgs ) );
     // PORT TODO: Implement *env*.
-    Symbol_st.mkSym( "call*" ).setValue( new Hash() );
-    Symbol_st.mkSym( "sig" ).setValue( new Hash() );
+    Symbol_st.mkSym( "call*" ).setValue( new Hash().init() );
+    Symbol_st.mkSym( "sig" ).setValue( new Hash().init() );
     
     var filesToLoad = (options[ "noLibs" ] ? [] : [
         "arc",
