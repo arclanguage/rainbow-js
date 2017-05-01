@@ -15,8 +15,6 @@
 // used for Arc.
 
 var fs = require( "fs" );
-var util = require( "util" );
-var $path = require( "path" );
 
 var missingLibs = [];
 // Turns out wrench wasn't useful here after all, since I'd rather
@@ -40,7 +38,7 @@ if ( missingLibs.length !== 0 ) {
 }
 
 function stat( path, then ) {
-    $path.exists( path, function ( exists ) {
+    fs.exists( path, function ( exists ) {
         if ( !exists ) return void then( null, null );
         fs.stat( path, then );
     } );
@@ -98,7 +96,10 @@ function cpOver( from, to, then ) {
                 var fromStream = fs.createReadStream( from );
                 var toStream = fs.createWriteStream( to );
                 fromStream.once( "open", function ( e ) {
-                    util.pump( fromStream, toStream, then );
+                    fromStream.pipe( toStream );
+                    toStream.on( "finish", function () {
+                        then();
+                    } );
                 } );
             } );
     } );

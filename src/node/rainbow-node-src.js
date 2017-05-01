@@ -15,7 +15,6 @@
 // used for Arc.
 
 var fs = require( "fs" );
-var $path = require( "path" );
 
 
 // This file is concatenated to some other text in build.js, which
@@ -355,11 +354,11 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
             },
             dirExistsAsync: function ( path, then, opt_sync ) {
                 if ( opt_sync ) {
-                    then( null, $path.existsSync( p ) &&
+                    then( null, fs.existsSync( p ) &&
                         fs.statSync( path ).isDirectory() );
                     return true;
                 } else {
-                    $path.exists( path, function ( exists ) {
+                    fs.exists( path, function ( exists ) {
                         // TODO: Figure out if there's any
                         // error propagation we need to do here.
 //                        if ( e ) return void then( e );
@@ -375,11 +374,11 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
             },
             fileExistsAsync: function ( path, then, opt_sync ) {
                 if ( opt_sync ) {
-                    then( null, $path.existsSync( p ) &&
+                    then( null, fs.existsSync( p ) &&
                         fs.statSync( path ).isFile() );
                     return true;
                 } else {
-                    $path.exists( path, function ( exists ) {
+                    fs.exists( path, function ( exists ) {
                         // TODO: Figure out if there's any
                         // error propagation we need to do here.
 //                        if ( e ) return void then( e );
