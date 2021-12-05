@@ -2,7 +2,7 @@
 //
 // A port of Rainbow to JavaScript.
 
-// Copyright (c) 2011, 2012 Ross Angle
+// Copyright (c) 2011, 2012, 2021 Ross Angle
 //
 // This software is derived from Rainbow, software which is
 // copyright (c) 2011 Conan Dalton, distributed under the
@@ -7670,12 +7670,12 @@ SingleAssignment.prototype.assignsTo = function ( name ) {
         return this.name.name.name() === name;
     } else {
         // PORT NOTE: This local variable didn't exist in Java.
-        var name = this.name;
+        var thisName = this.name;
         // PORT NOTE: This was a cast in Java.
         // PORT TODO: See if it's possible for this to throw an error.
-        if ( !(name instanceof BoundSymbol) )
+        if ( !(thisName instanceof BoundSymbol) )
             throw new TypeError();
-        return this.name.name.name() === name;
+        return thisName.name.name() === name;
     }
 };
 
