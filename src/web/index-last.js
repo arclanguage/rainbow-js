@@ -56,7 +56,8 @@
 
 // Rainbow.js extensions (just the one for now, since it allows usage
 // of window.eval)
-Symbol_st.make( "window" ).setValue( new JsObject().init( window ) );
+ArcSymbol_st.make( "window" ).setValue(
+    new JsObject().init( window ) );
 
 
 function keyCode( event ) {
@@ -112,7 +113,7 @@ handle( window, "load", function () {
         consoleIn.o.writeString( command );
     }
     
-    function readStringAvailable( stream, then ) {
+    function readStringAvailable( stream ) {
         if ( stream.readStringAvailable !== void 0 )
             return stream.readStringAvailable();
         
@@ -121,7 +122,7 @@ handle( window, "load", function () {
         while ( going ) {
             if ( !stream.readCharCodeAsync( function ( e, c ) {
                     if ( e ) throw e;
-                    if ( c !== null )
+                    if ( c === null )
                         going = false;
                     else
                         chars.push( String.fromCharCode( c ) );
