@@ -1,6 +1,6 @@
 // http://rocketnia.github.com/rainbow-js/test/index-last.js
 
-// Copyright (c) 2011 Ross Angle
+// Copyright (c) 2011, 2021 Ross Angle
 //
 // This software is derived from Rainbow, software which is
 // copyright (c) 2011 Conan Dalton, distributed under the
