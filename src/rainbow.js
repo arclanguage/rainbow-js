@@ -608,8 +608,8 @@ ParseException.prototype.init = function () {
 // from vm/Instruction.java
 // ===================================================================
 // Needed late: ArcError Hash Invoke_N_st.Other StringInputPort
-// ParseException ArcString ArcCharacter Rational Symbol Real Complex
-// FreeSym ArcNumber Literal "hash codes"
+// ParseException ArcString ArcCharacter Rational ArcSymbol Real
+// Complex FreeSym ArcNumber Literal "hash codes"
 
 
 // PORT NOTE: This was originally abstract.
@@ -1184,7 +1184,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                     if ( c === null ) {
                         then( new ParseException().init() );
                     } else if ( c === "|" ) {
-                        then( null, Symbol_st.make( soFar ) );
+                        then( null, ArcSymbol_st.make( soFar ) );
                     } else {
                         done = false;
                         soFar += c;
@@ -1303,7 +1303,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                                     (matches[ 3 ] || "1") ).value()
                             ) );
                         else
-                            then( null, Symbol_st.make( soFar ) );
+                            then( null, ArcSymbol_st.make( soFar ) );
                     }
                 } ) )
                 thisSync = false;
@@ -1323,7 +1323,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                         then( null, parts[ 0 ] );
                     else
                         then( null, Pair_st.buildFrom1(
-                            [ Symbol_st.make( "string" ) ].concat(
+                            [ ArcSymbol_st.make( "string" ) ].concat(
                                 parts ) ) );
                 } ) )
                 thisSync = false;
@@ -1331,7 +1331,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
         function doSymbol() {
             if ( !finishPipedSymbol( "", function ( e, name ) {
                     if ( e ) return void then( e );
-                    then( null, Symbol_st.make( name ) );
+                    then( null, ArcSymbol_st.make( name ) );
                 } ) )
                 thisSync = false;
         }
@@ -1366,8 +1366,11 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                     if ( o === null )
                         then( new ParseException().init() );
                     else
-                        then( null, Pair_st.buildFrom1(
-                            [ Symbol_st.mkSym( quoteName ), o ] ) );
+                        then( null,
+                            Pair_st.buildFrom1(
+                                [
+                                    ArcSymbol_st.mkSym( quoteName ),
+                                    o ] ) );
                 } ) )
                 thisSync = false;
         }
@@ -1405,9 +1408,9 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
             if ( !finishList( [], "]", function ( e, list ) {
                     if ( e ) return void then( e );
                     then( null, Pair_st.buildFrom1( [
-                        Symbol_st.mkSym( "fn" ),
+                        ArcSymbol_st.mkSym( "fn" ),
                         Pair_st.buildFrom1(
-                            [ Symbol_st.mkSym( "_" ) ] ),
+                            [ ArcSymbol_st.mkSym( "_" ) ] ),
                         Pair_st.buildFrom1( list ) ] ) );
                 } ) )
                 thisSync = false;
@@ -1450,16 +1453,17 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
 };
 
 
+// PORT NOTE: We've renamed all uses of Symbol.
 /** @constructor */
-function Symbol() {
+function ArcSymbol() {
 }
-var Symbol_st = {};
+var ArcSymbol_st = {};
 
-Symbol.prototype = new ArcObject();
-Symbol.prototype.className = "Symbol";
+ArcSymbol.prototype = new ArcObject();
+ArcSymbol.prototype.className = "ArcSymbol";
 
 // PORT NOTE: In Java, this was protected.
-Symbol.prototype.initSymbol = function ( name, parseableName ) {
+ArcSymbol.prototype.initSymbol = function ( name, parseableName ) {
     this.name_ = name;
     this.parseableName_ = parseableName;
     // PORT TODO: Find an equivalent for this Java.
@@ -1470,87 +1474,87 @@ Symbol.prototype.initSymbol = function ( name, parseableName ) {
     return this;
 };
 
-Symbol.prototype.addInstructions = function ( i ) {
+ArcSymbol.prototype.addInstructions = function ( i ) {
     i.push( new FreeSym().init( this ) );
 };
 
-Symbol_st.mkSym = function ( name ) {
-    var result = Symbol_st.make( name );
-    if ( !(result instanceof Symbol) )
+ArcSymbol_st.mkSym = function ( name ) {
+    var result = ArcSymbol_st.make( name );
+    if ( !(result instanceof ArcSymbol) )
         throw new ArcError().initAE(
             "can't make symbol from \"" + name + "\"" );
     else
         return result;
 };
 
-Symbol_st.make = function ( name ) {
+ArcSymbol_st.make = function ( name ) {
     if ( name === "t" )
         return ArcObject_st.T;
     else if ( name === "nil" )
         return ArcObject_st.NIL;
-    else if ( Symbol_st.requiresPiping_.test( name )
+    else if ( ArcSymbol_st.requiresPiping_.test( name )
         || ArcParser_st.isNonSymAtom( name )
         || name === "." )
-        return Symbol_st.nu( name, "|" + name + "|" );
-    else if ( Symbol_st.hasEscapedPiping_.test( name ) )
-        return Symbol_st.nu( name.replace( /\\\|/g, "|" ), name );
+        return ArcSymbol_st.nu( name, "|" + name + "|" );
+    else if ( ArcSymbol_st.hasEscapedPiping_.test( name ) )
+        return ArcSymbol_st.nu( name.replace( /\\\|/g, "|" ), name );
     else
-        return Symbol_st.nu( name, name );
+        return ArcSymbol_st.nu( name, name );
 };
 
-Symbol.prototype.disp = function () {
+ArcSymbol.prototype.disp = function () {
     return this.name_;
 };
 
-Symbol.prototype.toString = function () {
+ArcSymbol.prototype.toString = function () {
     return this.parseableName_;
 };
 
-Symbol_st.nu = function ( s, parseableName ) {
-    if ( Symbol_st.map_.has( s ) )
-        return Symbol_st.map_.get( s );
+ArcSymbol_st.nu = function ( s, parseableName ) {
+    if ( ArcSymbol_st.map_.has( s ) )
+        return ArcSymbol_st.map_.get( s );
     
-    var result = new Symbol().initSymbol( s, parseableName );
-    Symbol_st.map_.put( s, result );
+    var result = new ArcSymbol().initSymbol( s, parseableName );
+    ArcSymbol_st.map_.put( s, result );
     return result;
 };
 
-Symbol_st.parse = function ( s ) {
-    return Symbol_st.make( s.substring( 1, s.length - 1 ) );
+ArcSymbol_st.parse = function ( s ) {
+    return ArcSymbol_st.make( s.substring( 1, s.length - 1 ) );
 };
 
-Symbol.prototype.name = function () {
+ArcSymbol.prototype.name = function () {
     return this.name_;
 };
 
-Symbol.prototype.compareTo = function ( right ) {
+ArcSymbol.prototype.compareTo = function ( right ) {
     // PORT NOTE: This was a cast in Java.
-    if ( !(right instanceof Symbol) )
+    if ( !(right instanceof ArcSymbol) )
         throw new TypeError();
     return this.name_.localeCompare( right.name );
 };
 
-Symbol.prototype.type = function () {
-    return Symbol_st.TYPE;
+ArcSymbol.prototype.type = function () {
+    return ArcSymbol_st.TYPE;
 };
 
-Symbol.prototype.unwrap = function () {
+ArcSymbol.prototype.unwrap = function () {
     return this.name();
 };
 
-Symbol.prototype.hashCode = function () {
+ArcSymbol.prototype.hashCode = function () {
     return this.hash_;
 };
 
-Symbol.prototype.equals = function ( object ) {
+ArcSymbol.prototype.equals = function ( object ) {
     return this === object;
 };
 
-Symbol_st.is = function ( s, o ) {
-    return o instanceof Symbol && o.name() === s;
+ArcSymbol_st.is = function ( s, o ) {
+    return o instanceof ArcSymbol && o.name() === s;
 };
 
-Symbol.prototype.setValue = function ( value ) {
+ArcSymbol.prototype.setValue = function ( value ) {
     var old = this.value_;
     this.value_ = value;
     if ( old !== null )
@@ -1558,47 +1562,47 @@ Symbol.prototype.setValue = function ( value ) {
     value.assigned( this );
 };
 
-Symbol.prototype.value = function () {
+ArcSymbol.prototype.value = function () {
     if ( this.value_ === null )
         throw new ArcError().initAE(
             "Symbol " + this.name_ + " is not bound" );
     return this.value_;
 };
 
-Symbol.prototype.bound = function () {
+ArcSymbol.prototype.bound = function () {
     return this.value_ !== null;
 };
 
-Symbol_st.cast = function ( argument, caller ) {
+ArcSymbol_st.cast = function ( argument, caller ) {
     try {
         // PORT NOTE: This was a cast in Java.
-        if ( !(argument instanceof Symbol) )
+        if ( !(argument instanceof ArcSymbol) )
             throw new TypeError();
         return argument;
     } catch ( e ) { if ( !(e instanceof TypeError) ) throw e;
         throw new ArcError().initAE(
-            "Wrong argument type: " + caller + " expected a " +
-            "Symbol, got " + argument );
+            "Wrong argument type: " + caller + " expected an " +
+            "ArcSymbol, got " + argument );
     }
 };
 
-Symbol.prototype.addCoercion = function ( from, fn ) {
+ArcSymbol.prototype.addCoercion = function ( from, fn ) {
     if ( this.coerceFrom_ === null )
         this.coerceFrom_ = {};
     this.coerceFrom_[ from.name() ] = fn;
 };
 
-Symbol.prototype.getCoercion = function ( from ) {
+ArcSymbol.prototype.getCoercion = function ( from ) {
     return this.coerceFrom_[ from ] || null;
 };
 
-Symbol_st.map_ = new StringMap().init();
-Symbol_st.requiresPiping_ = /.*(["'; \t\n\)\(]|([^\\]|^)\|).*/;
-Symbol_st.hasEscapedPiping_ = /.*\\\|/;
+ArcSymbol_st.map_ = new StringMap().init();
+ArcSymbol_st.requiresPiping_ = /.*(["'; \t\n\)\(]|([^\\]|^)\|).*/;
+ArcSymbol_st.hasEscapedPiping_ = /.*\\\|/;
 
-Symbol_st.TYPE = Symbol_st.mkSym( "sym" );
-Symbol_st.DOT = Symbol_st.mkSym( "." );
-Symbol_st.BANG = Symbol_st.mkSym( "!" );
+ArcSymbol_st.TYPE = ArcSymbol_st.mkSym( "sym" );
+ArcSymbol_st.DOT = ArcSymbol_st.mkSym( "." );
+ArcSymbol_st.BANG = ArcSymbol_st.mkSym( "!" );
 
 
 /** @constructor */
@@ -1708,7 +1712,7 @@ Pair_st.parse = function ( items ) {
     if ( items === null || items.length === 0 )
         return ArcObject_st.NIL;
     
-    if ( items[ 0 ] === Symbol_st.DOT )
+    if ( items[ 0 ] === ArcSymbol_st.DOT )
         return Pair_st.illegalDot_( items );
     
     return new Pair().init2(
@@ -1719,7 +1723,7 @@ Pair_st.internalParse_ = function ( items ) {
     if ( items.length === 0 )
         return ArcObject_st.NIL;
     
-    if ( items[ 0 ] === Symbol_st.DOT ) {
+    if ( items[ 0 ] === ArcSymbol_st.DOT ) {
         if ( items.length === 2 ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var result = items[ 1 ];
@@ -1902,7 +1906,7 @@ Pair_st.OOB.prototype.init = function () {
 };
 
 Pair.prototype.isSpecial = function () {
-    return this.car() instanceof Symbol &&
+    return this.car() instanceof ArcSymbol &&
         this.car().name() in Pair_st.specials_ &&
         this.cdr() instanceof Pair &&
         this.cdr().size() === 1;
@@ -2037,7 +2041,7 @@ Pair.prototype.isProper = function () {
 Pair_st.NotPair = function () {
 };
 
-Pair_st.TYPE = Symbol_st.mkSym( "cons" );
+Pair_st.TYPE = ArcSymbol_st.mkSym( "cons" );
 
 Pair_st.specials_ = {
     "quasiquote": "`",
@@ -2166,7 +2170,7 @@ Nil.prototype.longerThan = function ( i ) {
     return i < 0;
 };
 
-Nil_st.TYPE = Symbol_st.TYPE;
+Nil_st.TYPE = ArcSymbol_st.TYPE;
 Nil_st.NIL = new Nil().initNil( "nil" );
 Nil_st.EMPTY_LIST = new Nil().initNil( "()" );
 
@@ -2176,7 +2180,7 @@ function Truth() {
 }
 var Truth_st = {};
 
-Truth.prototype = new Symbol();
+Truth.prototype = new ArcSymbol();
 Truth.prototype.className = "Truth";
 
 Truth.prototype.init_ = function () {
@@ -2200,7 +2204,7 @@ Truth.prototype.compareTo = function ( right ) {
 };
 
 Truth.prototype.type = function () {
-    return Symbol_st.TYPE;
+    return ArcSymbol_st.TYPE;
 };
 
 Truth_st.valueOf = function ( b ) {
@@ -2254,7 +2258,7 @@ Instruction.prototype.initInstruction = function () {
 };
 
 Instruction.prototype.type = function () {
-    return Symbol_st.mkSym( "instruction" );
+    return ArcSymbol_st.mkSym( "instruction" );
 };
 
 // PORT TODO: Find all uses of Instruction.toString( LexicalClosure ),
@@ -2330,7 +2334,7 @@ ArcObject_st.ConvertError.prototype.operate = function ( vm ) {
         this.orig_ + ": " + error, error );
 };
 
-ArcObject_st.TYPE_DISPATCHER_TABLE = Symbol_st.mkSym( "call*" );
+ArcObject_st.TYPE_DISPATCHER_TABLE = ArcSymbol_st.mkSym( "call*" );
 ArcObject_st.NIL = Nil_st.NIL;
 ArcObject_st.EMPTY_LIST = Nil_st.EMPTY_LIST;
 ArcObject_st.T = Truth_st.T;
@@ -2366,7 +2370,7 @@ LiteralObject.prototype.profileName = function () {
 // ===================================================================
 // from types/ArcCharacter.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: ArcError
 
 /** @constructor */
@@ -2475,7 +2479,7 @@ ArcCharacter_st.cast = function ( argument, caller ) {
     }
 };
 
-ArcCharacter_st.TYPE = Symbol_st.mkSym( "char" );
+ArcCharacter_st.TYPE = ArcSymbol_st.mkSym( "char" );
 ArcCharacter_st.chars_ = new Array( 65536 );
 
 // PORT NOTE: This was an anonymous class in Java.
@@ -2561,7 +2565,7 @@ ArcCharacter_st.named_ = [
 // ===================================================================
 // from types/ArcString.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: Builtin Rational ArcError ArcCharacter Typing
 
 /** @constructor */
@@ -2700,7 +2704,7 @@ ArcString.prototype.add = function ( other ) {
         // PORT NOTE: This local variable didn't exist in Java.
         var otherType = other.type();
         // PORT NOTE: This was a cast in Java.
-        if ( !(otherType instanceof Symbol) )
+        if ( !(otherType instanceof ArcSymbol) )
             throw new TypeError();
         // PORT NOTE: This local variable didn't exist in Java.
         var coercion = Typing_st.STRING.getCoercion( otherType );
@@ -2732,13 +2736,13 @@ ArcString_st.cast = function ( argument, caller ) {
     }
 };
 
-ArcString_st.TYPE = Symbol_st.mkSym( "string" );
+ArcString_st.TYPE = ArcSymbol_st.mkSym( "string" );
 
 
 // ===================================================================
 // from types/ArcException.java
 // ===================================================================
-// Needed early: LiteralObject Symbol ArcString
+// Needed early: LiteralObject ArcSymbol ArcString
 // Needed late: ArcError
 
 // PORT NOTE: We didn't port the zero-arg ArcException(), and there
@@ -2798,14 +2802,14 @@ ArcException.prototype.getOperating = function () {
     return this.operating_;
 };
 
-ArcException_st.TYPE = Symbol_st.mkSym( "exn" );
+ArcException_st.TYPE = ArcSymbol_st.mkSym( "exn" );
 ArcException_st.NO_MESSAGE_ = ArcString_st.make( "no message" );
 
 
 // ===================================================================
 // from types/ArcNumber.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: ArcError
 
 // PORT NOTE: This was originally abstract.
@@ -2878,14 +2882,14 @@ ArcNumber.prototype.mod = function ( other ) {
         this.className + "(" + this + ")" );
 };
 
-ArcNumber_st.INT_TYPE = Symbol_st.mkSym( "int" );
-ArcNumber_st.NUM_TYPE = Symbol_st.mkSym( "num" );
+ArcNumber_st.INT_TYPE = ArcSymbol_st.mkSym( "int" );
+ArcNumber_st.NUM_TYPE = ArcSymbol_st.mkSym( "num" );
 
 
 // ===================================================================
 // from types/ArcThreadLocal.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: ArcError
 
 /** @constructor */
@@ -2926,7 +2930,7 @@ ArcThreadLocal_st.cast = function ( argument, caller ) {
     }
 };
 
-ArcThreadLocal_st.TYPE = Symbol_st.mkSym( "thread-local" );
+ArcThreadLocal_st.TYPE = ArcSymbol_st.mkSym( "thread-local" );
 
 
 // ===================================================================
@@ -3553,7 +3557,7 @@ Real.prototype.add = function ( other ) {
 // ===================================================================
 // from types/Tagged.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: Hash Pair Nil
 
 /** @constructor */
@@ -3683,13 +3687,13 @@ Tagged_st.cast = function ( argument, caller ) {
     }
 };
 
-Tagged_st.TAGGED_WRITE_FN_ = Symbol_st.mkSym( "tagged-writers" );
+Tagged_st.TAGGED_WRITE_FN_ = ArcSymbol_st.mkSym( "tagged-writers" );
 
 
 // ===================================================================
 // from types/JavaObject.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: ArcError Nil Pair
 
 // PORT TODO: Apparently, if this is named JavaObject, the Closure
@@ -3870,13 +3874,13 @@ JsObject.prototype.close = function () {
 };
 
 // PORT TODO: See if this should be "js-object" instead.
-JsObject_st.TYPE = Symbol_st.mkSym( "java-object" );
+JsObject_st.TYPE = ArcSymbol_st.mkSym( "java-object" );
 
 
 // ===================================================================
 // from types/Hash.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: Pair Nil
 
 // PORT NOTE: Since JavaScript doesn't implement LinkedHashMap, we
@@ -4076,13 +4080,13 @@ Hash_st.DontName.prototype = new Hash_st.Naming();
 Hash_st.DontName.prototype.name = function ( o, name ) {};
 Hash_st.DontName.prototype.unname = function ( o, name ) {};
 
-Hash_st.TYPE = Symbol_st.mkSym( "table" );
+Hash_st.TYPE = ArcSymbol_st.mkSym( "table" );
 
 
 // ===================================================================
 // from vm/VM.java
 // ===================================================================
-// Needed early: ArcObject Symbol
+// Needed early: ArcObject ArcSymbol
 // Needed late: VMInterceptor ArcError Nil Instruction Pair
 // ArcException
 
@@ -4615,7 +4619,7 @@ VM.prototype.nextInstruction = function () {
     return this.ins[ this.ip ].car();
 };
 
-VM_st.TYPE = Symbol_st.mkSym( "thread" );
+VM_st.TYPE = ArcSymbol_st.mkSym( "thread" );
 VM_st.threadCount_ = 0;
 
 
@@ -4655,7 +4659,7 @@ ListBuilder.prototype.list = function () {
 };
 
 ListBuilder.prototype.type = function () {
-    return Symbol_st.mkSym( "list-builder" );
+    return ArcSymbol_st.mkSym( "list-builder" );
 };
 
 ListBuilder.prototype.toString = function () {
@@ -5145,7 +5149,7 @@ TableMapper.prototype.toString = function () {
 // ===================================================================
 // Needed early: Instruction
 // Needed late: BoundSymbol Assign_Lex_Lex StackSymbol
-// Assign_Lex_Stack Symbol Assign_Lex_Free Assign_Lex_Literal
+// Assign_Lex_Stack ArcSymbol Assign_Lex_Free Assign_Lex_Literal
 // Quotation Assign_Lex_Other
 
 /** @constructor */
@@ -5167,7 +5171,7 @@ Assign_Lex_st.addInstructions = function ( i, name, expr, last ) {
         Assign_Lex_Lex_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof StackSymbol )
         Assign_Lex_Stack_st.addInstructions( i, name, expr, last );
-    else if ( expr instanceof Symbol )
+    else if ( expr instanceof ArcSymbol )
         Assign_Lex_Free_st.addInstructions( i, name, expr, last );
     else if ( expr.literal() )
         Assign_Lex_Literal_st.addInstructions( i, name, expr, last );
@@ -5457,7 +5461,7 @@ Assign_Lex_Stack_st.Intermediate.prototype.operate = function ( vm ) {
 // ===================================================================
 // Needed early: Instruction
 // Needed late: BoundSymbol Assign_Free_Lex StackSymbol
-// Assign_Free_Stack Symbol Assign_Free_Free Assign_Free_Literal
+// Assign_Free_Stack ArcSymbol Assign_Free_Free Assign_Free_Literal
 // Quotation Assign_Free_Other
 
 /** @constructor */
@@ -5479,7 +5483,7 @@ Assign_Free_st.addInstructions = function ( i, name, expr, last ) {
         Assign_Free_Lex_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof StackSymbol )
         Assign_Free_Stack_st.addInstructions( i, name, expr, last );
-    else if ( expr instanceof Symbol )
+    else if ( expr instanceof ArcSymbol )
         Assign_Free_Free_st.addInstructions( i, name, expr, last );
     else if ( expr.literal() )
         Assign_Free_Literal_st.addInstructions( i, name, expr, last );
@@ -5761,7 +5765,7 @@ Assign_Free_Stack_st.Intermediate.prototype.operate = function (
 // ===================================================================
 // Needed early: Instruction
 // Needed late: BoundSymbol Assign_Stack_Lex StackSymbol
-// Assign_Stack_Stack Symbol Assign_Stack_Free Assign_Stack_Literal
+// Assign_Stack_Stack ArcSymbol Assign_Stack_Free Assign_Stack_Literal
 // Quotation Assign_Stack_Other
 
 /** @constructor */
@@ -5783,7 +5787,7 @@ Assign_Stack_st.addInstructions = function ( i, name, expr, last ) {
         Assign_Stack_Lex_st.addInstructions( i, name, expr, last );
     else if ( expr instanceof StackSymbol )
         Assign_Stack_Stack_st.addInstructions( i, name, expr, last );
-    else if ( expr instanceof Symbol )
+    else if ( expr instanceof ArcSymbol )
         Assign_Stack_Free_st.addInstructions( i, name, expr, last );
     else if ( expr.literal() )
         Assign_Stack_Literal_st.addInstructions(
@@ -6676,7 +6680,7 @@ If_other_stack_other_stForClasses.addInstructions = function (
 // from vm/instructions/cond/optimise/If_stack_literal_free.java
 // ===================================================================
 // Needed early: Instruction
-// Needed late: Nil StackSymbol rainbow.vm.interpreter.Else Symbol
+// Needed late: Nil StackSymbol rainbow.vm.interpreter.Else ArcSymbol
 
 /** @constructor */
 function If_stack_literal_free() {
@@ -6721,7 +6725,7 @@ If_stack_literal_free_stForClasses.addInstructions = function (
         throw new TypeError();
     var ee = elseExpr.ifExpression;
     // PORT NOTE: This was a cast in Java.
-    if ( !(ee instanceof Symbol) )
+    if ( !(ee instanceof ArcSymbol) )
         throw new TypeError();
     i.push(
         new If_stack_literal_free().init( ifExpr, thenExpr, ee ) );
@@ -6825,14 +6829,14 @@ If_stack_stack_literal_st.Or.prototype.toString = function () {
 // from vm/instructions/invoke/Invoke_0.java
 // ===================================================================
 // Needed early: Instruction
-// Needed late: BoundSymbol Symbol
+// Needed late: BoundSymbol ArcSymbol
 
 var Invoke_0_st = {};
 
 Invoke_0_st.addInstructions = function ( i, fn ) {
     if ( fn instanceof BoundSymbol ) {
         i.push( new Invoke_0_st.Lex().init( fn ) );
-    } else if ( fn instanceof Symbol ) {
+    } else if ( fn instanceof ArcSymbol ) {
         i.push( new Invoke_0_st.Free().init( fn ) );
     } else {
         fn.addInstructions( i );
@@ -6921,7 +6925,7 @@ Invoke_0_st.Other.prototype.getInvokee = function ( vm ) {
 // from vm/instructions/invoke/Invoke_1.java
 // ===================================================================
 // Needed early: Instruction
-// Needed late: BoundSymbol Symbol Pair
+// Needed late: BoundSymbol ArcSymbol Pair
 
 var Invoke_1_st = {};
 
@@ -6929,7 +6933,7 @@ Invoke_1_st.addInstructions = function ( i, fn, arg ) {
     arg.addInstructions( i );
     if ( fn instanceof BoundSymbol ) {
         i.push( new Invoke_1_st.Lex().init( fn ) );
-    } else if ( fn instanceof Symbol ) {
+    } else if ( fn instanceof ArcSymbol ) {
         i.push( new Invoke_1_st.Free().init( fn ) );
     } else {
         fn.addInstructions( i );
@@ -7021,7 +7025,7 @@ Invoke_1_st.Other.prototype.getInvokee = function ( vm ) {
 // from vm/instructions/invoke/Invoke_2.java
 // ===================================================================
 // Needed early: Instruction
-// Needed late: BoundSymbol Symbol Pair
+// Needed late: BoundSymbol ArcSymbol Pair
 
 var Invoke_2_st = {};
 
@@ -7030,7 +7034,7 @@ Invoke_2_st.addInstructions = function ( i, fn, arg1, arg2 ) {
     arg2.addInstructions( i );
     if ( fn instanceof BoundSymbol ) {
         i.push( new Invoke_2_st.Lex().init( fn ) );
-    } else if ( fn instanceof Symbol ) {
+    } else if ( fn instanceof ArcSymbol ) {
         i.push( new Invoke_2_st.Free().init( fn ) );
     } else {
         fn.addInstructions( i );
@@ -7144,7 +7148,7 @@ Invoke_2_st.Other.prototype.getInvokee = function ( vm ) {
 // from vm/instructions/invoke/Invoke_3.java
 // ===================================================================
 // Needed early: Instruction
-// Needed late: BoundSymbol Symbol Pair
+// Needed late: BoundSymbol ArcSymbol Pair
 
 var Invoke_3_st = {};
 
@@ -7154,7 +7158,7 @@ Invoke_3_st.addInstructions = function ( i, fn, arg1, arg2, arg3 ) {
     arg3.addInstructions( i );
     if ( fn instanceof BoundSymbol ) {
         i.push( new Invoke_3_st.Lex().init( fn ) );
-    } else if ( fn instanceof Symbol ) {
+    } else if ( fn instanceof ArcSymbol ) {
         i.push( new Invoke_3_st.Free().init( fn ) );
     } else {
         fn.addInstructions( i );
@@ -7258,7 +7262,7 @@ Invoke_3_st.Other.prototype.getInvokee = function ( vm ) {
 // from vm/instructions/invoke/Invoke_N.java
 // ===================================================================
 // Needed early: Instruction
-// Needed late: Nil Pair BoundSymbol Symbol
+// Needed late: Nil Pair BoundSymbol ArcSymbol
 
 var Invoke_N_st = {};
 
@@ -7273,7 +7277,7 @@ Invoke_N_st.addInstructions = function ( i, fn, args ) {
     }
     if ( fn instanceof BoundSymbol ) {
         i.push( new Invoke_N_st.Lex().init( fn, argCount ) );
-    } else if ( fn instanceof Symbol ) {
+    } else if ( fn instanceof ArcSymbol ) {
         i.push( new Invoke_N_st.Free().init( fn, argCount ) );
     } else {
         fn.addInstructions( i );
@@ -7368,7 +7372,7 @@ Invoke_N_st.Other.prototype.getInvokee = function ( vm ) {
 // from vm/interpreter/StackSymbol.java
 // ===================================================================
 // Needed early: ArcObject
-// Needed late: StackSym Symbol
+// Needed late: StackSym ArcSymbol
 
 /** @constructor */
 function StackSymbol() {
@@ -7396,7 +7400,7 @@ StackSymbol.prototype.addInstructions = function ( i ) {
 };
 
 StackSymbol.prototype.type = function () {
-    return Symbol_st.mkSym( "stack-symbol" );
+    return ArcSymbol_st.mkSym( "stack-symbol" );
 };
 
 StackSymbol.prototype.toString = function () {
@@ -7421,7 +7425,7 @@ StackSymbol.prototype.inline3 = function ( p, arg, paramIndex ) {
 // ===================================================================
 // from vm/interpreter/BoundSymbol.java
 // ===================================================================
-// Needed early: ArcObject Symbol
+// Needed early: ArcObject ArcSymbol
 // Needed late: LexSym ArcError StackSymbol
 
 /** @constructor */
@@ -7524,14 +7528,14 @@ BoundSymbol.prototype.replaceBoundSymbols = function (
             index + ", got " + this.index );
 };
 
-BoundSymbol_st.TYPE = Symbol_st.mkSym( "bound-symbol" );
+BoundSymbol_st.TYPE = ArcSymbol_st.mkSym( "bound-symbol" );
 
 
 // ===================================================================
 // from vm/interpreter/SingleAssignment.java
 // ===================================================================
 // Needed early: ArcObject
-// Needed late: Symbol BoundSymbol ArcError Assign_Lex StackSymbol
+// Needed late: ArcSymbol BoundSymbol ArcError Assign_Lex StackSymbol
 // Assign_Stack Assign_Free InterpretedFunction
 
 // PORT TODO: Remove all uses of the zero-arg SingleAssignment().
@@ -7551,7 +7555,7 @@ SingleAssignment.prototype.initSingleAssignment = function ( next ) {
 
 SingleAssignment.prototype.take = function ( o ) {
     if ( this.name === null ) {
-        if ( o instanceof Symbol || o instanceof BoundSymbol )
+        if ( o instanceof ArcSymbol || o instanceof BoundSymbol )
             this.name = o;
         else
             throw new ArcError().initAE(
@@ -7579,7 +7583,7 @@ SingleAssignment.prototype.addMyInstructions = function ( i, last ) {
     else if ( this.name instanceof StackSymbol )
         Assign_Stack_st.addInstructions(
             i, this.name, this.expression, last );
-    else if ( this.name instanceof Symbol )
+    else if ( this.name instanceof ArcSymbol )
         Assign_Free_st.addInstructions(
             i, this.name, this.expression, last );
     else
@@ -7588,7 +7592,7 @@ SingleAssignment.prototype.addMyInstructions = function ( i, last ) {
 };
 
 SingleAssignment.prototype.type = function () {
-    return Symbol_st.mkSym( "assignment" );
+    return ArcSymbol_st.mkSym( "assignment" );
 };
 
 SingleAssignment.prototype.assigns = function ( nesting ) {
@@ -7664,7 +7668,7 @@ SingleAssignment.prototype.visit = function ( v ) {
 };
 
 SingleAssignment.prototype.assignsTo = function ( name ) {
-    if ( this.name instanceof Symbol ) {
+    if ( this.name instanceof ArcSymbol ) {
         return this.name.name() === name;
     } else if ( this.name instanceof StackSymbol ) {
         return this.name.name.name() === name;
@@ -7684,7 +7688,7 @@ SingleAssignment.prototype.assignsTo = function ( name ) {
 // from vm/interpreter/LastAssignment.java
 // ===================================================================
 // Needed early: SingleAssignment
-// Needed late: Symbol BoundSymbol ArcError Assign_Lex StackSymbol
+// Needed late: ArcSymbol BoundSymbol ArcError Assign_Lex StackSymbol
 // Assign_Stack Assign_Free InterpretedFunction
 
 /** @constructor */
@@ -7700,7 +7704,7 @@ LastAssignment.prototype.init = function () {
 
 LastAssignment.prototype.take = function ( o ) {
     if ( this.name === null ) {
-        if ( o instanceof Symbol || o instanceof BoundSymbol )
+        if ( o instanceof ArcSymbol || o instanceof BoundSymbol )
             this.name = o;
         else
             throw new ArcError().initAE(
@@ -7782,7 +7786,7 @@ LastAssignment.prototype.visit = function ( v ) {
 // from vm/interpreter/Assignment.java
 // ===================================================================
 // Needed early: ArcObject
-// Needed late: Symbol ArcError LastAssignment SingleAssignment
+// Needed late: ArcSymbol ArcError LastAssignment SingleAssignment
 
 /** @constructor */
 function Assignment() {
@@ -7797,7 +7801,7 @@ Assignment.prototype.init = function () {
 };
 
 Assignment.prototype.type = function () {
-    return Symbol_st.mkSym( "assignment" );
+    return ArcSymbol_st.mkSym( "assignment" );
 };
 
 Assignment.prototype.take = function ( o ) {
@@ -7884,7 +7888,7 @@ Assignment.prototype.replaceBoundSymbols = function (
 // from vm/interpreter/Else.java
 // ===================================================================
 // Needed early: ArcObject
-// Needed late: Symbol ArcError InterpretedFunction Invocation
+// Needed late: ArcSymbol ArcError InterpretedFunction Invocation
 
 /** @constructor */
 function Else() {
@@ -7900,7 +7904,7 @@ Else.prototype.init = function () {
 };
 
 Else.prototype.type = function () {
-    return Symbol_st.mkSym( "else-clause" );
+    return ArcSymbol_st.mkSym( "else-clause" );
 };
 
 Else.prototype.add = function ( c ) {
@@ -7987,7 +7991,7 @@ Else.prototype.sig = function () {
 // ===================================================================
 // from vm/interpreter/IfClause.java
 // ===================================================================
-// Needed early: ArcObject Symbol
+// Needed early: ArcObject ArcSymbol
 // Needed late: ArcError IfThen
 
 /** @constructor */
@@ -8132,14 +8136,14 @@ IfClause.prototype.elseExpression = function () {
     return first.next;
 };
 
-IfClause_st.TYPE = Symbol_st.mkSym( "if-clause" );
+IfClause_st.TYPE = ArcSymbol_st.mkSym( "if-clause" );
 
 
 // ===================================================================
 // from vm/interpreter/IfThen.java
 // ===================================================================
 // Needed early: ArcObject
-// Needed late: Symbol ArcError classes Cond Nil Else StackSymbol
+// Needed late: ArcSymbol ArcError classes Cond Nil Else StackSymbol
 // InterpretedFunction
 
 /** @constructor */
@@ -8159,7 +8163,7 @@ IfThen.prototype.init = function () {
 };
 
 IfThen.prototype.type = function () {
-    return Symbol_st.mkSym( "if-then-clause" );
+    return ArcSymbol_st.mkSym( "if-then-clause" );
 };
 
 IfThen.prototype.add = function ( c ) {
@@ -8387,7 +8391,7 @@ IfThen_st.handlers = {};
 // from vm/interpreter/Quotation.java
 // ===================================================================
 // Needed early: ArcObject
-// Needed late: Literal Symbol
+// Needed late: Literal ArcSymbol
 
 /** @constructor */
 function Quotation() {
@@ -8410,7 +8414,7 @@ Quotation.prototype.quoted = function () {
 };
 
 Quotation.prototype.type = function () {
-    return Symbol_st.mkSym( "quotation" );
+    return ArcSymbol_st.mkSym( "quotation" );
 };
 
 Quotation.prototype.interpret = function ( lc ) {
@@ -8426,7 +8430,7 @@ Quotation.prototype.toString = function () {
 // from vm/interpreter/Invocation.java
 // ===================================================================
 // Needed early: ArcObject
-// Needed late: Symbol Decompiler InterpretedFunction Bind ArcError
+// Needed late: ArcSymbol Decompiler InterpretedFunction Bind ArcError
 // Pair Nil BoundSymbol StackSymbol Quotation
 
 /** @constructor */
@@ -8444,7 +8448,7 @@ Invocation.prototype.init = function ( parts ) {
 };
 
 Invocation.prototype.type = function () {
-    return Symbol_st.mkSym( "if-then-clause" );
+    return ArcSymbol_st.mkSym( "if-then-clause" );
 };
 
 Invocation.prototype.toString = function () {
@@ -8463,7 +8467,7 @@ Invocation.prototype.reduce = function () {
             var plist = fn.parameterList();
             
             if ( plist.isNotPair() ||
-                !(plist.car() instanceof Symbol) )
+                !(plist.car() instanceof ArcSymbol) )
                 return this;
             
             var param = plist.car();
@@ -8561,7 +8565,7 @@ Invocation.prototype.sig_ = function () {
 Invocation_st.sig = function ( o ) {
     if ( o instanceof BoundSymbol )
         return "bound";
-    else if ( o instanceof Symbol )
+    else if ( o instanceof ArcSymbol )
         return "free";
     else if ( o instanceof StackSymbol )
         return "stack";
@@ -8733,7 +8737,7 @@ Invocation.prototype.visit = function ( v ) {
 // from vm/interpreter/QuasiQuotation.java
 // ===================================================================
 // Needed early: ArcObject
-// Needed late: Symbol Literal QuasiQuoteCompiler Listify AppendAll
+// Needed late: ArcSymbol Literal QuasiQuoteCompiler Listify AppendAll
 // Append AppendDot Nil Pair InterpretedFunction
 
 /** @constructor */
@@ -8750,7 +8754,7 @@ QuasiQuotation.prototype.init = function ( target ) {
 };
 
 QuasiQuotation.prototype.type = function () {
-    return Symbol_st.mkSym( "quasiquotation" );
+    return ArcSymbol_st.mkSym( "quasiquotation" );
 };
 
 // PORT TODO: Rename all uses of addInstructions( List, ArcObject ).
@@ -9922,7 +9926,7 @@ AssignmentBuilder_st.BuildAssignment2.prototype.operate = function (
 // ===================================================================
 // from vm/compiler/Compiler.java
 // ===================================================================
-// Needed early: ArcObject Symbol Instruction
+// Needed early: ArcObject ArcSymbol Instruction
 // Needed late: Nil ArcString Evaluation Pair BoundSymbol Quotation
 // QuasiQuoteCompiler QuasiQuotation FunctionBodyBuilder IfBuilder
 // AssignmentBuilder InvocationBuilder Tagged
@@ -9930,7 +9934,7 @@ AssignmentBuilder_st.BuildAssignment2.prototype.operate = function (
 var Compiler_st = {};
 
 Compiler_st.atstrings = ArcObject_st.NIL;
-Compiler_st.atStringFunction = Symbol_st.mkSym( "at-string" );
+Compiler_st.atStringFunction = ArcSymbol_st.mkSym( "at-string" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 Compiler_st.compile = function ( vm, expression, lexicalBindings ) {
@@ -9946,7 +9950,7 @@ Compiler_st.compile = function ( vm, expression, lexicalBindings ) {
             Evaluation_st.ssExpand( expression ), lexicalBindings );
     } else if ( expression instanceof Pair ) {
         Compiler_st.compilePair( vm, expression, lexicalBindings );
-    } else if ( expression instanceof Symbol ) {
+    } else if ( expression instanceof ArcSymbol ) {
         for ( var i = 0; i < lexicalBindings.length; i++ )
             if ( expression.name() in lexicalBindings[ i ] )
                 return void vm.pushA( BoundSymbol_st.make( expression,
@@ -10001,7 +10005,7 @@ Compiler_st.FinishAtString.prototype.operate = function ( vm ) {
 //    } else if ( expression instanceof Pair ) {
 //        return Compiler_st.compilePair(
 //            vm, expression, lexicalBindings );
-//    } else if ( expression instanceof Symbol ) {
+//    } else if ( expression instanceof ArcSymbol ) {
 //        for ( var i = 0; i < lexicalBindings.length; i++ )
 //            if ( expression.name() in lexicalBindings[ i ] )
 //                return BoundSymbol_st.make( expression, i,
@@ -10028,7 +10032,7 @@ Compiler_st.compilePair = function (
         f.invokeAndWait( vm, cdr );
     } else {
         var fun = expression.car();
-        if ( Symbol_st.is( "quote", fun ) ) {
+        if ( ArcSymbol_st.is( "quote", fun ) ) {
             vm.pushA(
                 new Quotation().init( expression.cdr().car() ) );
         } else if ( fun === QuasiQuoteCompiler_st.QUASIQUOTE ) {
@@ -10036,20 +10040,20 @@ Compiler_st.compilePair = function (
                 new Compiler_st.WrapQuasiQuotation().init() );
             QuasiQuoteCompiler_st.compile(
                 vm, expression.cdr().car(), lexicalBindings, 1 );
-        } else if ( Symbol_st.is( "fn", fun ) ) {
+        } else if ( ArcSymbol_st.is( "fn", fun ) ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var cdr = expression.cdr();
             // PORT NOTE: This was a cast in Java.
             if ( !(cdr instanceof Pair) )
                 throw new TypeError();
             FunctionBodyBuilder_st.build( vm, cdr, lexicalBindings );
-        } else if ( Symbol_st.is( "if", fun ) ) {
+        } else if ( ArcSymbol_st.is( "if", fun ) ) {
             IfBuilder_st.build(
                 vm, expression.cdr(), lexicalBindings );
-        } else if ( Symbol_st.is( "assign", fun ) ) {
+        } else if ( ArcSymbol_st.is( "assign", fun ) ) {
             AssignmentBuilder_st.build(
                 vm, expression.cdr(), lexicalBindings );
-        } else if ( Symbol_st.is( "compose", fun.xcar() ) ) {
+        } else if ( ArcSymbol_st.is( "compose", fun.xcar() ) ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var funCdr = fun.cdr();
             // PORT NOTE: This was a cast in Java.
@@ -10063,7 +10067,7 @@ Compiler_st.compilePair = function (
             Compiler_st.compile( vm,
                 Compiler_st.decompose_( funCdr, expressionCdr ),
                 lexicalBindings );
-        } else if ( Symbol_st.is( "complement", fun.xcar() ) ) {
+        } else if ( ArcSymbol_st.is( "complement", fun.xcar() ) ) {
             // PORT NOTE: This local variable didn't exist in Java.
             var cdr = expression.cdr();
             // PORT NOTE: This was a cast in Java.
@@ -10141,13 +10145,13 @@ Compiler_st.WrapQuasiQuotation.prototype.operate = function ( vm ) {
 //        return Compiler_st.compile( vm, expanded, lexicalBindings );
 //    } else {
 //        var fun = expression.car();
-//        if ( Symbol_st.is( "quote", fun ) ) {
+//        if ( ArcSymbol_st.is( "quote", fun ) ) {
 //            return new Quotation().init( expression.cdr().car() );
 //        } else if ( fun === QuasiQuoteCompiler_st.QUASIQUOTE ) {
 //            return new QuasiQuotation().init(
 //                QuasiQuoteCompiler_st.compile( vm,
 //                    expression.cdr().car(), lexicalBindings, 1 ) );
-//        } else if ( Symbol_st.is( "fn", fun ) ) {
+//        } else if ( ArcSymbol_st.is( "fn", fun ) ) {
 //            // PORT NOTE: This local variable didn't exist in Java.
 //            var cdr = expression.cdr();
 //            // PORT NOTE: This was a cast in Java.
@@ -10155,13 +10159,13 @@ Compiler_st.WrapQuasiQuotation.prototype.operate = function ( vm ) {
 //                throw new TypeError();
 //            return FunctionBodyBuilder_st.build(
 //                vm, cdr, lexicalBindings );
-//        } else if ( Symbol_st.is( "if", fun ) ) {
+//        } else if ( ArcSymbol_st.is( "if", fun ) ) {
 //            return IfBuilder_st.build(
 //                vm, expression.cdr(), lexicalBindings );
-//        } else if ( Symbol_st.is( "assign", fun ) ) {
+//        } else if ( ArcSymbol_st.is( "assign", fun ) ) {
 //            return AssignmentBuilder_st.build(
 //                vm, expression.cdr(), lexicalBindings );
-//        } else if ( Symbol_st.is( "compose", fun.xcar() ) ) {
+//        } else if ( ArcSymbol_st.is( "compose", fun.xcar() ) ) {
 //            // PORT NOTE: This local variable didn't exist in Java.
 //            var funCdr = fun.cdr();
 //            // PORT NOTE: This was a cast in Java.
@@ -10175,7 +10179,7 @@ Compiler_st.WrapQuasiQuotation.prototype.operate = function ( vm ) {
 //            return Compiler_st.compile( vm,
 //                Compiler_st.decompose_( funCdr, expressionCdr ),
 //                lexicalBindings );
-//        } else if ( Symbol_st.is( "complement", fun.xcar() ) ) {
+//        } else if ( ArcSymbol_st.is( "complement", fun.xcar() ) ) {
 //            // PORT NOTE: This local variable didn't exist in Java.
 //            var cdr = expression.cdr();
 //            // PORT NOTE: This was a cast in Java.
@@ -10211,7 +10215,7 @@ Compiler_st.decompose_ = function ( fns, args ) {
 };
 
 Compiler_st.decomplement_ = function ( not, args ) {
-    return new Pair().init2( Symbol_st.mkSym( "no" ),
+    return new Pair().init2( ArcSymbol_st.mkSym( "no" ),
         new Pair().init2(
             new Pair().init2( not, args ), ArcObject_st.NIL ) );
 };
@@ -10238,7 +10242,7 @@ Compiler_st.atString_ = function ( vm, expression ) {
 
 Compiler_st.getMacro_ = function ( maybeMacCall ) {
     var first = maybeMacCall.car();
-    if ( !(first instanceof Symbol) )
+    if ( !(first instanceof ArcSymbol) )
         return null;
     
     if ( !first.bound() )
@@ -10559,13 +10563,14 @@ FunctionBodyBuilder_st.visit = function (
 // ===================================================================
 // from vm/compiler/FunctionParameterListBuilder.java
 // ===================================================================
-// Needed early: Symbol Instruction
+// Needed early: ArcSymbol Instruction
 // Needed late: ArcObject ArcString Pair Nil ComplexArgs ArcError
 
 var FunctionParameterListBuilder_st = {};
 
-FunctionParameterListBuilder_st.O = Symbol_st.mkSym( "o" );
-FunctionParameterListBuilder_st.NIL_ARG = Symbol_st.mkSym( "#NIL#" );
+FunctionParameterListBuilder_st.O = ArcSymbol_st.mkSym( "o" );
+FunctionParameterListBuilder_st.NIL_ARG =
+    ArcSymbol_st.mkSym( "#NIL#" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 FunctionParameterListBuilder_st.build = function (
@@ -10866,7 +10871,7 @@ FunctionParameterListBuilder_st.index = function (
         // and it doesn't call name(), so in fact this check may be a
         // change in functionality. See if it is and what to do about
         // it.
-        if ( !(parameterList instanceof Symbol) )
+        if ( !(parameterList instanceof ArcSymbol) )
             throw new TypeError();
         map[ parameterList.name() ] = i[ 0 ];
         i[ 0 ]++;
@@ -10887,7 +10892,7 @@ FunctionParameterListBuilder_st.curryStack = function (
             list.push( curriedParam );
         params = params.cdr();
     }
-    if ( params instanceof Symbol ) {
+    if ( params instanceof ArcSymbol ) {
         var rest = FunctionParameterListBuilder_st.curryStackParam_(
             param, arg, paramIndex, params );
         if ( rest !== null )
@@ -10915,7 +10920,7 @@ FunctionParameterListBuilder_st.curryBound = function (
             list.push( curriedParam );
         params = params.cdr();
     }
-    if ( params instanceof Symbol ) {
+    if ( params instanceof ArcSymbol ) {
         var rest = FunctionParameterListBuilder_st.curryBoundParam_(
             param, arg, paramIndex, params );
         if ( rest !== null )
@@ -10934,7 +10939,7 @@ FunctionParameterListBuilder_st.curryStackParam_ = function (
     param, arg, paramIndex, c ) {
     
     var curriedParam = null;
-    if ( c instanceof Symbol && !c.isSame( param.name ) )
+    if ( c instanceof ArcSymbol && !c.isSame( param.name ) )
         curriedParam = c;
     else if ( ComplexArgs_st.optional( c )
         && !c.cdr().car().isSame( param.name ) )
@@ -10952,7 +10957,7 @@ FunctionParameterListBuilder_st.curryBoundParam_ = function (
     param, arg, paramIndex, c ) {
     
     var curriedParam = null;
-    if ( c instanceof Symbol && !c.isSame( param.name ) )
+    if ( c instanceof ArcSymbol && !c.isSame( param.name ) )
         curriedParam = c;
     else if ( ComplexArgs_st.optional( c )
         && !c.cdr().car().isSame( param.name ) )
@@ -11368,15 +11373,15 @@ PairExpander_st.FinishPair.prototype.operate = function ( vm ) {
 // ===================================================================
 // from vm/compiler/QuasiQuoteCompiler.java
 // ===================================================================
-// Needed early: Symbol
+// Needed early: ArcSymbol
 // Needed late: QuasiQuotation Pair Compiler
 
 var QuasiQuoteCompiler_st = {};
 
-QuasiQuoteCompiler_st.QUASIQUOTE = Symbol_st.mkSym( "quasiquote" );
-QuasiQuoteCompiler_st.UNQUOTE = Symbol_st.mkSym( "unquote" );
+QuasiQuoteCompiler_st.QUASIQUOTE = ArcSymbol_st.mkSym( "quasiquote" );
+QuasiQuoteCompiler_st.UNQUOTE = ArcSymbol_st.mkSym( "unquote" );
 QuasiQuoteCompiler_st.UNQUOTE_SPLICING =
-    Symbol_st.mkSym( "unquote-splicing" );
+    ArcSymbol_st.mkSym( "unquote-splicing" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 QuasiQuoteCompiler_st.compile = function (
@@ -11648,18 +11653,18 @@ Argv.prototype.present = function ( option ) {
 // ===================================================================
 // from util/Decompiler.java
 // ===================================================================
-// Needed early: Symbol
+// Needed early: ArcSymbol
 // Needed late: InterpretedFunction Nil IfClause LastAssignment Pair
 
 var Decompiler_st = {};
 
-Decompiler_st.LET = Symbol_st.mkSym( "let" );
-Decompiler_st.SELF = Symbol_st.mkSym( "self" );
-Decompiler_st.IT = Symbol_st.mkSym( "it" );
-Decompiler_st.AFN = Symbol_st.mkSym( "afn" );
-Decompiler_st.DO = Symbol_st.mkSym( "do" );
-Decompiler_st.WITH = Symbol_st.mkSym( "with" );
-Decompiler_st.AIF = Symbol_st.mkSym( "aif" );
+Decompiler_st.LET = ArcSymbol_st.mkSym( "let" );
+Decompiler_st.SELF = ArcSymbol_st.mkSym( "self" );
+Decompiler_st.IT = ArcSymbol_st.mkSym( "it" );
+Decompiler_st.AFN = ArcSymbol_st.mkSym( "afn" );
+Decompiler_st.DO = ArcSymbol_st.mkSym( "do" );
+Decompiler_st.WITH = ArcSymbol_st.mkSym( "with" );
+Decompiler_st.AIF = ArcSymbol_st.mkSym( "aif" );
 
 Decompiler_st.decompile = function ( o ) {
     if ( o.parts.car() instanceof InterpretedFunction )
@@ -11756,8 +11761,8 @@ Decompiler_st.makeAif_ = function ( ifClause, arg ) {
 // ===================================================================
 // from functions/Builtin.java
 // ===================================================================
-// Needed early: ArcObject Symbol
-// Needed late: Symbol ArcError
+// Needed early: ArcObject ArcSymbol
+// Needed late: ArcSymbol ArcError
 
 // PORT TODO: The name-mangling tricks this does won't work yet.
 // Figure out something that will.
@@ -11774,7 +11779,7 @@ Builtin.prototype.initBuiltin = function ( name ) {
     // PORT NOTE: The name field was protected in Java, but there's
     // also a name method.
     this.name_ = name;
-    Symbol_st.mkSym( name ).setValue( this );
+    ArcSymbol_st.mkSym( name ).setValue( this );
     return this;
 };
 
@@ -11843,7 +11848,7 @@ Builtin.prototype.name = function () {
         this.className.toLowerCase() : this.name_;
 };
 
-Builtin_st.TYPE = Symbol_st.mkSym( "fn" );
+Builtin_st.TYPE = ArcSymbol_st.mkSym( "fn" );
 
 
 // ===================================================================
@@ -11902,19 +11907,19 @@ Closure.prototype.fn = function () {
 // from functions/Evaluation.java
 // ===================================================================
 // Needed early: ArcError
-// Needed late: Symbol rainbow.functions.eval.SSyntax
+// Needed late: ArcSymbol rainbow.functions.eval.SSyntax
 // rainbow.functions.eval.SSExpand
 
 var Evaluation_st = {};
 
 Evaluation_st.isSpecialSyntax = function ( expression ) {
-    return expression instanceof Symbol &&
+    return expression instanceof ArcSymbol &&
         SSyntax_st.isSpecial( expression );
 };
 
 Evaluation_st.ssExpand = function ( expression ) {
     return SSExpand_st.expand(
-        Symbol_st.cast( expression, "ssexpand" ) );
+        ArcSymbol_st.cast( expression, "ssexpand" ) );
 };
 
 // PORT TODO: See if this is unused. But don't remove it! (The
@@ -11970,7 +11975,7 @@ Evaluation_st.isCompose_ = function ( symbol ) {
 // ===================================================================
 // Needed early: ArcObject Visitor
 // Needed late: FunctionOwnershipVisitor Nil ArcString Pair
-// FunctionBodyBuilder Literal PopArg BoundSymbol Quotation Symbol
+// FunctionBodyBuilder Literal PopArg BoundSymbol Quotation ArcSymbol
 // ReferenceCounter ArcError Close_Instruction MeasureLexicalReach
 // LiteralObject Builtin FunctionParameterListBuilder IfClause
 
@@ -12156,7 +12161,7 @@ InterpretedFunction.prototype.inlineableArg_ = function (
     var p = BoundSymbol_st.make( param, 0, paramIndex );
     return (arg.literal()
         || arg instanceof Quotation
-        || arg instanceof Symbol
+        || arg instanceof ArcSymbol
         || arg instanceof BoundSymbol
         // TODO: this last condition allows inlining of invocations,
         // it's dubious and may cause out-of-order evaluation!
@@ -12295,7 +12300,7 @@ InterpretedFunction.prototype.visit = function ( v ) {
 
 InterpretedFunction.prototype.isIdFn = function () {
     if ( this.parameterList_.len() === 1 )
-        if ( this.parameterList_.car() instanceof Symbol )
+        if ( this.parameterList_.car() instanceof ArcSymbol )
             if ( this.body.length === 1 )
                 if ( this.body[ 0 ] instanceof BoundSymbol ) {
                     var p1 = this.parameterList_.car();
@@ -12320,13 +12325,13 @@ InterpretedFunction.prototype.toString = function () {
             return "[" + s.substring( 1, s.length - 1 ) + "]";
         }
     }
-    return Pair_st.buildFrom1( [ Symbol_st.mkSym( "fn" ),
+    return Pair_st.buildFrom1( [ ArcSymbol_st.mkSym( "fn" ),
         this.parameterList() ].concat( this.body ) ).toString();
 };
 
 InterpretedFunction.prototype.isBracketFn_ = function () {
     return (this.parameterList_ instanceof Pair
-        && this.parameterList_.car() === Symbol_st.mkSym( "_" )
+        && this.parameterList_.car() === ArcSymbol_st.mkSym( "_" )
         && this.parameterList_.cdr() instanceof Nil
         && this.body.length === 1
         && !(this.body[ 0 ] instanceof LiteralObject));
@@ -12490,7 +12495,7 @@ InterpretedFunction.prototype.isAifBody = function () {
 // from functions/interpreted/SimpleArgs.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: LexicalClosure Nil Symbol
+// Needed late: LexicalClosure Nil ArcSymbol
 
 /** @constructor */
 function SimpleArgs() {
@@ -12512,7 +12517,7 @@ SimpleArgs.prototype.invoke3 = function ( vm, lc, args ) {
 
 SimpleArgs_st.simple_ = function ( lc, parameterList, args ) {
     while ( !(parameterList instanceof Nil) ) {
-        if ( parameterList instanceof Symbol ) {
+        if ( parameterList instanceof ArcSymbol ) {
             lc.add( args );
             return;
         } else {
@@ -12527,7 +12532,7 @@ SimpleArgs_st.simple_ = function ( lc, parameterList, args ) {
 // ===================================================================
 // from functions/interpreted/ComplexArgs.java
 // ===================================================================
-// Needed early: InterpretedFunction Symbol
+// Needed early: InterpretedFunction ArcSymbol
 // Needed late: LexicalClosure Nil Pair ArcError
 
 /** @constructor */
@@ -12612,7 +12617,7 @@ ComplexArgs_st.BuildComplex.prototype.init = function (
 
 ComplexArgs_st.BuildComplex.prototype.operate = function ( vm ) {
     if ( this.parameters_.isNotPair() ) {
-        if ( this.parameters_ instanceof Symbol )
+        if ( this.parameters_ instanceof ArcSymbol )
             this.lc_.add( this.args_ );
         return;
     }
@@ -12624,7 +12629,7 @@ ComplexArgs_st.BuildComplex.prototype.operate = function ( vm ) {
         this.lc_, this.parameters_.cdr(), this.args_.cdr(),
         this.owner() ) );
     
-    if ( nextParameter instanceof Symbol ) {
+    if ( nextParameter instanceof ArcSymbol ) {
         this.lc_.add( nextArg );
     } else if ( ComplexArgs_st.optional( nextParameter ) ) {
         var optional =
@@ -12678,7 +12683,7 @@ ComplexArgs_st.AddToLc.prototype.operate = function ( vm ) {
 //        var nextParameter = parameters.car();
 //        var nextArg = args.car();
 //        
-//        if ( nextParameter instanceof Symbol ) {
+//        if ( nextParameter instanceof ArcSymbol ) {
 //            lc.add( nextArg );
 //        } else if ( ComplexArgs_st.optional( nextParameter ) ) {
 //            var optional =
@@ -12705,7 +12710,7 @@ ComplexArgs_st.AddToLc.prototype.operate = function ( vm ) {
 //        args = args.cdr();
 //    }
 //    
-//    if ( parameters instanceof Symbol )
+//    if ( parameters instanceof ArcSymbol )
 //        lc.add( args );
 //};
 
@@ -12740,14 +12745,14 @@ ComplexArgs_st.optionalParam_ = function ( nextParameter ) {
     return result;
 };
 
-ComplexArgs_st.o_ = Symbol_st.mkSym( "o" );
+ComplexArgs_st.o_ = ArcSymbol_st.mkSym( "o" );
 
 
 // ===================================================================
 // from functions/interpreted/StackFunctionSupport.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: StackSymbol Quotation Symbol
+// Needed late: StackSymbol Quotation ArcSymbol
 // FunctionParameterListBuilder Pair FunctionBodyBuilder
 
 // PORT NOTE: This was abstract in Java.
@@ -12778,7 +12783,7 @@ StackFunctionSupport.prototype.inlineableArg_ = function (
     var p = new StackSymbol().init( param, paramIndex );
     return (arg.literal()
         || arg instanceof Quotation
-        || arg instanceof Symbol
+        || arg instanceof ArcSymbol
         || (this.body.length === 1
             && this.body[ 0 ] instanceof StackSymbol
             && p.isSameStackSymbol( this.body[ 0 ] )));
@@ -13077,7 +13082,7 @@ Bind_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/Bind_A_Obound.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: BoundSymbol Symbol LexicalClosure Nil
+// Needed late: BoundSymbol ArcSymbol LexicalClosure Nil
 
 /** @constructor */
 function Bind_A_Obound() {
@@ -13105,7 +13110,7 @@ Bind_A_Obound_stForClasses.of = function (
     result.optExpr_ = optExpr;
     var optParam = parameterList.cdr().car().cdr().car();
     // PORT NOTE: This was a cast in Java.
-    if ( !(optParam instanceof Symbol) )
+    if ( !(optParam instanceof ArcSymbol) )
         throw new TypeError();
     if ( result.canInline( optParam, result.optExpr_ ) )
         try {
@@ -13164,7 +13169,7 @@ Bind_A_Obound.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/Bind_A_Oliteral.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: Symbol LexicalClosure Nil
+// Needed late: ArcSymbol LexicalClosure Nil
 
 /** @constructor */
 function Bind_A_Oliteral() {
@@ -13187,7 +13192,7 @@ Bind_A_Oliteral_stForClasses.of = function (
     result.optExpr_ = parameterList.cdr().car().cdr().cdr().car();
     var optParam = parameterList.cdr().car().cdr().car();
     // PORT NOTE: This was a cast in Java.
-    if ( !(optParam instanceof Symbol) )
+    if ( !(optParam instanceof ArcSymbol) )
         throw new TypeError();
     if ( result.canInline( optParam, result.optExpr_ ) )
         try {
@@ -13246,7 +13251,7 @@ Bind_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/Bind_A_Oother.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: Symbol LexicalClosure BindAndRun Nil
+// Needed late: ArcSymbol LexicalClosure BindAndRun Nil
 
 /** @constructor */
 function Bind_A_Oother() {
@@ -13485,7 +13490,7 @@ Bind_D_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/Bind_Obound.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: Pair Symbol LexicalClosure Nil
+// Needed late: Pair ArcSymbol LexicalClosure Nil
 
 /** @constructor */
 function Bind_Obound() {
@@ -13558,7 +13563,7 @@ Bind_Obound.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/Bind_Oliteral.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: Symbol LexicalClosure Nil
+// Needed late: ArcSymbol LexicalClosure Nil
 
 /** @constructor */
 function Bind_Oliteral() {
@@ -13581,7 +13586,7 @@ Bind_Oliteral_stForClasses.of = function (
     result.optExpr_ = parameterList.car().cdr().cdr().car();
     var optParam = parameterList.car().cdr().car();
     // PORT NOTE: This was a cast in Java.
-    if ( !(optParam instanceof Symbol) )
+    if ( !(optParam instanceof ArcSymbol) )
         throw new TypeError();
     if ( result.canInline( optParam, result.optExpr_ ) ) {
         // PORT NOTE: This local variable didn't exist in Java.
@@ -13640,7 +13645,7 @@ Bind_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/Bind_Oother.java
 // ===================================================================
 // Needed early: InterpretedFunction
-// Needed late: Symbol LexicalClosure Nil ArcError
+// Needed late: ArcSymbol LexicalClosure Nil ArcError
 
 /** @constructor */
 function Bind_Oother() {
@@ -14230,7 +14235,7 @@ Stack_D_A_A_d.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/stack/Stack_A_Oliteral.java
 // ===================================================================
 // Needed early: StackFunctionSupport
-// Needed late: Symbol InterpretedFunction Nil
+// Needed late: ArcSymbol InterpretedFunction Nil
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of
@@ -14257,7 +14262,7 @@ Stack_A_Oliteral_stForClasses.of1 = function ( original ) {
         result.parameterList_.cdr().car().cdr().cdr().car();
     var optParam = result.parameterList_.cdr().car().cdr().car();
     // PORT NOTE: This was a cast in Java.
-    if ( !(optParam instanceof Symbol) )
+    if ( !(optParam instanceof ArcSymbol) )
         throw new TypeError();
     if ( result.canInline( optParam, result.optExpr_ ) ) {
         // PORT NOTE: This local variable didn't exist in Java.
@@ -14340,7 +14345,7 @@ Stack_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/interpreted/optimise/stack/Stack_Oliteral.java
 // ===================================================================
 // Needed early: StackFunctionSupport
-// Needed late: Symbol InterpretedFunction Nil
+// Needed late: ArcSymbol InterpretedFunction Nil
 
 // PORT NOTE: We've changed all original uses of the constructor
 // (which were only reflection uses) to uses of Stack_Oliteral.of*().
@@ -14366,7 +14371,7 @@ Stack_Oliteral_stForClasses.of1 = function ( original ) {
         result.parameterList_.car().cdr().cdr().car();
     var optParam = result.parameterList_.car().cdr().car();
     // PORT NOTE: This was a cast in Java.
-    if ( !(optParam instanceof Symbol) )
+    if ( !(optParam instanceof ArcSymbol) )
         throw new TypeError();
     if ( result.canInline( optParam, result.optExpr_ ) ) {
         // PORT NOTE: This local variable didn't exist in Java.
@@ -14439,7 +14444,7 @@ Stack_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
 // from functions/Macex.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: Nil ArcObject Pair Symbol Tagged
+// Needed late: Nil ArcObject Pair ArcSymbol Tagged
 
 /** @constructor */
 function Macex() {
@@ -14467,7 +14472,7 @@ Macex.prototype.invoke = function ( vm, args ) {
     }
     
     var macroName = expression.car();
-    if ( !(macroName instanceof Symbol) ) {
+    if ( !(macroName instanceof ArcSymbol) ) {
         vm.pushA( expression );
         return;
     }
@@ -14526,7 +14531,7 @@ Macex_st.Again.prototype.operate = function ( vm ) {
 //    }
 //    
 //    var macroName = expression.car();
-//    if ( !(macroName instanceof Symbol) ) {
+//    if ( !(macroName instanceof ArcSymbol) ) {
 //        vm.pushA( expression );
 //        return;
 //    }
@@ -14558,7 +14563,7 @@ Macex_st.Again.prototype.operate = function ( vm ) {
 // from functions/Uniq.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: Symbol ArcObject ArcError
+// Needed late: ArcSymbol ArcObject ArcError
 
 /** @constructor */
 function Uniq() {
@@ -14574,7 +14579,7 @@ Uniq.prototype.init = function () {
 
 Uniq.prototype.invokef0 = function ( vm ) {
     // PORT NOTE: This was synchronized on Uniq.class in Java.
-    vm.pushA( Symbol_st.mkSym( "gs" + (++Uniq_st.count_) ) );
+    vm.pushA( ArcSymbol_st.mkSym( "gs" + (++Uniq_st.count_) ) );
 };
 
 Uniq.prototype.invokePair = function ( args ) {
@@ -14586,7 +14591,7 @@ Uniq.prototype.invokePair = function ( args ) {
                 "uniq: expects no args, got " + args );
     }
     // PORT NOTE: This was synchronized on Uniq.class in Java.
-    return Symbol_st.mkSym( "gs" + (++Uniq_st.count_) );
+    return ArcSymbol_st.mkSym( "gs" + (++Uniq_st.count_) );
 };
 
 Uniq_st.count_ = 0;
@@ -14828,7 +14833,7 @@ Eval_st.ReduceAndExecute.prototype.operate = function ( vm ) {
 // from functions/eval/SSExpand.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: Symbol Evaluation ArcError Pair ArcParser
+// Needed late: ArcSymbol Evaluation ArcError Pair ArcParser
 // StringInputPort ParseException Nil ArcObject
 
 /** @constructor */
@@ -14844,7 +14849,8 @@ SSExpand.prototype.init = function () {
 };
 
 SSExpand.prototype.invokePair = function ( args ) {
-    return SSExpand_st.expand( Symbol_st.cast( args.car(), this ) );
+    return SSExpand_st.expand(
+        ArcSymbol_st.cast( args.car(), this ) );
 };
 
 SSExpand_st.expand = function ( s ) {
@@ -14860,14 +14866,14 @@ SSExpand_st.expand = function ( s ) {
 };
 
 SSExpand_st.expandAndf_ = function ( symbol ) {
-    var toks = [ Symbol_st.mkSym( "andf" ) ];
+    var toks = [ ArcSymbol_st.mkSym( "andf" ) ];
     var tokenised = SSExpand_st.andToks_( symbol );
     for ( var i = 0, len = tokenised.length; i < len; i++ ) {
         var s = tokenised[ i ];
         // PORT NOTE: This local variable didn't exist in Java.
-        var sym = Symbol_st.make( s );
+        var sym = ArcSymbol_st.make( s );
         // PORT NOTE: This was a cast in Java.
-        if ( !(sym instanceof Symbol) )
+        if ( !(sym instanceof ArcSymbol) )
             throw new TypeError();
         toks.push( SSExpand_st.readValueObject_( sym ) );
     }
@@ -14901,18 +14907,19 @@ SSExpand_st.expandToks_ = function ( list, i ) {
     if ( i < list.length ) {
         sep = list[ i++ ];
         // PORT NOTE: This was a cast in Java.
-        if ( !(sep instanceof Symbol) )
+        if ( !(sep instanceof ArcSymbol) )
             throw new TypeError();
     }
     
-    var next = sep === Symbol_st.BANG ?
-        Pair_st.buildFrom1( [ Symbol_st.mkSym( "quote" ), s ] ) : s;
+    var next = sep === ArcSymbol_st.BANG ?
+        Pair_st.buildFrom1( [ ArcSymbol_st.mkSym( "quote" ), s ] ) :
+        s;
     if ( i < list.length )
         return Pair_st.buildFrom1(
             [ SSExpand_st.expandToks_( list, i ), next ] );
     else if ( sep !== null )
         return Pair_st.buildFrom1(
-            [ Symbol_st.mkSym( "get" ), next ] );
+            [ ArcSymbol_st.mkSym( "get" ), next ] );
     else
         return next;
 };
@@ -14933,7 +14940,7 @@ SSExpand_st.readValueObject_ = function ( symbol ) {
     if ( symbol instanceof Nil )
         return symbol;
     // PORT NOTE: This was a cast in Java.
-    if ( !(symbol instanceof Symbol) )
+    if ( !(symbol instanceof ArcSymbol) )
         throw new TypeError();
     return SSExpand_st.readValueString_( symbol.name() );
 };
@@ -14946,7 +14953,7 @@ SSExpand_st.expandExpression_ = function ( symbol ) {
     var wasSep = false;
     for ( var i = 0, len = tokens.length; i < len; i++ ) {
         if ( tokens[ i ] === "" ) continue;
-        var sym = Symbol_st.make(
+        var sym = ArcSymbol_st.make(
             tokens[ i ].replace( /#p/g, "%" ).replace( /#h/g, "#" ) );
         if ( SSExpand_st.isSpecialListSyntax_( sym ) ) {
             if ( wasSep )
@@ -14959,20 +14966,20 @@ SSExpand_st.expandExpression_ = function ( symbol ) {
         list.unshift( sym );
     }
     if ( wasSep )
-        list.unshift( Symbol_st.mkSym( "#<eof>" ) );
+        list.unshift( ArcSymbol_st.mkSym( "#<eof>" ) );
     
     return SSExpand_st.expandToks_( list, 0 );
 };
 
 SSExpand_st.isSpecialListSyntax_ = function ( sym ) {
-    return sym === Symbol_st.DOT || sym === Symbol_st.BANG;
+    return sym === ArcSymbol_st.DOT || sym === ArcSymbol_st.BANG;
 };
 
 SSExpand_st.expandCompose_ = function ( symbol ) {
     var elements = symbol.split( ":" );
     if ( elements.length === 1 )
         return SSExpand_st.possiblyComplement_( elements[ 0 ] );
-    var list = [ Symbol_st.mkSym( "compose" ) ];
+    var list = [ ArcSymbol_st.mkSym( "compose" ) ];
     for ( var i = 0, len = elements.length; i < len; i++ )
         list.push( SSExpand_st.possiblyComplement_( elements[ i ] ) );
     return Pair_st.buildFrom2( list, ArcObject_st.NIL );
@@ -14980,7 +14987,7 @@ SSExpand_st.expandCompose_ = function ( symbol ) {
 
 SSExpand_st.possiblyComplement_ = function ( element ) {
     return /^~/.test( element ) ?
-        Pair_st.buildFrom1( [ Symbol_st.mkSym( "complement" ),
+        Pair_st.buildFrom1( [ ArcSymbol_st.mkSym( "complement" ),
             SSExpand_st.readValueString_(
                 element.substring( 1 ) ) ] ) :
         SSExpand_st.readValueString_( element );
@@ -14994,7 +15001,7 @@ SSExpand_st.ANDF_INTRASYM_CHAR = "&".charCodeAt( 0 );
 // from functions/eval/SSyntax.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: Symbol ArcObject Evaluation
+// Needed late: ArcSymbol ArcObject Evaluation
 
 /** @constructor */
 function SSyntax() {
@@ -15009,7 +15016,7 @@ SSyntax.prototype.init = function () {
 };
 
 SSyntax.prototype.invokePair = function ( args ) {
-    return args.car() instanceof Symbol &&
+    return args.car() instanceof ArcSymbol &&
         SSyntax_st.isSpecial( args.car() ) ?
         ArcObject_st.T : ArcObject_st.NIL;
 };
@@ -15046,7 +15053,7 @@ JavaDebug.prototype.invokePair = function ( args ) {
 // from functions/java/JavaInvoke.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: JsObject Symbol Pair
+// Needed late: JsObject ArcSymbol Pair
 
 /** @constructor */
 function JavaInvoke() {
@@ -15061,7 +15068,8 @@ JavaInvoke.prototype.init = function () {
 
 JavaInvoke.prototype.invokePair = function ( args ) {
     var target = JsObject_st.cast( args.car(), this );
-    var methodName = Symbol_st.cast( args.cdr().car(), this ).name();
+    var methodName =
+        ArcSymbol_st.cast( args.cdr().car(), this ).name();
     // PORT NOTE: This local variable didn't exist in Java.
     var jsArgs = args.cdr().cdr().car();
     // PORT NOTE: This was a cast in Java.
@@ -16133,7 +16141,7 @@ Trunc.prototype.invokePair = function ( args ) {
 // from functions/predicates/Bound.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: ArcError Symbol Truth
+// Needed late: ArcError ArcSymbol Truth
 
 /** @constructor */
 function Bound() {
@@ -16152,14 +16160,14 @@ Bound.prototype.invokef0 = function ( vm ) {
 
 Bound.prototype.invokef1 = function ( vm, arg ) {
     // PORT NOTE: This was a cast in Java.
-    if ( !(arg instanceof Symbol) )
+    if ( !(arg instanceof ArcSymbol) )
         throw new TypeError();
     vm.pushA( Truth_st.valueOf( arg.bound() ) );
 };
 
 Bound.prototype.invokePair = function ( args ) {
     Builtin_st.checkMaxArgCount( args, this.className, 1 );
-    var sym = Symbol_st.cast( args.car(), this );
+    var sym = ArcSymbol_st.cast( args.car(), this );
     return Truth_st.valueOf( sym.bound() );
 };
 
@@ -16340,7 +16348,7 @@ LessThan.prototype.invokePair = function ( args ) {
 // from functions/rainbow/RainbowDebug.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: VMInterceptor Symbol
+// Needed late: VMInterceptor ArcSymbol
 
 /** @constructor */
 function RainbowDebug() {
@@ -16355,7 +16363,7 @@ RainbowDebug.prototype.init = function () {
 
 RainbowDebug.prototype.invoke = function ( vm, args ) {
     vm.setInterceptor( VMInterceptor_st.DEBUG );
-    vm.pushA( Symbol_st.mkSym( this.name_ ) );
+    vm.pushA( ArcSymbol_st.mkSym( this.name_ ) );
 };
 
 
@@ -16427,11 +16435,11 @@ RainbowProfileReport.prototype.createReport_ = function ( target ) {
     report.sref(
         this.createInvocationReport_(
             target.profileData.invocationProfile ),
-        Symbol_st.mkSym( "invocation-profile" ) );
+        ArcSymbol_st.mkSym( "invocation-profile" ) );
     report.sref(
         this.createInstructionReport_(
             target.profileData.instructionProfile ),
-        Symbol_st.mkSym( "instruction-profile" ) );
+        ArcSymbol_st.mkSym( "instruction-profile" ) );
     return report;
 };
 
@@ -16545,7 +16553,7 @@ CurrentProcessMilliseconds.prototype.invoke = function ( vm, args ) {
 // ===================================================================
 // from functions/system/Declare.java
 // ===================================================================
-// Needed early: Builtin Symbol
+// Needed early: Builtin ArcSymbol
 // Needed late: Compiler ArcObject
 
 /** @constructor */
@@ -16574,7 +16582,7 @@ Declare.prototype.invoke = function ( vm, args ) {
     this.invokef2( vm, args.car(), args.cdr().car() );
 };
 
-Declare_st.atstrings = Symbol_st.mkSym( "atstrings" );
+Declare_st.atstrings = ArcSymbol_st.mkSym( "atstrings" );
 
 
 // ===================================================================
@@ -17122,7 +17130,7 @@ Annotate.prototype.invokePair = function ( args ) {
 // from functions/typing/Coerce.java
 // ===================================================================
 // Needed early: Builtin
-// Needed late: Typing Symbol ArcError
+// Needed late: Typing ArcSymbol ArcError
 
 /** @constructor */
 function Coerce() {
@@ -17145,10 +17153,10 @@ Coerce.prototype.invokef2 = function ( vm, arg, toType ) {
     }
     try {
         // PORT NOTE: This was a cast in Java.
-        if ( !(toType instanceof Symbol) )
+        if ( !(toType instanceof ArcSymbol) )
             throw new TypeError();
         // PORT NOTE: This was a cast in Java.
-        if ( !(fromType instanceof Symbol) )
+        if ( !(fromType instanceof ArcSymbol) )
             throw new TypeError();
         var coercer = toType.getCoercion( fromType );
         coercer.invokef1( vm, arg );
@@ -17170,10 +17178,10 @@ Coerce.prototype.invokef3 = function ( vm, arg, toType, base ) {
     }
     try {
         // PORT NOTE: This was a cast in Java.
-        if ( !(toType instanceof Symbol) )
+        if ( !(toType instanceof ArcSymbol) )
             throw new TypeError();
         // PORT NOTE: This was a cast in Java.
-        if ( !(fromType instanceof Symbol) )
+        if ( !(fromType instanceof ArcSymbol) )
             throw new TypeError();
         var coercer = toType.getCoercion( fromType );
         coercer.invokef2( vm, arg, base );
@@ -17255,18 +17263,18 @@ Type.prototype.invokePair = function ( args ) {
 // ===================================================================
 // from functions/typing/Typing.java
 // ===================================================================
-// Needed early: Symbol ArcObject
+// Needed early: ArcSymbol ArcObject
 // Needed late: ArcString ArcCharacter Pair Nil Rational ArcNumber
 // Complex Real ParseException ArcError
 
 var Typing_st = {};
 
-Typing_st.STRING = Symbol_st.mkSym( "string" );
-Typing_st.SYM = Symbol_st.mkSym( "sym" );
-Typing_st.INT = Symbol_st.mkSym( "int" );
-Typing_st.NUM = Symbol_st.mkSym( "num" );
-Typing_st.CONS = Symbol_st.mkSym( "cons" );
-Typing_st.CHAR = Symbol_st.mkSym( "char" );
+Typing_st.STRING = ArcSymbol_st.mkSym( "string" );
+Typing_st.SYM = ArcSymbol_st.mkSym( "sym" );
+Typing_st.INT = ArcSymbol_st.mkSym( "int" );
+Typing_st.NUM = ArcSymbol_st.mkSym( "num" );
+Typing_st.CONS = ArcSymbol_st.mkSym( "cons" );
+Typing_st.CHAR = ArcSymbol_st.mkSym( "char" );
 
 Typing_st.init = function () {
     Typing_st.CONS.addCoercion( Typing_st.STRING,
@@ -17355,7 +17363,7 @@ Typing_st.init = function () {
             // PORT NOTE: This was a cast in Java.
             if ( !(original instanceof ArcString) )
                 throw new TypeError();
-            return Symbol_st.make( original.value() );
+            return ArcSymbol_st.make( original.value() );
         } ) );
     
     Typing_st.STRING.addCoercion( Typing_st.SYM,
@@ -17429,7 +17437,7 @@ Typing_st.init = function () {
             if ( !(original instanceof ArcCharacter) )
                 throw new TypeError();
             var source = original.value();
-            return Symbol_st.make( String.fromCharCode( source ) );
+            return ArcSymbol_st.make( String.fromCharCode( source ) );
         } ) );
     
     Typing_st.NUM.addCoercion( Typing_st.STRING,
@@ -17598,7 +17606,7 @@ Typing_st.Coercion.prototype.init = function (
 };
 
 Typing_st.Coercion.prototype.type = function () {
-    return Symbol_st.mkSym( "fn" );
+    return ArcSymbol_st.mkSym( "fn" );
 };
 
 Typing_st.Coercion.prototype.coerce1 = function ( original ) {
@@ -17657,8 +17665,8 @@ Environment_st.init = function () {
 //    new Quit();
     
     // maths
-    Symbol_st.mkSym( "pi" ).setValue( new Real().init( Math.PI ) );
-    Symbol_st.mkSym( "e" ).setValue( new Real().init( Math.E ) );
+    ArcSymbol_st.mkSym( "pi" ).setValue( new Real().init( Math.PI ) );
+    ArcSymbol_st.mkSym( "e" ).setValue( new Real().init( Math.E ) );
     new Trunc().init();
     new Expt().init();
     new Rand().init();
@@ -17793,7 +17801,7 @@ Environment_st.init = function () {
 // ===================================================================
 // from types/Input.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: ArcError ArcObject Rational ArcCharacter
 
 // ASYNC PORT NOTE: This is a completely reworked design.
@@ -17889,13 +17897,13 @@ Input_st.cast = function ( argument, caller ) {
     }
 };
 
-Input_st.TYPE = Symbol_st.mkSym( "input" );
+Input_st.TYPE = ArcSymbol_st.mkSym( "input" );
 
 
 // ===================================================================
 // from types/Output.java
 // ===================================================================
-// Needed early: LiteralObject Symbol
+// Needed early: LiteralObject ArcSymbol
 // Needed late: ArcError
 
 // ASYNC PORT NOTE: This is a completely reworked design.
@@ -17963,7 +17971,7 @@ Output.prototype.flush = function () {
     this.out_.flush();
 };
 
-Output_st.TYPE = Symbol_st.mkSym( "output" );
+Output_st.TYPE = ArcSymbol_st.mkSym( "output" );
 
 
 // ===================================================================
@@ -19029,7 +19037,7 @@ InFile_st.Go.prototype.operate = function ( vm ) {
 // from functions/fs/OutFile.java
 // ===================================================================
 // Needed early: Builtin Instruction
-// Needed late: Nil Symbol System_fs
+// Needed late: Nil ArcSymbol System_fs
 
 // ASYNC PORT NOTE: This had to be converted to an asynchronous
 // design.
@@ -19053,7 +19061,7 @@ OutFile.prototype.invoke = function ( vm, args ) {
     var name = ArcString_st.cast( args.car(), this ).value();
     var appendSymbol = args.cdr().car();
     var append = !(appendSymbol instanceof Nil) &&
-        Symbol_st.cast( appendSymbol, this ).name() === "append";
+        ArcSymbol_st.cast( appendSymbol, this ).name() === "append";
     vm.pushFrame( new OutFile_st.Go().init( name, append, this ) );
 };
 
@@ -19342,7 +19350,7 @@ RmFile_st.Go.prototype.operate = function ( vm ) {
 // from Console.java
 // ===================================================================
 // Needed early: ArcObject Visitor Instruction
-// Needed late: Environment VM Symbol ArcParser StringInputPort
+// Needed late: Environment VM ArcSymbol ArcParser StringInputPort
 // ParseException ArcError System_fs Compiler
 
 // PORT NOTE: This is substantially different from the original.
@@ -19375,11 +19383,11 @@ Console_st.mainAsync = function ( options, then, opt_sync ) {
     var vm = new VM().init();
 //    vm.setInterceptor( VMInterceptor_st.DEBUG );
     
-    Symbol_st.mkSym( "*argv*" ).setValue(
+    ArcSymbol_st.mkSym( "*argv*" ).setValue(
         Pair_st.buildFrom1( programArgs ) );
     // PORT TODO: Implement *env*.
-    Symbol_st.mkSym( "call*" ).setValue( new Hash().init() );
-    Symbol_st.mkSym( "sig" ).setValue( new Hash().init() );
+    ArcSymbol_st.mkSym( "call*" ).setValue( new Hash().init() );
+    ArcSymbol_st.mkSym( "sig" ).setValue( new Hash().init() );
     
     var filesToLoad = (options[ "noLibs" ] ? [] : [
         "arc",
