@@ -6,11 +6,11 @@
 //   Licensed under the Perl Foundations's Artistic License 2.0.
 
 // To load this file, the variables `System_in`, `System_out`,
-// `System_err`, `System_getenvAsync0`, `System_getenvAsync1`, and
-// `System_fs` must already be defined. Here's an example
-// implementation where stdin is always at EOF, stdout and stderr are
-// noops, the environment is empty, and filesystem operations never
-// work:
+// `System_err`, `System_getenvAsync0`, `System_getenvAsync1`,
+// `System_exitAsync`, and `System_fs` must already be defined. Here's
+// an example implementation where stdin is always at EOF, stdout and
+// stderr are noops, the environment is empty, and filesystem
+// operations never work:
 
 //var System_in = {
 //    readByteAsync: function ( then, opt_sync ) {
@@ -45,6 +45,10 @@
 //}
 //function System_getenvAsync1( name, then, opt_sync ) {
 //    then( null, null );
+//    return true;
+//}
+//function System_exitAsync( exitCode, then, opt_sync ) {
+//    then( new ArcError().initAE( "No way to exit." ) );
 //    return true;
 //}
 //var System_fs = {
@@ -318,6 +322,7 @@
 // functions/system/CurrentProcessMilliseconds.java
 // functions/system/Declare.java
 // functions/system/MSec.java
+// functions/system/Quit.java
 // functions/system/Seconds.java
 // functions/tables/*
 //   functions/tables/MapTable.java
@@ -405,7 +410,6 @@
 //   functions/network/SocketAccept.java
 // functions/system/Memory.java
 // functions/system/PipeFrom.java
-// functions/system/Quit.java
 // functions/system/SetUID.java
 // functions/system/ShellInvoke.java
 // functions/system/SystemFunctions.java
@@ -11811,7 +11815,7 @@ Builtin_st.checkMaxArgCount = function (
     if ( maxArgs < args.len() ) {
         System_out_println(
             functionClass + " got args " + args + " was expecting " +
-            "expecting at most " + maxArgs );
+            "at most " + maxArgs );
         throw new ArcError().initAE(
             functionClass.toLowerCase() + " expects at most " +
             maxArgs + " arguments: given " + args );
@@ -14590,8 +14594,9 @@ Uniq.prototype.invokePair = function ( args ) {
         args.mustBeNil();
     } catch ( notNil ) {
         if ( !(notNil instanceof ArcObject_st.NotNil) )
-            throw new ArcError().initAE(
-                "uniq: expects no args, got " + args );
+            throw notNil;
+        throw new ArcError().initAE(
+            "uniq: expects no args, got " + args );
     }
     // PORT NOTE: This was synchronized on Uniq.class in Java.
     return ArcSymbol_st.mkSym( "gs" + (++Uniq_st.count_) );
@@ -16611,6 +16616,80 @@ MSec.prototype.invokePair = function ( args ) {
 
 
 // ===================================================================
+// from functions/system/Quit.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: System_exitAsync
+
+// PORT TODO: The Java Rainbow version accepted any number of
+// arguments, ignored them all, and exited with a code of 0. To
+// facilitate unit tests, we've implemented this more in line with
+// the Racket versions of Arc, which use Racket's `exit`. Racket's
+// `exit` accepts at most one argument, and it invokes an exit handler
+// that usually exits with a code of 0 or exits with a code equal to
+// the given argument if it's an exact integer between 1 and 255
+// inclusive. Let's fix this in Java Rainbow, too.
+
+/** @constructor */
+function Quit() {
+}
+var Quit_st = {};
+
+Quit.prototype = new Builtin();
+Quit.prototype.className = "Quit";
+
+Quit.prototype.init = function () {
+    return this.initBuiltin( "quit" );
+};
+
+// ASYNC PORT NOTE: The original implemented .invoke( Pair ), but we
+// can't do that (since it's synchronous), so we're implementing
+// .invoke( VM, Pair ) instead.
+Quit.prototype.invoke = function ( vm, args ) {
+    Builtin_st.checkMaxArgCount( args, this.className, 1 );
+    var exitCode = 0;
+    if ( args instanceof Pair ) {
+        var exitValue = args.car();
+        if ( exitValue instanceof Rational
+            && exitValue.isInteger() ) {
+            var exitNumber = exitValue.toInt();
+            if ( 1 <= exitNumber && exitNumber <= 255 )
+                exitCode = exitNumber;
+        }
+    }
+    vm.pushFrame( new Quit_st.Go().init( exitCode, this ) );
+};
+
+// ASYNC PORT NOTE: This didn't exist in Java.
+/** @constructor */
+Quit_st.Go = function () {
+};
+
+Quit_st.Go.prototype = new Instruction();
+Quit_st.Go.prototype.implementsAsync = true;
+Quit_st.Go.prototype.className = "Quit.Go";
+
+Quit_st.Go.prototype.init = function ( exitCode, owner ) {
+    this.initInstruction();
+    this.exitCode_ = exitCode;
+    this.belongsTo( owner );
+    return this;
+};
+
+Quit_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return System_exitAsync( this.exitCode_, function ( e, result ) {
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
+    }, opt_sync );
+};
+
+Quit_st.Go.prototype.operate = function ( vm ) {
+    throw new Error();
+};
+
+
+// ===================================================================
 // from functions/system/Seconds.java
 // ===================================================================
 // Needed early: Builtin
@@ -17669,7 +17748,7 @@ Environment_st.init = function () {
     new Declare().init();
 //    new SetUID();
 //    new Memory();
-//    new Quit();
+    new Quit().init();
     
     // maths
     ArcSymbol_st.mkSym( "pi" ).setValue( new Real().init( Math.PI ) );

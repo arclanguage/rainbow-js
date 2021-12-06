@@ -9,7 +9,7 @@ var fs = require( "fs" );
 //
 //   exports.makeRainbow = function (
 //       System_in, System_out, System_err, System_getenvAsync0,
-//       System_getenvAsync1, System_fs ) {
+//       System_getenvAsync1, System_exitAsync, System_fs ) {
 //   
 //   [contents of rainbow.js]
 //   
@@ -338,6 +338,13 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
                 nodeEnv, name ) )
                 result = nodeEnv[ name ];
             then( null, result );
+            return true;
+        },
+        
+        // System_exitAsync
+        function ( exitCode, then, opt_sync ) {
+            process.exit( exitCode );
+            then( null );
             return true;
         },
         

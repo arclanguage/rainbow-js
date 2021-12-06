@@ -264,6 +264,14 @@ function System_getenvAsync1( name, then, opt_sync ) {
     return true;
 }
 
+function System_exitAsync( exitCode, then, opt_sync ) {
+    then(
+        new ArcError().initAE(
+            "Attempted to end the process, but this is a web page." )
+        );
+    return true;
+}
+
 var System_fs = {
     dirAsync: function ( path, then, opt_sync ) {
         then( new ArcError().initAE( "No filesystem." ) );
