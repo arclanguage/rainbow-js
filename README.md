@@ -1,5 +1,4 @@
-                              Rainbow.js
-                              ==========
+# Rainbow.js
 
 This is a port of Conan Dalton's Rainbow, a Java implementation of
 Arc, to JavaScript. It hasn't been used for any real applications yet,
@@ -10,7 +9,7 @@ there. Bug reports and bug fixes are both welcome. ^_^
 
 You can play around with the REPL here:
 
-  https://arclanguage.github.io/rainbow-js/test/
+> https://arclanguage.github.io/rainbow-js/test/
 
 At over 10000 lines of code (not including blank lines and comments!),
 Rainbow.js is a pretty freaking big JavaScript file, but with the help
@@ -18,9 +17,11 @@ of the Closure Compiler, I'm minifying Rainbow.js together with the
 code for the test REPL down to about 148 KB. I'm using a command like
 this:
 
-  java -jar compiler.jar --compilation_level ADVANCED_OPTIMIZATIONS \
-    --js index-first.js --js rainbow.js --js index-last.js \
-    --js_output_file index-min.js
+```bash
+java -jar compiler.jar --compilation_level ADVANCED_OPTIMIZATIONS \
+  --js index-first.js --js rainbow.js --js index-last.js \
+  --js_output_file index-min.js
+```
 
 I've observed that simple Rainbow.js-based test applications that
 *don't* have a full REPL can minify down to a smaller size. However,
@@ -31,11 +32,11 @@ code.
 
 The main goals of this project are as follows:
 
-- To be faithful to Rainbow (even where it differs from Arc 3.1), even
+* To be faithful to Rainbow (even where it differs from Arc 3.1), even
   down to having similar code wherever possible so that the Java
   Rainbow and Rainbow.js codebases can improve side-by-side.
 
-- To be performant. Java Rainbow is the fastest faithful Arc
+* To be performant. Java Rainbow is the fastest faithful Arc
   implementation, and it would be nice for Rainbow.js to carry that
   benefit over as much as possible. As part of this goal, I've done
   silly premature optimizations like using for loops and imperative
@@ -45,7 +46,7 @@ The main goals of this project are as follows:
   Java Rainbow in my tests, at least on Chrome, Firefox, and Opera.
   Spooky!
 
-- To be compatible with lots of browsers, ECMAScript 5's strict mode,
+* To be compatible with lots of browsers, ECMAScript 5's strict mode,
   and the Closure Compiler. We're probably already there, at least for
   people who've upgraded their browsers.
 
@@ -57,20 +58,20 @@ open an issue or something. :)
 Despite the focus on keeping the Rainbow.js code similar to the Java
 Rainbow code, it differs in at least the following ways:
 
-- There is no support for threads or Java-specific operations.
+* There is no support for threads or Java-specific operations.
   However, for certain thread operations and Java-specific operations
   that make sense in a single-threaded JavaScript program (even if
   they don't do anything useful!), a JavaScript equivalent is given
   under the same name.
 
-- Input streams in the implementation of Rainbow.js are asynchronous,
+* Input streams in the implementation of Rainbow.js are asynchronous,
   but in the language itself they're still synchronous. This is done
   by making the evaluation model itself asynchronous. Actually,
   there's still one place where Arc code is run synchronously: when
   calculating the toString of a Rainbow tagged value. If input would
   block in this context, an ArcError is thrown instead.
 
-- In order to allow for asynchronous IO during the compilation phase
+* In order to allow for asynchronous IO during the compilation phase
   of a Rainbow command (as though anyone would ever really use that
   :-p ), compilation is now performed by way of Instructions, the same
   way as execution is performed. For example, in Java Rainbow, calling
@@ -82,7 +83,7 @@ Rainbow code, it differs in at least the following ways:
   implemented in terms of a lot of mutation "on the heap", which a
   captured continuation won't restore, so it's bound to be a bit ugly.
 
-- The Java version of Rainbow uses the Java/CC parser generator. I see
+* The Java version of Rainbow uses the Java/CC parser generator. I see
   no suitable replacement for that in JavaScript: Most
   JavaScript-targeting parser generators support parsing from strings
   but don't support incremental parsing from streams (which is to be
@@ -94,25 +95,25 @@ Rainbow code, it differs in at least the following ways:
   doesn't really solve the right problem, I've hand-rolled the parser.
   My parser actually implements a syntax that's not quite the same as
   Rainbow's, in order to make the implementation easier. Where it
-  differs from Rainbow (e.g. the way it parses "(#\newlyne)" as an
-  error rather than as "(#\n ewlyne)"), I believe it's actually closer
+  differs from Rainbow (e.g. the way it parses `(#\newlyne)` as an
+  error rather than as `(#\n ewlyne)`), I believe it's actually closer
   in behavior to Arc 3.1.
 
 There are other significant design issues worth mentioning, which I
 *don't* consider code differences:
 
-- Where Java Rainbow uses doubles, longs, ints, and chars, Rainbow.js
+* Where Java Rainbow uses doubles, longs, ints, and chars, Rainbow.js
   uses JavaScript numbers--which are 64-bit floating point values,
   with about 53 bits of precision when used for exact integer
   calculations. Some floating-point calculations and some calculations
   on very large integers may not be perfectly consistent with Rainbow.
 
-- Where Java Rainbow relies on the platform's default charset for the
+* Where Java Rainbow relies on the platform's default charset for the
   purposes of mapping bytes to characters and vice versa, Rainbow.js
   currently uses big-endian UTF-16, since String.prototype.charCodeAt
   returns UTF-16 code units. The big-endianness was chosen rather
   arbitrarily, but at least this way
-  "str.getCharCodeAt( i ).toString( 16 )" shows the nibbles in the
+  `str.getCharCodeAt( i ).toString( 16 )` shows the nibbles in the
   same order as they appear in the stream.
 
 Some other miscellaneous notes:
