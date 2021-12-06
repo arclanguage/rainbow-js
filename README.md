@@ -1,5 +1,7 @@
 # Rainbow.js
 
+[![CI](https://github.com/arclanguage/rainbow-js/actions/workflows/ci.yml/badge.svg)](https://github.com/arclanguage/rainbow-js/actions/workflows/ci.yml)
+
 This is a port of Conan Dalton's Rainbow, a Java implementation of Arc, to JavaScript. It hasn't been used for any real applications yet, but it's at the stage where it seems to be working under the test cases it's been given. If you write an application that uses it, you're likely to stumble across a few simple-to-fix bugs here and there. Bug reports and bug fixes are both welcome. ^_^
 
 You can play around with the REPL here:
