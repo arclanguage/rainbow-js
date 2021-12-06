@@ -1,20 +1,7 @@
 // http://rocketnia.github.com/rainbow-js/test/index-first.js
 
-// Copyright (c) 2011 Ross Angle
-//
-// This software is derived from Rainbow, software which is
-// copyright (c) 2011 Conan Dalton, distributed under the
-// Perl Foundation's Artistic License 2.0. In the sense described in
-// section (4)(c)(i) of that document, using its own terminology,
-// permission to use this "Modified Version" is granted under the
-// "Original License."
-//
-// This software may also be derived from Arc, software which is
-// copyright (c) Paul Graham and Robert Morris, distributed under the
-// Perl Foundation's Artistic License 2.0. In the sense described in
-// section (4)(b) of that document, using its own terminology, this
-// "Modified Version" bears a name that is different from any name
-// used for Arc.
+//   Copyright (c) 2011 the Rainbow.js authors.
+//   Licensed under the Perl Foundations's Artistic License 2.0.
 
 
 "use strict";
