@@ -92,15 +92,8 @@ function cpOver( from, to, then ) {
                 } );
             } );
         else
-            rm( to, function ( e ) {
-                var fromStream = fs.createReadStream( from );
-                var toStream = fs.createWriteStream( to );
-                fromStream.once( "open", function ( e ) {
-                    fromStream.pipe( toStream );
-                    toStream.on( "finish", function () {
-                        then();
-                    } );
-                } );
+            fs.copyFile( from, to, function ( e ) {
+                then();
             } );
     } );
 }
