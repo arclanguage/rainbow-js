@@ -1,6 +1,6 @@
 // http://rocketnia.github.com/rainbow-js/test/index-first.js
 
-//   Copyright (c) 2011 the Rainbow.js authors.
+//   Copyright (c) 2011, 2021 the Rainbow.js authors.
 //   Licensed under the Perl Foundations's Artistic License 2.0.
 
 
@@ -254,6 +254,15 @@ var rainbowStderr = makeInputAndOutput( "rainbowStderr" );
 var System_in = rainbowStdin.i;
 var System_out = rainbowStdout.o;
 var System_err = rainbowStderr.o;
+
+function System_getenvAsync0( then, opt_sync ) {
+    then( null, {} );
+    return true;
+}
+function System_getenvAsync1( name, then, opt_sync ) {
+    then( null, null );
+    return true;
+}
 
 var System_fs = {
     dirAsync: function ( path, then, opt_sync ) {

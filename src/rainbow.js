@@ -5,10 +5,12 @@
 //   Copyright (c) 2011, 2012, 2021 the Rainbow.js authors.
 //   Licensed under the Perl Foundations's Artistic License 2.0.
 
-// To load this file, the variables System_in, System_out, System_err,
-// and System_fs must already be defined. Here's an example
+// To load this file, the variables `System_in`, `System_out`,
+// `System_err`, `System_getenvAsync0`, `System_getenvAsync1`, and
+// `System_fs` must already be defined. Here's an example
 // implementation where stdin is always at EOF, stdout and stderr are
-// noops, and filesystem operations never work:
+// noops, the environment is empty, and filesystem operations never
+// work:
 
 //var System_in = {
 //    readByteAsync: function ( then, opt_sync ) {
@@ -37,6 +39,14 @@
 //    close: function () {},
 //    flush: function () {}
 //};
+//function System_getenvAsync0( then, opt_sync ) {
+//    then( null, {} );
+//    return true;
+//}
+//function System_getenvAsync1( name, then, opt_sync ) {
+//    then( null, null );
+//    return true;
+//}
 //var System_fs = {
 //    dirAsync: function ( path, then, opt_sync ) {
 //        then( new ArcError().initAE( "No filesystem." ) );
@@ -11596,8 +11606,6 @@ QuasiQuoteCompiler_st.Prefix.prototype.operate = function ( vm ) {
 // from util/Argv.java
 // ===================================================================
 
-// PORT TODO: See if this is supposed to be used. But don't remove it!
-
 /** @constructor */
 function Argv() {
 }
@@ -11622,8 +11630,8 @@ Argv.prototype.terminal = function ( option ) {
 Argv.prototype.multi = function ( option ) {
     var add = false;
     var result = [];
-    for ( var i = 0, len = this.args.length; i < len; i++ ) {
-        var arg = this.args[ i ];
+    for ( var i = 0, len = this.args_.length; i < len; i++ ) {
+        var arg = this.args_[ i ];
         if ( arg === option )
             add = true;
         else if ( /^-/.test( arg ) )
@@ -11636,8 +11644,8 @@ Argv.prototype.multi = function ( option ) {
 };
 
 Argv.prototype.present = function ( option ) {
-    for ( var i = 0; i < this.args.length; i++ ) {
-        var arg = this.args[ i ];
+    for ( var i = 0; i < this.args_.length; i++ ) {
+        var arg = this.args_[ i ];
         if ( arg === option )
             return true;
     }
@@ -19349,8 +19357,9 @@ RmFile_st.Go.prototype.operate = function ( vm ) {
 // from Console.java
 // ===================================================================
 // Needed early: ArcObject Visitor Instruction
-// Needed late: Environment VM ArcSymbol ArcParser StringInputPort
-// ParseException ArcError System_fs Compiler
+// Needed late: Argv Environment VM ArcSymbol ArcParser
+// StringInputPort System_in ParseException ArcError System_fs
+// Compiler System_getenvAsync0 System_getenvAsync1
 
 // PORT NOTE: This is substantially different from the original.
 
@@ -19360,16 +19369,52 @@ Console_st.o = ArcObject_st.NIL;
 Console_st.debugJava = false;
 Console_st.stackfunctions = true;
 
-// PORT TODO: If the "options" parameter is going to come from
+Console_st.mainCliAsync = function ( args, then, opt_sync ) {
+    var argv = new Argv().init( args );
+    
+    if ( argv.present( "--help" ) ) {
+        Console_st.showHelp_();
+        then();
+        return true;
+    }
+    
+    var thisSync = true;
+    if ( !Console_st.getArcPathAsync( function ( e, path ) {
+            if ( e ) return void then( e );
+            
+            var options = {
+                "ARC_PATH": path,
+                "args": argv.terminal( "-args" ),
+                "nosf": argv.present( "--nosf" ),
+                "noLibs": argv.present( "--no-libs" ),
+                "f": argv.multi( "-f" ),
+                "e": argv.multi( "-e" ),
+                "q": argv.present( "-q" )
+            };
+            if ( !Console_st.mainAsync( options, then, opt_sync ) )
+                thisSync = false;
+        }, opt_sync ) )
+        thisSync = false;
+    return thisSync;
+};
+
+// PORT NOTE: In case the "options" parameter is going to come from
 // someplace that the Closure Compiler won't compile alongside this,
-// change this to use things like options[ "nosf" ] which won't be
-// minified.
+// we write things like `options[ "nosf" ]` instead of `options.nosf`
+// so that they won't be minified.
+//
 /** @param {boolean} [opt_sync] */
 Console_st.mainAsync = function ( options, then, opt_sync ) {
+    // PORT TODO: Let's start measuring sooner than this. This line in
+    // Java Rainbow executed as soon as the application began, but
+    // Rainbow.js has a lot of setup it does before it calls
+    // `mainAsync`.
     var started = new Date().getTime();
     
-    // PORT TODO: See if we should implement the original's
-    // getArcPath() instead of this.
+    // PORT TODO: See if we should still do the `.`-adding logic in
+    // `getArcPathAsync` since we do it here as well. Java Rainbow
+    // didn't have an `options` data structure like this, so this
+    // redundancy is original to the port.
     var path = options[ "ARC_PATH" ] || [];
     if ( path.indexOf( "." ) === -1 )
         path = [ "." ].concat( path );
@@ -19385,46 +19430,68 @@ Console_st.mainAsync = function ( options, then, opt_sync ) {
     
     ArcSymbol_st.mkSym( "*argv*" ).setValue(
         Pair_st.buildFrom1( programArgs ) );
-    // PORT TODO: Implement *env*.
-    ArcSymbol_st.mkSym( "call*" ).setValue( new Hash().init() );
-    ArcSymbol_st.mkSym( "sig" ).setValue( new Hash().init() );
-    
-    var filesToLoad = (options[ "noLibs" ] ? [] : [
-        "arc",
-        "strings",
-        "lib/bag-of-tricks",
-        "rainbow/rainbow",
-        "rainbow/rainbow-libs"
-    ]).concat( options[ "f" ] || [] );
     
     var achievedSync = true;
-    
-    if ( !Console_st.loadAllAsync_( vm, path, filesToLoad, function (
-            e ) {
-            
+    if ( !Console_st.getEnvironmentAsync( function ( e, env ) {
             if ( e ) return void then( e );
             
-            if ( !Console_st.interpretAllAsync_(
-                    vm, options[ "e" ] || [], function ( e ) {
+            ArcSymbol_st.mkSym( "*env*" ).setValue( env );
+            ArcSymbol_st.mkSym( "call*" ).setValue(
+                new Hash().init() );
+            ArcSymbol_st.mkSym( "sig" ).setValue( new Hash().init() );
+            
+            var filesToLoad = (options[ "noLibs" ] ? [] : [
+                "arc",
+                "strings",
+                "lib/bag-of-tricks",
+                "rainbow/rainbow",
+                "rainbow/rainbow-libs"
+            ]).concat( options[ "f" ] || [] );
+            
+            if ( !Console_st.loadAllAsync_( vm, path, filesToLoad,
+                    function ( e ) {
                     
                     if ( e ) return void then( e );
                     
-                    if ( options[ "q" ] ) {
-                        then();
-                    } else {
-                        var ready = new Date().getTime();
-                        System_out_println(
-                            "repl in " + (ready - started) + "ms" );
-                        if ( !Console_st.replAsync_(
-                            vm, then, opt_sync ) )
-                            achievedSync = false;
-                    }
+                    if ( !Console_st.interpretAllAsync_(
+                            vm, options[ "e" ] || [], function ( e ) {
+                            
+                            if ( e ) return void then( e );
+                            
+                            if ( options[ "q" ] ) {
+                                then();
+                            } else {
+                                var ready = new Date().getTime();
+                                System_out_println(
+                                    "repl in " +
+                                    (ready - started) + "ms" );
+                                if ( !Console_st.replAsync_(
+                                    vm, then, opt_sync ) )
+                                    achievedSync = false;
+                            }
+                        }, opt_sync ) )
+                        achievedSync = false;
                 }, opt_sync ) )
                 achievedSync = false;
         }, opt_sync ) )
         achievedSync = false;
-    
     return achievedSync;
+};
+
+Console_st.showHelp_ = function () {
+    System_out_print(
+        "Launch the Rainbow.js Arc Interpreter                               " +
+        "\n                                                                  " +
+        "\n rainbow [options]                                                " +
+        "\n                                                                  " +
+        "\n where options include                                            " +
+        "\n   --help       show this help                                    " +
+        "\n   -f file ...  load and interpret file                           " +
+        "\n   -e expr ...  evaluate expr                                     " +
+        "\n   -q           don't enter the REPL (quit if no threads started) " +
+        "\n   --no-libs    don't load any arc libraries                      " +
+        "\n   -args xyz    (if specified must be last) set symbol *argv* to xyz" +
+        "\n");
 };
 
 Console_st.parseAll_ = function ( list ) {
@@ -19442,6 +19509,9 @@ Console_st.parseAll_ = function ( list ) {
     return result;
 };
 
+// PORT TODO: See if this should be changed to consume only a constant
+// number of stack frames, rather than a number proportional to the
+// number of files to load.
 Console_st.loadAllAsync_ = function (
     vm, arcPath, files, then, opt_sync ) {
     
@@ -19462,6 +19532,9 @@ Console_st.loadAllAsync_ = function (
     return thisSync;
 };
 
+// PORT TODO: See if this should be changed to consume only a constant
+// number of stack frames, rather than a number proportional to the
+// number of expressions to evaluate.
 Console_st.interpretAllAsync_ = function (
     vm, expressionsToEval, then, opt_sync ) {
     
@@ -19605,7 +19678,7 @@ Console_st.loadFileAsync = function (
             thisSync = false;
     }
     // PORT TODO: Stop checking if the path is valid if it isn't
-    // absolute. To accomplish this, we may want to add a System_fs
+    // absolute. To accomplish this, we may want to add a `System_fs`
     // interface for normalizing paths. Confer with the original.
     if ( !Console_st.isValidSourceFileAsync_( f, function (
             e, valid ) {
@@ -19740,6 +19813,51 @@ Console_st.AndEval.prototype.operate = function ( vm ) {
     var instructions = Pair_st.buildFrom1( i );
     instructions.visit( Console_st.mkVisitor_( expression ) );
     vm.pushInvocation2( null, instructions );
+};
+
+Console_st.getEnvironmentAsync = function ( then, opt_sync ) {
+    var env = new Hash().init();
+    return System_getenvAsync0( function ( e, s ) {
+        if ( e ) return void then( e );
+        for ( var k in s )
+            if ( Object.prototype.hasOwnProperty.call( s, k ) )
+                env.sref( ArcString_st.make( s[ k ] ),
+                    ArcString_st.make( k ) );
+        then( null, env );
+    }, opt_sync );
+};
+
+Console_st.getArcPathAsync = function ( then, opt_sync ) {
+    return System_getenvAsync1( "ARC_PATH", function ( e, arcPath ) {
+        if ( e ) return void then( e );
+        
+        // PORT TODO: This trims according to JavaScript's
+        // `String#trim()`, which trims out tab, vertical tab, line
+        // feed, form feed, carriage return, line separator, paragraph
+        // separator, zero-width no-break space, and Unicode
+        // `Space_Separator` characters. However, Java Rainbow trims
+        // according to Java's `String#trim()`, which trims any
+        // character with a code point less than or equal to
+        // U+0020 (SPACE). Figure out what both of them should
+        // actually do.
+        //
+        if ( arcPath === null || arcPath.trim().length === 0 )
+            return void then( null, [ "." ] );
+        
+        // PORT NOTE: Java Rainbow uses the Java `String#split()`,
+        // which does not include empty strings occurring at the end
+        // of the match. We simulate that here.
+        var strings = arcPath.split( ":" );
+        while ( strings.length !== 0
+            && strings[ strings.length - 1 ] === "" ) {
+            strings.pop();
+        }
+        
+        if ( strings.indexOf( "." ) !== -1 )
+            strings.unshift( "." );
+        
+        then( null, strings );
+    }, opt_sync );
 };
 
 Console_st.isValidSourceFileAsync_ = function ( f, then, opt_sync ) {

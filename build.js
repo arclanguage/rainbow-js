@@ -96,7 +96,8 @@ cpOver( "src/web/index.html", "test/index.html", function ( e ) {
     if ( e ) throw e;
 fs.writeFileSync( "bin/node/rainbow-node.js",
     "exports.makeRainbow = function (\n" +
-    "    System_in, System_out, System_err, System_fs ) {\n" +
+    "    System_in, System_out, System_err, System_getenvAsync0,\n" +
+    "    System_getenvAsync1, System_fs ) {\n" +
     "\n" +
     fs.readFileSync( "src/rainbow.js", "utf8" ) +
     "\n" +

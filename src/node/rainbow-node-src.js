@@ -1,4 +1,4 @@
-//   Copyright (c) 2012 the Rainbow.js authors.
+//   Copyright (c) 2012, 2021 the Rainbow.js authors.
 //   Licensed under the Perl Foundations's Artistic License 2.0.
 
 var fs = require( "fs" );
@@ -8,7 +8,8 @@ var fs = require( "fs" );
 // provides this extra export:
 //
 //   exports.makeRainbow = function (
-//       System_in, System_out, System_err, System_fs ) {
+//       System_in, System_out, System_err, System_getenvAsync0,
+//       System_getenvAsync1, System_fs ) {
 //   
 //   [contents of rainbow.js]
 //   
@@ -321,7 +322,27 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
         nodeOutToRainbowOut( function () {
             return getStderr();
         }, !"closeable" ),
-        {  // filesystem
+        
+        // System_getenvAsync0
+        function ( then, opt_sync ) {
+            // TODO: See if we need to copy the object like this.
+            then( null, Object.assign( {}, process.env ) );
+            return true;
+        },
+        
+        // System_getenvAsync1
+        function ( name, then, opt_sync ) {
+            var nodeEnv = process.env;
+            var result = null;
+            if ( Object.prototype.hasOwnProperty.call(
+                nodeEnv, name ) )
+                result = nodeEnv[ name ];
+            then( null, result );
+            return true;
+        },
+        
+        // filesystem
+        {
             dirAsync: function ( path, then, opt_sync ) {
                 function toArc( files ) {
                     return rainbow.list( files.map( function ( it ) {
@@ -493,11 +514,18 @@ exports.getSharedRainbow = function () {
 };
 
 if ( require.main === module )
-    exports.getSharedRainbow().mainAsync( {}, function ( e ) {
-        // TODO: See if this is ever reached.
-        if ( e )
+    exports.getSharedRainbow().mainCliAsync( process.argv.slice( 2 ),
+        function ( e ) {
+        
+        if ( e ) {
+            // TODO: See if we ever get here. We at least get to this
+            // callback when we exit the REPL using Ctrl+D or when we
+            // use the `--help` or `-q` option, but we haven't gotten
+            // here with an error yet.
             console.log( e );
-        else
-            console.log( "Thanks for using Rainbow.js on Node." );
+            process.exit( 1 );
+            return;
+        }
+        
         process.exit();
     } );
