@@ -1,0 +1,32 @@
+{
+  "name": "rainbow-js",
+  "version": "0.1.0",
+  "description": "The Arc programming language, reimplemented in Java, then ported to JavaScript.",
+  "main": "bin/node/rainbow-node.js",
+  "scripts": {
+    "all": "npm run clean && npm run build",
+    "clean": "rm -rf fin test",
+    "build": "node build.js && npm run build-closure",
+    "build-closure": "google-closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS --js src/web/index-first.js --js src/rainbow.js --js src/web/index-last.js --js_output_file test/index-min.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arclanguage/rainbow-js.git"
+  },
+  "keywords": [
+    "arc",
+    "language"
+  ],
+  "author": {
+    "name": "Arc language community",
+    "url": "https://github.com/arclanguage"
+  },
+  "license": "Artistic-2.0",
+  "bugs": {
+    "url": "https://github.com/arclanguage/rainbow-js/issues"
+  },
+  "homepage": "https://github.com/arclanguage/rainbow-js#readme",
+  "devDependencies": {
+    "google-closure-compiler": "^20211107.0.0"
+  }
+}
