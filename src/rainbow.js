@@ -19627,28 +19627,38 @@ Console_st.loadFileAsync = function (
     return thisSync;
 };
 
-// PORT TODO: See if this should be changed to consume only a constant
-// number of stack frames, rather than a number proportional to the
-// number of commands available in the stream without blocking.
+/** @param {boolean} [opt_sync] */
 Console_st.loadAsync = function ( vm, stream, then, opt_sync ) {
     var thisSync = true;
-    if ( !ArcParser_st.readObjectAsync( stream, function (
-            e, command ) {
-            
-            if ( e ) return void then( e );
-            if ( command === null )
-                return void then();
-            if ( !Console_st.compileAndEvalAsync_( vm, command,
-                    function ( e, result ) {
-                    
-                    if ( e ) return void then( e );
-                    if ( !Console_st.loadAsync(
-                        vm, stream, then, opt_sync ) )
-                        thisSync = false;
-                }, opt_sync ) )
-                thisSync = false;
-        }, opt_sync ) )
-        thisSync = false;
+    
+    // PORT NOTE: By using this `while` loop, we consume only a
+    // constant number of stack frames, rather than a number
+    // proportional to the number of commands available in the stream
+    // without blocking.
+    //
+    var done = false;
+    while ( thisSync && !done ) {
+        done = true;
+        if ( !ArcParser_st.readObjectAsync( stream, function (
+                e, command ) {
+                
+                if ( e ) return void then( e );
+                if ( command === null )
+                    return void then();
+                if ( !Console_st.compileAndEvalAsync_( vm, command,
+                        function ( e, result ) {
+                        
+                        if ( e ) return void then( e );
+                        if ( thisSync ) {
+                            done = false;
+                        } else {
+                            Console_st.loadAsync( vm, stream, then );
+                        }
+                    }, opt_sync ) )
+                    thisSync = false;
+            }, opt_sync ) )
+            thisSync = false;
+    }
     return thisSync;
 };
 
