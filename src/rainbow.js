@@ -888,26 +888,26 @@ var ArcParser_st = {};
 ArcParser_st.isNonSymAtom = function ( s ) {
     if ( /^-?[01-9]+\/[01-9]+$/.test( s )
         || /^-?[01-9]+$/.test( s )
-        || /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?$/.test( s )
+        || /^[-+]?[01-9]*\.?[01-9]+(e-?[01-9]+)?$/i.test( s )
         || s === "+inf.0"
         || s === "-inf.0"
         || s === "+nan.0"
         || s === "+i"
         || s === "-i"
-        || /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/.
-            test( s )
-        || /\\(?!\|)/.test( s ) )
+        || /^([-+]?[01-9]*\.?[01-9]+(?:e-?[01-9]+)?)([-+])([01-9]*\.?[01-9]+(?:e-?[01-9]+)?)?i$/i.
+            test( s ) )
         return true;
     
-    for ( var i = 0, len = s.length; i < len; i++ ) {
-        var code = s.charCodeAt( i );
-        if ( !(/^[-+$%&*\/<=>?^_~.!:01-9a-zA-Z]+$/.test(
-                s.charAt( i ) )
-                || (0x0080 <= code && code < 0x10000)) )
-            return true;
-    }
+    // PORT TODO: It's unclear Java Rainbow has support for escaped
+    // backslashes in symbols. We implement this to account for them,
+    // but there are probably more places in the code that have to
+    // change for it, and we should probably implement it in
+    // Java Rainbow as well.
+    if ( /^\|([^\\|]|\\[\\|])*\|$/.test( s )
+        || /^([-+$%&*/<=>?^_~.!:01-9a-zA-Z]|\\[\\|])+$/.test( s ) )
+        return false;
     
-    return false;
+    return true;
 };
 
 ArcParser_st.readFirstObjectFromString = function ( s ) {
@@ -1127,7 +1127,7 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                         else if ( soFar === "null" )
                             code( "\0".charCodeAt( 0 ) );
                         else if ( /^[01-9][01-9]+$/.test( soFar ) )
-                            code( parseInt( soFar, 10 ) );
+                            code( parseInt( soFar, 8 ) );
                         else if ( /^u[0-9a-f]+$/i.test( soFar ) )
                             code( parseInt(
                                 soFar.substring( 1 ), 16 ) );
@@ -1139,10 +1139,12 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                         if ( !readChar( function ( e, c ) {
                                 if ( e ) return void then( e );
                                 done = false;
-                                soFar += c;
-                                if ( !thisSync )
+                                var nextSoFar = soFar + c;
+                                if ( thisSync )
+                                    soFar = nextSoFar;
+                                else
                                     finishNamedCharacter(
-                                        soFar, then );
+                                        nextSoFar, then );
                             } ) )
                             thisSync = false;
                     }
@@ -1168,9 +1170,12 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                         if ( !readChar( function ( e, c ) {
                                 if ( e ) return void then( e );
                                 done = false;
-                                soFar += c;
-                                if ( !thisSync )
-                                    finishHexInteger( soFar, then );
+                                var nextSoFar = soFar + c;
+                                if ( thisSync )
+                                    soFar = nextSoFar;
+                                else
+                                    finishHexInteger(
+                                        nextSoFar, then );
                             } ) )
                             thisSync = false;
                     }
@@ -1192,9 +1197,11 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                         then( null, ArcSymbol_st.make( soFar ) );
                     } else {
                         done = false;
-                        soFar += c;
-                        if ( !thisSync )
-                            finishPipedSymbol( soFar, then );
+                        var nextSoFar = soFar + c;
+                        if ( thisSync )
+                            soFar = nextSoFar;
+                        else
+                            finishPipedSymbol( nextSoFar, then );
                     }
                 } ) )
                 thisSync = false;
@@ -1224,10 +1231,14 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                                         if ( e )
                                             return void then( e );
                                         done = false;
-                                        soFar = soFar.concat( [ o ] );
-                                        if ( !thisSync )
+                                        var nextSoFar =
+                                            soFar.concat( [ o ] );
+                                        if ( thisSync )
+                                            soFar = nextSoFar;
+                                        else
                                             finishList(
-                                                soFar, end, then );
+                                                nextSoFar, end, then
+                                                );
                                     } ) )
                                     thisSync = false;
                             }
@@ -1252,9 +1263,11 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                         if ( !readChar( function ( e, c ) {
                                 if ( e ) return void then( e );
                                 done = false;
-                                soFar += c;
-                                if ( !thisSync )
-                                    finishAtom( soFar, then );
+                                var nextSoFar = soFar + c;
+                                if ( thisSync )
+                                    soFar = nextSoFar;
+                                else
+                                    finishAtom( nextSoFar, then );
                             } ) )
                             thisSync = false;
                     } else if ( c === "\\" ) {
@@ -1265,10 +1278,13 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                                             return void then( e );
                                         if ( c2 === "|" ) {
                                             done = false;
-                                            soFar += "\\|";
-                                            if ( !thisSync )
+                                            var nextSoFar =
+                                                soFar + "\\|";
+                                            if ( thisSync )
+                                                soFar = nextSoFar;
+                                            else
                                                 finishAtom(
-                                                    soFar, then );
+                                                    nextSoFar, then );
                                         } else {
                                             then(
                                                 new ParseException().
@@ -1334,9 +1350,9 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                 thisSync = false;
         }
         function doSymbol() {
-            if ( !finishPipedSymbol( "", function ( e, name ) {
+            if ( !finishPipedSymbol( "", function ( e, symbol ) {
                     if ( e ) return void then( e );
-                    then( null, ArcSymbol_st.make( name ) );
+                    then( null, symbol );
                 } ) )
                 thisSync = false;
         }
@@ -1420,34 +1436,60 @@ ArcParser_st.readObjectAsync = function ( input, then, opt_sync ) {
                 } ) )
                 thisSync = false;
         }
-        function doAtom( c ) {
-            if ( !finishAtom( c, then ) )
+        function doAtom() {
+            if ( !finishAtom( "", then ) )
                 thisSync = false;
         }
         if ( !readWhite( function ( e ) {
                 if ( e ) return void then( e );
-                if ( !readChar( function ( e, c ) {
+                if ( !peekChar( function ( e, c ) {
                         if ( e ) return void then( e );
+                        
+                        function readPeekedChar( body ) {
+                            if ( !readChar( function ( e, c ) {
+                                    if ( e ) return void then( e );
+                                    body();
+                                } ) )
+                                thisSync = false;
+                        }
+                        
+                        
                         if ( c === null )
                             then( null, null );
                         else if ( c === "\"" )
-                            doString();
+                            readPeekedChar( function () {
+                                doString();
+                            } );
                         else if ( c === "|" )
-                            doSymbol();
+                            readPeekedChar( function () {
+                                doSymbol();
+                            } );
                         else if ( c === "#" )
-                            doHash();
+                            readPeekedChar( function () {
+                                doHash();
+                            } );
                         else if ( c === "'" )
-                            doQuote( "quote" );
+                            readPeekedChar( function () {
+                                doQuote( "quote" );
+                            } );
                         else if ( c === "," )
-                            doComma();
+                            readPeekedChar( function () {
+                                doComma();
+                            } );
                         else if ( c === "`" )
-                            doQuote( "quasiquote" );
+                            readPeekedChar( function () {
+                                doQuote( "quasiquote" );
+                            } );
                         else if ( c === "(" )
-                            doParen();
+                            readPeekedChar( function () {
+                                doParen();
+                            } );
                         else if ( c === "[" )
-                            doBracket();
+                            readPeekedChar( function () {
+                                doBracket();
+                            } );
                         else
-                            doAtom( c );
+                            doAtom();
                     } ) )
                     thisSync = false;
             } ) )
@@ -4002,7 +4044,7 @@ Hash.prototype.unref = function ( key ) {
             this.firstEntry_ = entry.next;
         if ( this.lastEntry_ === entry )
             this.lastEntry_ = entry.prev;
-        this.len--;
+        this.len_--;
         return;
     }
 };
@@ -4352,7 +4394,7 @@ VM.prototype.pushFrame = function ( i ) {
     }
 };
 
-// PORT TODO: Rename all uses of pushInvocation.
+// PORT NOTE: We've renamed all uses of pushInvocation.
 VM.prototype.pushInvocation2 = function ( lc, instructions ) {
     if ( this.ipThreshold <= this.ip
         && this.peekI() instanceof Nil ) {
@@ -4523,7 +4565,7 @@ VM.prototype.clearError = function () {
     this.error_ = null;
 };
 
-// PORT TODO: Rename all uses of VM.ap() and VM.ap( int ).
+// PORT NOTE: We've renamed all uses of VM.ap() and VM.ap( int ).
 VM.prototype.getAp = function () {
     return this.ap;
 };
@@ -7425,7 +7467,7 @@ StackSymbol.prototype.inline3 = function ( p, arg, paramIndex ) {
     if ( this.isSameStackSymbol( p ) )
         return arg;
     else if ( paramIndex < this.index_ )
-        return new StackSymbol().init( this.name, this.index - 1 );
+        return new StackSymbol().init( this.name, this.index_ - 1 );
     else
         return this;
 };
@@ -8766,7 +8808,6 @@ QuasiQuotation.prototype.type = function () {
     return ArcSymbol_st.mkSym( "quasiquotation" );
 };
 
-// PORT TODO: Rename all uses of addInstructions( List, ArcObject ).
 QuasiQuotation.prototype.addInstructions = function ( i ) {
     this.addInstructions2( i, this.target_ );
 };
@@ -8821,6 +8862,8 @@ QuasiQuotation.prototype.appendUnquotes_ = function (
         }
 };
 
+// PORT NOTE: We've renamed all uses of
+// .addInstructions( List, ArcObject ).
 QuasiQuotation.prototype.addInstructions2 = function ( i, target ) {
     return this.addInstructions_( i, target, 1 );
 };
@@ -9260,7 +9303,7 @@ Visitor.prototype.acceptObject = function ( o ) {
 Visitor.prototype.endObject = function ( o ) {
 };
 
-// PORT TODO: Rename all uses of accept().
+// PORT NOTE: We've renamed all uses of accept().
 Visitor.prototype.acceptInterpretedFunction = function ( o ) {
     this.acceptObject( o );
 };
@@ -9313,7 +9356,7 @@ Visitor.prototype.acceptSingleAssignment = function ( o ) {
     this.acceptObject( o );
 };
 
-// PORT TODO: Rename all uses of end().
+// PORT NOTE: We've renamed all uses of end().
 Visitor.prototype.endInterpretedFunction = function ( o ) {
     this.endObject( o );
 };
@@ -10887,7 +10930,7 @@ FunctionParameterListBuilder_st.index = function (
     }
 };
 
-// PORT TODO: Rename all uses of .curry().
+// PORT NOTE: We've renamed all uses of .curry().
 FunctionParameterListBuilder_st.curryStack = function (
     params, param, arg, paramIndex ) {
     
@@ -11790,7 +11833,7 @@ Builtin.prototype.initBuiltin = function ( name ) {
     return this;
 };
 
-// PORT TODO: Rename all uses of .invoke( Pair ).
+// PORT NOTE: We've renamed all uses of .invoke( Pair ).
 Builtin.prototype.invokePair = function ( args ) {
     throw new ArcError().initAE(
         "Builtin:invoke(args):provide implementation! " +
@@ -12224,7 +12267,7 @@ InterpretedFunction.prototype.invokef0 = function ( vm ) {
     return this.invokeN0( vm, null );
 };
 
-// PORT TODO: Rename all uses of .invokeN.
+// PORT NOTE: We've renamed all uses of .invokeN.
 InterpretedFunction.prototype.invokeN0 = function ( vm, lc ) {
     return this.invoke3( vm, lc, ArcObject_st.NIL );
 };
@@ -12267,7 +12310,8 @@ InterpretedFunction.prototype.invoke = function ( vm, args ) {
     return this.invoke3( vm, null, args );
 };
 
-// TODO: Rename all uses of .invoke( VM, LexicalClosure, Pair ).
+// PORT NOTE: We've renamed all uses of
+// .invoke( VM, LexicalClosure, Pair ).
 InterpretedFunction.prototype.invoke3 = function ( vm, lc, args ) {
     throw new ArcError().initAE(
         "error: invoke(vm, lc, args) not implemented in " +
@@ -14343,7 +14387,7 @@ Stack_A_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
         if ( args.cdr() instanceof Nil )
             this.invokeN1( vm, lc, arg1 );
         else
-            this.invokeN( vm, lc, arg1, args.cdr().car() );
+            this.invokeN2( vm, lc, arg1, args.cdr().car() );
     }
 };
 
@@ -15219,8 +15263,11 @@ NewString.prototype.invokePair = function ( args ) {
             throw new TypeError();
     }
     var b = [];
+    // PORT NOTE: In the original, this called `c.value()` instead of
+    // `c.disp()`, but it also used a `StringBuilder` method that
+    // used a value of type `char` for its textual meaning.
     for ( var i = 0; i < n.toInt(); i++ )
-        b.push( c.value() );
+        b.push( c.disp() );
     return ArcString_st.make( b.join( "" ) );
 };
 
@@ -16972,7 +17019,7 @@ CCC_st.ContinuationWrapper.prototype.applyFinallies_ = function (
         var lc = finallies[ 1 ][ i ];
         // PORT NOTE: This was a cast in Java.
         // PORT TODO: See if this can throw an error.
-        if ( !(lc instanceof LexicalClosure) )
+        if ( !(lc === null || lc instanceof LexicalClosure) )
             throw new TypeError();
         var instructions = finallies[ 0 ][ i ];
         // PORT NOTE: This was a cast in Java.
@@ -17923,7 +17970,8 @@ Input.prototype.readCharacterAsync = function ( then, opt_sync ) {
                 new ArcError().initAE( "reading character: " + e ) );
         if ( result === null )
             return then( null, ArcObject_st.NIL );
-        return then( null, ArcCharacter_st.makeFromCharCode( result ) );
+        return then( null,
+            ArcCharacter_st.makeFromCharCode( result ) );
     }, opt_sync );
 };
 
@@ -17935,7 +17983,8 @@ Input.prototype.peekCharacterAsync = function ( then, opt_sync ) {
             return then( e );
         if ( result === null )
             return then( null, ArcObject_st.NIL );
-        return then( null, ArcCharacter_st.makeFromCharCode( result ) );
+        return then( null,
+            ArcCharacter_st.makeFromCharCode( result ) );
     }, opt_sync );
 };
 

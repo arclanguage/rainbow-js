@@ -456,7 +456,9 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
                 function onOpen( fd ) {
                     stream.removeListener( "error", onError );
                     stream.removeListener( "open", onOpen );
-                    then( null, nodeOutToRainbowOut( stream ) );
+                    then( null, nodeOutToRainbowOut( function () {
+                      return stream;
+                    } ) );
                 }
                 stream.on( "error", onError );
                 stream.on( "open", onOpen );
