@@ -482,8 +482,34 @@ StringMap.prototype.get = function ( k ) {
 StringMap.prototype.put = function ( k, v ) {
     return this.contents_[ stringMapPrefix + k ] = v;
 };
+StringMap.prototype.hasPrePrefixed_ = function ( prefixedK ) {
+    return Object.prototype.hasOwnProperty.call(
+        this.contents_, prefixedK );
+};
 StringMap.prototype.has = function ( k ) {
-    return stringMapPrefix + k in this.contents_;
+    return this.hasPrePrefixed_( stringMapPrefix + k );
+};
+StringMap.prototype.len = function () {
+    var result = 0;
+    for ( var prefixedK in this.contents_ ) {
+        if ( this.hasPrePrefixed_( prefixedK ) )
+            result++;
+    }
+    return result;
+};
+StringMap.prototype.toString = function () {
+    var entries = [];
+    for ( var prefixedK in this.contents_ ) {
+        if ( this.hasPrePrefixed_( prefixedK ) )
+            entries.push(
+                JSON.stringify(
+                    prefixedK.substring( stringMapPrefix.length ) ) +
+                ": " +
+                this.contents_[ prefixedK ] );
+    }
+    if ( entries.length === 0 )
+        return "StringMap[]";
+    return "StringMap[ " + entries.join( ", " ) + " ]";
 };
 
 
@@ -802,6 +828,7 @@ ArcObject.prototype.collectReferences = function ( b, bs ) {
 ArcObject.prototype.visit = function ( v ) {
 };
 
+/** @param {StringMap} lexicalBindings */
 ArcObject.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
@@ -1578,7 +1605,7 @@ ArcSymbol.prototype.compareTo = function ( right ) {
     // PORT NOTE: This was a cast in Java.
     if ( !(right instanceof ArcSymbol) )
         throw new TypeError();
-    return this.name_.localeCompare( right.name );
+    return this.name_.localeCompare( right.name_ );
 };
 
 ArcSymbol.prototype.type = function () {
@@ -7565,10 +7592,11 @@ BoundSymbol.prototype.visit = function ( v ) {
     v.acceptBoundSymbol( this );
 };
 
+/** @param {StringMap} lexicalBindings */
 BoundSymbol.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
-    var index = lexicalBindings[ this.name.name() ];
+    var index = lexicalBindings.get( this.name.name() );
     if ( index === void 0 )
         return this.unnest();
     else if ( index === this.index )
@@ -7693,6 +7721,7 @@ SingleAssignment.prototype.nest = function ( threshold ) {
     return sa;
 };
 
+/** @param {StringMap} lexicalBindings */
 SingleAssignment.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
@@ -7815,6 +7844,7 @@ LastAssignment.prototype.nest = function ( threshold ) {
     return sa;
 };
 
+/** @param {StringMap} lexicalBindings */
 LastAssignment.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
@@ -7919,6 +7949,7 @@ Assignment.prototype.visit = function ( v ) {
     v.endAssignment( this );
 };
 
+/** @param {StringMap} lexicalBindings */
 Assignment.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
@@ -8021,10 +8052,11 @@ Else.prototype.nest = function ( threshold ) {
     return e;
 };
 
-Else.prototype.replaceBoundSymbols = function ( lexicalbindings ) {
+/** @param {StringMap} lexicalBindings */
+Else.prototype.replaceBoundSymbols = function ( lexicalBindings ) {
     var e = new Else().init();
     e.ifExpression =
-        this.ifExpression.replaceBoundSymbols( lexicalbindings );
+        this.ifExpression.replaceBoundSymbols( lexicalBindings );
     return e;
 };
 
@@ -8142,12 +8174,13 @@ IfClause.prototype.nest = function ( threshold ) {
     return ic;
 };
 
+/** @param {StringMap} lexicalBindings */
 IfClause.prototype.replaceBoundSymbols = function (
-    lexicalbindings ) {
+    lexicalBindings ) {
     
     var ic = new IfClause().init();
     // PORT NOTE: This local variable didn't exist in Java.
-    var newFirst = this.first_.replaceBoundSymbols( lexicalbindings );
+    var newFirst = this.first_.replaceBoundSymbols( lexicalBindings );
     // PORT NOTE: This was a cast in Java.
     // PORT TODO: See if it's possible for this to throw an error.
     if ( !newFirst.implementsConditional )
@@ -8396,14 +8429,15 @@ IfThen.prototype.nest = function ( threshold ) {
     return other;
 };
 
-IfThen.prototype.replaceBoundSymbols = function ( lexicalbindings ) {
+/** @param {StringMap} lexicalBindings */
+IfThen.prototype.replaceBoundSymbols = function ( lexicalBindings ) {
     var other = new IfThen().init();
     other.ifExpression = this.ifExpression.replaceBoundSymbols(
-        lexicalbindings );
+        lexicalBindings );
     other.thenExpression = this.thenExpression.replaceBoundSymbols(
-        lexicalbindings );
+        lexicalBindings );
     // PORT NOTE: This local variable didn't exist in Java.
-    var newNext = this.next.replaceBoundSymbols( lexicalbindings );
+    var newNext = this.next.replaceBoundSymbols( lexicalBindings );
     // PORT NOTE: This was a cast in Java.
     // PORT TODO: See if it's possible for this to throw an error.
     if ( !newNext.implementsConditional )
@@ -8754,6 +8788,7 @@ Invocation.prototype.nest = function ( threshold ) {
     return new Invocation().init( Pair_st.buildFrom1( inlined ) );
 };
 
+/** @param {StringMap} lexicalBindings */
 Invocation.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
@@ -9189,6 +9224,7 @@ QuasiQuotation_st.nest_ = function ( threshold, expr, nesting ) {
     return Pair_st.buildFrom2( list, last );
 };
 
+/** @param {StringMap} lexicalBindings */
 QuasiQuotation.prototype.replaceBoundSymbols = function (
     lexicalBindings ) {
     
@@ -9197,6 +9233,7 @@ QuasiQuotation.prototype.replaceBoundSymbols = function (
             lexicalBindings, this.target_, 1 ) );
 };
 
+/** @param {StringMap} lexicalBindings */
 QuasiQuotation_st.replaceBoundSymbols_ = function (
     lexicalBindings, expr, nesting ) {
     
@@ -9871,6 +9908,7 @@ VMInterceptor_st.PROFILE = new VMInterceptor_st.PROFILE_class();
 var AssignmentBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 AssignmentBuilder_st.build = function ( vm, body, lexicalBindings ) {
     var assignment = new Assignment().init();
     assignment.prepare( body.len() );
@@ -9893,6 +9931,7 @@ AssignmentBuilder_st.BuildAssignment1.prototype = new Instruction();
 AssignmentBuilder_st.BuildAssignment1.prototype.className =
     "AssignmentBuilder.BuildAssignment1";
 
+/** @param {Array<StringMap>} lexicalBindings */
 AssignmentBuilder_st.BuildAssignment1.prototype.init = function (
     assignment, body, lexicalBindings ) {
     
@@ -9933,6 +9972,7 @@ AssignmentBuilder_st.BuildAssignment2.prototype = new Instruction();
 AssignmentBuilder_st.BuildAssignment2.prototype.className =
     "AssignmentBuilder.BuildAssignment2";
 
+/** @param {Array<StringMap>} lexicalBindings */
 AssignmentBuilder_st.BuildAssignment2.prototype.init = function (
     assignment, body, lexicalBindings ) {
     
@@ -9954,6 +9994,7 @@ AssignmentBuilder_st.BuildAssignment2.prototype.operate = function (
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //AssignmentBuilder_st.build = function (
 //    vm, body, lexicalBindings ) {
 //    
@@ -9989,6 +10030,7 @@ Compiler_st.atstrings = ArcObject_st.NIL;
 Compiler_st.atStringFunction = ArcSymbol_st.mkSym( "at-string" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 Compiler_st.compile = function ( vm, expression, lexicalBindings ) {
     if ( expression instanceof Nil ) {
         vm.pushA( expression );
@@ -10004,9 +10046,11 @@ Compiler_st.compile = function ( vm, expression, lexicalBindings ) {
         Compiler_st.compilePair( vm, expression, lexicalBindings );
     } else if ( expression instanceof ArcSymbol ) {
         for ( var i = 0; i < lexicalBindings.length; i++ )
-            if ( expression.name() in lexicalBindings[ i ] )
-                return void vm.pushA( BoundSymbol_st.make( expression,
-                    i, lexicalBindings[ i ][ expression.name() ] ) );
+            if ( lexicalBindings[ i ].has( expression.name() ) )
+                return void vm.pushA(
+                    BoundSymbol_st.make( expression, i,
+                        lexicalBindings[ i ].get(
+                            expression.name() ) ) );
         vm.pushA( expression );
     } else {
         vm.pushA( expression );
@@ -10022,6 +10066,7 @@ Compiler_st.FinishAtString.prototype = new Instruction();
 Compiler_st.FinishAtString.prototype.className =
     "Compiler.FinishAtString";
 
+/** @param {Array<StringMap>} lexicalBindings */
 Compiler_st.FinishAtString.prototype.init = function (
     lexicalBindings ) {
     
@@ -10041,6 +10086,7 @@ Compiler_st.FinishAtString.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //Compiler_st.compile = function ( vm, expression, lexicalBindings ) {
 //    if ( expression instanceof Nil ) {
 //        return expression;
@@ -10059,9 +10105,9 @@ Compiler_st.FinishAtString.prototype.operate = function ( vm ) {
 //            vm, expression, lexicalBindings );
 //    } else if ( expression instanceof ArcSymbol ) {
 //        for ( var i = 0; i < lexicalBindings.length; i++ )
-//            if ( expression.name() in lexicalBindings[ i ] )
+//            if ( lexicalBindings[ i ].has( expression.name() ) )
 //                return BoundSymbol_st.make( expression, i,
-//                    lexicalBindings[ i ][ expression.name() ] );
+//                    lexicalBindings[ i ].get( expression.name() ) );
 //        return expression;
 //    } else {
 //        return expression;
@@ -10069,6 +10115,7 @@ Compiler_st.FinishAtString.prototype.operate = function ( vm ) {
 //};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 Compiler_st.compilePair = function (
     vm, expression, lexicalBindings ) {
     
@@ -10148,6 +10195,7 @@ Compiler_st.ThenCompile = function () {
 Compiler_st.ThenCompile.prototype = new Instruction();
 Compiler_st.ThenCompile.prototype.className = "Compiler.ThenCompile";
 
+/** @param {Array<StringMap>} lexicalBindings */
 Compiler_st.ThenCompile.prototype.init = function (
     lexicalBindings ) {
     
@@ -10183,6 +10231,7 @@ Compiler_st.WrapQuasiQuotation.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //Compiler_st.compilePair = function (
 //    vm, expression, lexicalBindings ) {
 //    
@@ -10313,13 +10362,14 @@ Compiler_st.getMacro_ = function ( maybeMacCall ) {
 var FunctionBodyBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 FunctionBodyBuilder_st.build = function (
     vm, args, lexicalBindings ) {
     
     if ( lexicalBindings === null )
         throw new ReferenceError(
             "can't have null lexical bindings!" );
-    var myParams = {};
+    var myParams = new StringMap().init();
     var parameters = args.car();
     var complexParams;
     var parameterList;
@@ -10344,6 +10394,10 @@ FunctionBodyBuilder_st.Intermediate.prototype = new Instruction();
 FunctionBodyBuilder_st.Intermediate.prototype.className =
     "FunctionBodyBuilder.Intermediate";
 
+/**
+ * @param {Array<StringMap>} lexicalBindings
+ * @param {StringMap} myParams
+ */
 FunctionBodyBuilder_st.Intermediate.prototype.init = function (
     args, lexicalBindings, myParams ) {
     
@@ -10423,13 +10477,14 @@ FunctionBodyBuilder_st.Finish.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //FunctionBodyBuilder_st.build = function (
 //    vm, args, lexicalBindings ) {
 //    
 //    if ( lexicalBindings === null )
 //        throw new ReferenceError(
 //            "can't have null lexical bindings!" );
-//    var myParams = {};
+//    var myParams = new StringMap().init();
 //    var parameters = args.car();
 //    var complexParams;
 //    var parameterList;
@@ -10460,6 +10515,7 @@ FunctionBodyBuilder_st.Finish.prototype.operate = function ( vm ) {
 //        parameterList, myParams, expandedBody, complexParams );
 //};
 
+/** @param {StringMap} lexicalBindings */
 FunctionBodyBuilder_st.buildFunctionBody = function (
     parameterList, lexicalBindings, expandedBody, complexParams ) {
     
@@ -10487,6 +10543,7 @@ FunctionBodyBuilder_st.buildFunctionBody = function (
     }
 };
 
+/** @param {StringMap} lexicalBindings */
 FunctionBodyBuilder_st.buildStackFunctionBody = function (
     parameterList, lexicalBindings, expandedBody, complexParams ) {
     
@@ -10547,6 +10604,7 @@ FunctionBodyBuilder_st.convertToStackParams = function ( ifn ) {
     }
 };
 
+/** @param {StringMap} lexicalBindings */
 FunctionBodyBuilder_st.defaultFunctionBody_ = function (
     parameterList, lexicalBindings, expandedBody, complexParams ) {
     
@@ -10625,6 +10683,7 @@ FunctionParameterListBuilder_st.NIL_ARG =
     ArcSymbol_st.mkSym( "#NIL#" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 FunctionParameterListBuilder_st.build = function (
     vm, parameters, lexicalBindings ) {
     
@@ -10635,6 +10694,7 @@ FunctionParameterListBuilder_st.build = function (
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //FunctionParameterListBuilder_st.build = function (
 //    vm, parameters, lexicalBindings ) {
 //    
@@ -10645,6 +10705,7 @@ FunctionParameterListBuilder_st.build = function (
 //};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 FunctionParameterListBuilder_st.buildParams_ = function (
     vm, parameters, lexicalBindings ) {
     
@@ -10703,8 +10764,9 @@ FunctionParameterListBuilder_st.BuildParams1.prototype =
 FunctionParameterListBuilder_st.BuildParams1.prototype.className =
     "FunctionParameterListBuilder.BuildParams1";
 
-FunctionParameterListBuilder_st.BuildParams1.prototype.init = function (
-    result, complexParams, parameters, lexicalBindings ) {
+/** @param {Array<StringMap>} lexicalBindings */
+FunctionParameterListBuilder_st.BuildParams1.prototype.init =
+    function ( result, complexParams, parameters, lexicalBindings ) {
     
     this.initInstruction();
     this.result_ = result;
@@ -10776,6 +10838,7 @@ FunctionParameterListBuilder_st.BuildParams2a.prototype =
 FunctionParameterListBuilder_st.BuildParams2a.prototype.className =
     "FunctionParameterListBuilder.BuildParams2a";
 
+/** @param {Array<StringMap>} lexicalBindings */
 FunctionParameterListBuilder_st.BuildParams2a.prototype.init =
     function ( result, complexParams, parameters, lexicalBindings,
     optionalParamName ) {
@@ -10814,6 +10877,7 @@ FunctionParameterListBuilder_st.BuildParams2b.prototype =
 FunctionParameterListBuilder_st.BuildParams2b.prototype.className =
     "FunctionParameterListBuilder.BuildParams2b";
 
+/** @param {Array<StringMap>} lexicalBindings */
 FunctionParameterListBuilder_st.BuildParams2b.prototype.init = function (
     result, complexParams, parameters, lexicalBindings ) {
     
@@ -10839,6 +10903,7 @@ FunctionParameterListBuilder_st.BuildParams2b.prototype.operate =
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //FunctionParameterListBuilder_st.buildParams_ = function (
 //    vm, parameters, lexicalBindings ) {
 //    
@@ -10893,6 +10958,7 @@ FunctionParameterListBuilder_st.returnParams_ = function (
     return new Pair().init2( complexParams, params );
 };
 
+/** @param {StringMap} map */
 FunctionParameterListBuilder_st.index = function (
     parameterList, map, i, optionable ) {
     
@@ -10907,9 +10973,9 @@ FunctionParameterListBuilder_st.index = function (
         } else {
             var first = parameterList.car();
             if ( first instanceof Nil ) {
-                map[
-                    FunctionParameterListBuilder_st.NIL_ARG.name() ] =
-                    i[ 0 ];
+                map.put(
+                    FunctionParameterListBuilder_st.NIL_ARG.name(),
+                    i[ 0 ] );
                 i[ 0 ]++;
             } else {
                 FunctionParameterListBuilder_st.index(
@@ -10925,7 +10991,7 @@ FunctionParameterListBuilder_st.index = function (
         // it.
         if ( !(parameterList instanceof ArcSymbol) )
             throw new TypeError();
-        map[ parameterList.name() ] = i[ 0 ];
+        map.put( parameterList.name(), i[ 0 ] );
         i[ 0 ]++;
     }
 };
@@ -11034,6 +11100,7 @@ FunctionParameterListBuilder_st.curryBoundParam_ = function (
 var IfBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 IfBuilder_st.build = function ( vm, body, lexicalBindings ) {
     var original = body;
     var clause = new IfClause().init();
@@ -11094,6 +11161,7 @@ IfBuilder_st.BuildIf1 = function () {
 IfBuilder_st.BuildIf1.prototype = new Instruction();
 IfBuilder_st.BuildIf1.prototype.className = "IfBuilder.BuildIf1";
 
+/** @param {Array<StringMap>} lexicalBindings */
 IfBuilder_st.BuildIf1.prototype.init = function (
     clause, body, lexicalBindings ) {
     
@@ -11131,6 +11199,7 @@ IfBuilder_st.BuildIf2 = function () {
 IfBuilder_st.BuildIf2.prototype = new Instruction();
 IfBuilder_st.BuildIf2.prototype.className = "IfBuilder.BuildIf2";
 
+/** @param {Array<StringMap>} lexicalBindings */
 IfBuilder_st.BuildIf2.prototype.init = function (
     clause, body, lexicalBindings ) {
     
@@ -11150,6 +11219,7 @@ IfBuilder_st.BuildIf2.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //IfBuilder_st.build = function ( vm, body, lexicalBindings ) {
 //    var original = body;
 //    var clause = new IfClause().init();
@@ -11202,6 +11272,7 @@ IfBuilder_st.BuildIf2.prototype.operate = function ( vm ) {
 var InvocationBuilder_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 InvocationBuilder_st.build = function ( vm, body, lexicalBindings ) {
     var original = body;
     var list = [];
@@ -11218,6 +11289,7 @@ InvocationBuilder_st.BuildInvocation.prototype = new Instruction();
 InvocationBuilder_st.BuildInvocation.prototype.className =
     "InvocationBuilder.BuildInvocation";
 
+/** @param {Array<StringMap>} lexicalBindings */
 InvocationBuilder_st.BuildInvocation.prototype.init = function (
     body, lexicalBindings, original, list ) {
     
@@ -11279,6 +11351,7 @@ InvocationBuilder_st.ReducePush.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //InvocationBuilder_st.build = function ( vm, body, lexicalBindings ) {
 //    var original = body;
 //    var list = [];
@@ -11308,6 +11381,7 @@ InvocationBuilder_st.ReducePush.prototype.operate = function ( vm ) {
 var PairExpander_st = {};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+///** @param {Array<StringMap>} lexicalBindings */
 PairExpander_st.expand = function ( vm, body, lexicalBindings ) {
     var result = [];
     vm.pushFrame( new PairExpander_st.ExpandPair().init(
@@ -11323,6 +11397,7 @@ PairExpander_st.ExpandPair.prototype = new Instruction();
 PairExpander_st.ExpandPair.prototype.className =
     "PairExpander.ExpandPair";
 
+/** @param {Array<StringMap>} lexicalBindings */
 PairExpander_st.ExpandPair.prototype.init = function (
     body, lexicalBindings, result ) {
     
@@ -11402,6 +11477,7 @@ PairExpander_st.FinishPair.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //PairExpander_st.expand = function ( vm, body, lexicalBindings ) {
 //    var result = [];
 //    
@@ -11436,6 +11512,7 @@ QuasiQuoteCompiler_st.UNQUOTE_SPLICING =
     ArcSymbol_st.mkSym( "unquote-splicing" );
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 QuasiQuoteCompiler_st.compile = function (
     vm, expression, lexicalBindings, nesting ) {
     
@@ -11472,6 +11549,7 @@ QuasiQuoteCompiler_st.CompileQuasiQuote.prototype = new Instruction();
 QuasiQuoteCompiler_st.CompileQuasiQuote.prototype.className =
     "QuasiQuoteCompiler.CompileQuasiQuote";
 
+/** @param {Array<StringMap>} lexicalBindings */
 QuasiQuoteCompiler_st.CompileQuasiQuote.prototype.init = function (
     result, expression, lexicalBindings, nesting ) {
     
@@ -11561,6 +11639,7 @@ QuasiQuoteCompiler_st.Push.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //QuasiQuoteCompiler_st.compile = function (
 //    vm, expression, lexicalBindings, nesting ) {
 //    
@@ -11599,6 +11678,7 @@ QuasiQuoteCompiler_st.Push.prototype.operate = function ( vm ) {
 //};
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
+/** @param {Array<StringMap>} lexicalBindings */
 QuasiQuoteCompiler_st.compileUnquote_ = function (
     vm, prefix, expression, nesting, lexicalBindings ) {
     
@@ -11634,6 +11714,7 @@ QuasiQuoteCompiler_st.Prefix.prototype.operate = function ( vm ) {
 };
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
+///** @param {Array<StringMap>} lexicalBindings */
 //QuasiQuoteCompiler_st.compileUnquote_ = function (
 //    vm, prefix, expression, nesting, lexicalBindings ) {
 //    
@@ -12038,6 +12119,7 @@ InterpretedFunction.prototype = new ArcObject();
 InterpretedFunction.prototype.Cons_ = InterpretedFunction;
 InterpretedFunction.prototype.className = "InterpretedFunction";
 
+/** @param {StringMap} lexicalBindings */
 InterpretedFunction.prototype.initInterpretedFunction = function (
     parameterList, lexicalBindings, body ) {
     
@@ -12207,7 +12289,7 @@ InterpretedFunction.prototype.canInline = function ( param, arg ) {
 InterpretedFunction.prototype.inlineableArg_ = function (
     param, arg ) {
     
-    var paramIndex = this.lexicalBindings[ param.name() ];
+    var paramIndex = this.lexicalBindings.get( param.name() );
     var p = BoundSymbol_st.make( param, 0, paramIndex );
     return (arg.literal()
         || arg instanceof Quotation
@@ -12433,7 +12515,7 @@ InterpretedFunction.prototype.throwArgMismatchError = function (
 InterpretedFunction.prototype.curry = function (
     param, arg, requiresNesting ) {
     
-    var paramIndex = this.lexicalBindings[ param.name() ];
+    var paramIndex = this.lexicalBindings.get( param.name() );
     // PORT NOTE: This was implicit unboxing in Java.
     // PORT TODO: See if it's possible for this to throw an error.
     if ( paramIndex === void 0 )
@@ -12441,7 +12523,7 @@ InterpretedFunction.prototype.curry = function (
     var p = BoundSymbol_st.make( param, 0, paramIndex );
     var newParams = FunctionParameterListBuilder_st.curryBound(
         this.parameterList_, p, arg, paramIndex );
-    var lexicalBindings = {};
+    var lexicalBindings = new StringMap().init();
     FunctionParameterListBuilder_st.index(
         newParams, lexicalBindings, [ 0 ], false );
     var unnest = newParams instanceof Nil;
@@ -12558,9 +12640,7 @@ SimpleArgs.prototype.Cons_ = SimpleArgs;
 SimpleArgs.prototype.className = "SimpleArgs";
 
 SimpleArgs.prototype.invoke3 = function ( vm, lc, args ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     SimpleArgs_st.simple_( lc, this.parameterList_, args );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -12597,9 +12677,7 @@ ComplexArgs.prototype.className = "ComplexArgs";
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 ComplexArgs.prototype.invoke3 = function ( vm, lc, args ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     vm.pushFrame( new ComplexArgs_st.Run().init(
         lc, this.instructions_, this ) );
@@ -12630,9 +12708,7 @@ ComplexArgs_st.Run.prototype.operate = function ( vm ) {
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
 //ComplexArgs.prototype.invoke3 = function ( vm, lc, args ) {
-//    var len = 0;
-//    for ( var k in this.lexicalBindings )
-//        len++;
+//    var len = this.lexicalBindings.len();
 //    lc = new LexicalClosure().init( len, lc );
 //    ComplexArgs_st.complex_( vm, lc, this.parameterList_, args );
 //    vm.pushInvocation2( lc, this.instructions_ );
@@ -12816,6 +12892,7 @@ StackFunctionSupport.prototype = new InterpretedFunction();
 StackFunctionSupport.prototype.Cons_ = StackFunctionSupport;
 StackFunctionSupport.prototype.className = "StackFunctionSupport";
 
+/** @param {StringMap} lexicalBindings */
 StackFunctionSupport.prototype.initStackFunctionSupport = function (
     parameterList, lexicalBindings, body ) {
     
@@ -12830,7 +12907,7 @@ StackFunctionSupport.prototype.canInline = function ( param, arg ) {
 StackFunctionSupport.prototype.inlineableArg_ = function (
     param, arg ) {
     
-    var paramIndex = this.lexicalBindings[ param.name() ];
+    var paramIndex = this.lexicalBindings.get( param.name() );
     var p = new StackSymbol().init( param, paramIndex );
     return (arg.literal()
         || arg instanceof Quotation
@@ -12847,11 +12924,11 @@ StackFunctionSupport.prototype.nests = function () {
 StackFunctionSupport.prototype.curry = function (
     param, arg, requiresNesting ) {
     
-    var paramIndex = this.lexicalBindings[ param.name() ];
+    var paramIndex = this.lexicalBindings.get( param.name() );
     var p = new StackSymbol().init( param, paramIndex );
     var newParams = FunctionParameterListBuilder_st.curryStack(
         this.parameterList_, p, arg, paramIndex );
-    var lexicalBindings = {};
+    var lexicalBindings = new StringMap().init();
     FunctionParameterListBuilder_st.index(
         newParams, lexicalBindings, [ 0 ], false );
     
@@ -12867,6 +12944,7 @@ StackFunctionSupport.prototype.curry = function (
 };
 
 // PORT NOTE: We've renamed all uses of .convert().
+/** @param {StringMap} lexicalBindings */
 StackFunctionSupport_st.convertBody = function (
     lexicalBindings, body ) {
     
@@ -12877,6 +12955,7 @@ StackFunctionSupport_st.convertBody = function (
     return Pair_st.buildFrom1( nb );
 };
 
+/** @param {StringMap} lexicalBindings */
 StackFunctionSupport_st.convertItem = function (
     lexicalBindings, item ) {
     
@@ -12903,6 +12982,7 @@ Bind.prototype.className = "Bind";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -12944,6 +13024,7 @@ Bind_A.prototype.className = "Bind_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_A_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -12957,9 +13038,7 @@ Bind_A.prototype.invokeN0 = function ( vm, lc ) {
 };
 
 Bind_A.prototype.invokeN1 = function ( vm, lc, arg ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -12998,6 +13077,7 @@ Bind_A_A.prototype.className = "Bind_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_A_A_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13015,9 +13095,7 @@ Bind_A_A.prototype.invokeN1 = function ( vm, lc, arg ) {
 };
 
 Bind_A_A.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
@@ -13054,6 +13132,7 @@ Bind_A_A_A.prototype.className = "Bind_A_A_A";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_A_A_A_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13064,9 +13143,7 @@ Bind_A_A_A_stForClasses.of = function (
 Bind_A_A_A.prototype.invokeN3 = function (
     vm, lc, arg1, arg2, arg3 ) {
     
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
@@ -13100,6 +13177,7 @@ Bind_A_A_R.prototype.className = "Bind_A_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_A_A_R_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13118,9 +13196,7 @@ Bind_A_A_R.prototype.invokeN1 = function ( vm, lc, arg ) {
 };
 
 Bind_A_A_R.prototype.invoke3 = function ( vm, lc, args ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( args.car() );
     lc.add( args.cdr().car() );
@@ -13148,6 +13224,7 @@ Bind_A_Obound.prototype.className = "Bind_A_Obound";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_A_Obound_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13183,9 +13260,7 @@ Bind_A_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
     if ( this.curried !== null ) {
         this.curried.invokeN1( vm, lc, arg );
     } else {
-        var len = 0;
-        for ( var k in this.lexicalBindings )
-            len++;
+        var len = this.lexicalBindings.len();
         lc = new LexicalClosure().init( len, lc );
         lc.add( arg );
         lc.add( this.optExpr_.interpret( lc ) );
@@ -13194,9 +13269,7 @@ Bind_A_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
 };
 
 Bind_A_Obound.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
@@ -13235,6 +13308,7 @@ Bind_A_Oliteral.prototype.className = "Bind_A_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_A_Oliteral_stForClasses.of = function (
     parameterList, lexicalBindings, expandedBody ) {
     
@@ -13265,9 +13339,7 @@ Bind_A_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
     if ( this.curried !== null ) {
         this.curried.invokeN1( vm, lc, arg );
     } else {
-        var len = 0;
-        for ( var k in this.lexicalBindings )
-            len++;
+        var len = this.lexicalBindings.len();
         lc = new LexicalClosure().init( len, lc );
         lc.add( arg );
         lc.add( this.optExpr_ );
@@ -13276,9 +13348,7 @@ Bind_A_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
 };
 
 Bind_A_Oliteral.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
@@ -13317,6 +13387,7 @@ Bind_A_Oother.prototype.className = "Bind_A_Oother";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_A_Oother_stForClasses.of = function (
     parameterList, lexicalBindings, expandedBody ) {
     
@@ -13331,9 +13402,7 @@ Bind_A_Oother_stForClasses.of = function (
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushFrame(
@@ -13343,9 +13412,7 @@ Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
 //Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
-//    var len = 0;
-//    for ( var k in this.lexicalBindings )
-//        len++;
+//    var len = this.lexicalBindings.len();
 //    lc = new LexicalClosure().init( len, lc );
 //    lc.add( arg );
 //    vm.pushInvocation2( lc, this.optInstructions_ );
@@ -13354,9 +13421,7 @@ Bind_A_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
 //};
 
 Bind_A_Oother.prototype.invokeN2 = function ( vm, lc, arg1, arg2 ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg1 );
     lc.add( arg2 );
@@ -13395,6 +13460,7 @@ Bind_A_R.prototype.className = "Bind_A_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_A_R_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13408,9 +13474,7 @@ Bind_A_R.prototype.invokeN0 = function ( vm, lc ) {
 };
 
 Bind_A_R.prototype.invoke3 = function ( vm, lc, args ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( args.car() );
     lc.add( args.cdr() );
@@ -13437,6 +13501,7 @@ Bind_D_A_A_A_d.prototype.className = "Bind_D_A_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_D_A_A_A_d_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13445,9 +13510,7 @@ Bind_D_A_A_A_d_stForClasses.of = function (
 };
 
 Bind_D_A_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     
     var destructured = arg;
@@ -13503,6 +13566,7 @@ Bind_D_A_A_d.prototype.className = "Bind_D_A_A_d";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_D_A_A_d_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13511,9 +13575,7 @@ Bind_D_A_A_d_stForClasses.of = function (
 };
 
 Bind_D_A_A_d.prototype.invokeN1 = function ( vm, lc, arg ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     
     var destructured = arg;
@@ -13556,6 +13618,7 @@ Bind_Obound.prototype.className = "Bind_Obound";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_Obound_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13575,18 +13638,14 @@ Bind_Obound_stForClasses.of = function (
 };
 
 Bind_Obound.prototype.invokeN0 = function ( vm, lc ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( this.optionalExpression_.interpret( lc ) );
     vm.pushInvocation2( lc, this.instructions_ );
 };
 
 Bind_Obound.prototype.invokeN1 = function ( vm, lc, arg ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -13629,6 +13688,7 @@ Bind_Oliteral.prototype.className = "Bind_Oliteral";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_Oliteral_stForClasses.of = function (
     parameterList, lexicalBindings, expandedBody ) {
     
@@ -13656,9 +13716,7 @@ Bind_Oliteral.prototype.invokeN0 = function ( vm, lc ) {
     if ( this.curried !== null ) {
         this.curried.invokeN0( vm, lc );
     } else {
-        var len = 0;
-        for ( var k in this.lexicalBindings )
-            len++;
+        var len = this.lexicalBindings.len();
         lc = new LexicalClosure().init( len, lc );
         lc.add( this.optExpr_ );
         vm.pushInvocation2( lc, this.instructions_ );
@@ -13666,9 +13724,7 @@ Bind_Oliteral.prototype.invokeN0 = function ( vm, lc ) {
 };
 
 Bind_Oliteral.prototype.invokeN1 = function ( vm, lc, arg ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -13711,6 +13767,7 @@ Bind_Oother.prototype.className = "Bind_Oother";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_Oother_stForClasses.of = function (
     parameterList, lexicalBindings, expandedBody ) {
     
@@ -13725,9 +13782,7 @@ Bind_Oother_stForClasses.of = function (
 
 // ASYNC PORT NOTE: The synchronous Java version is below.
 Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     vm.pushFrame(
         new BindAndRun().init( lc, this.instructions_, this ) );
@@ -13736,9 +13791,7 @@ Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
 
 //// ASYNC PORT NOTE: This was the synchronous Java version.
 //Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
-//    var len = 0;
-//    for ( var k in this.lexicalBindings )
-//        len++;
+//    var len = this.lexicalBindings.len();
 //    lc = new LexicalClosure().init( len, lc );
 //    vm.pushInvocation2( lc, this.optInstructions_ );
 //    lc.add( vm.thread() );
@@ -13746,9 +13799,7 @@ Bind_Oother.prototype.invokeN0 = function ( vm, lc ) {
 //};
 
 Bind_Oother.prototype.invokeN1 = function ( vm, lc, arg ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( arg );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -13791,6 +13842,7 @@ Bind_R.prototype.className = "Bind_R";
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Bind_R_stForClasses.of = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13799,9 +13851,7 @@ Bind_R_stForClasses.of = function (
 };
 
 Bind_R.prototype.invoke3 = function ( vm, lc, args ) {
-    var len = 0;
-    for ( var k in this.lexicalBindings )
-        len++;
+    var len = this.lexicalBindings.len();
     lc = new LexicalClosure().init( len, lc );
     lc.add( args );
     vm.pushInvocation2( lc, this.instructions_ );
@@ -13836,6 +13886,7 @@ Stack_A_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_A_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13890,6 +13941,7 @@ Stack_A_A_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_A_A_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -13944,6 +13996,7 @@ Stack_A_A_A_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_A_A_A_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14004,6 +14057,7 @@ Stack_A_A_A_A_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_A_A_A_A_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14066,6 +14120,7 @@ Stack_A_A_R_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_A_A_R_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14107,6 +14162,7 @@ Stack_A_R_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_A_R_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14148,6 +14204,7 @@ Stack_R_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_R_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14190,6 +14247,7 @@ Stack_D_A_A_A_A_d_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_D_A_A_A_A_d_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14254,6 +14312,7 @@ Stack_D_A_A_d_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_D_A_A_d_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14330,6 +14389,7 @@ Stack_A_Oliteral_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_A_Oliteral_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14439,6 +14499,7 @@ Stack_Oliteral_stForClasses.of1 = function ( original ) {
 
 // PORT NOTE: This didn't exist in Java. (It was part of the
 // constructor.)
+/** @param {StringMap} lexicalBindings */
 Stack_Oliteral_stForClasses.of3 = function (
     parameterList, lexicalBindings, body ) {
     
@@ -14462,7 +14523,7 @@ Stack_Oliteral.prototype.invokef1 = function ( vm, arg ) {
 
 Stack_Oliteral.prototype.invokeN0 = function ( vm, lc ) {
     if ( this.curried !== null )
-        this.curried.invokeN1( vm, lc );
+        this.curried.invokeN0( vm, lc );
     else
         vm.pushInvocation3( lc, this.instructions_,
             [ this.optExpr_ ] );
@@ -14483,7 +14544,7 @@ Stack_Oliteral.prototype.invoke = function ( vm, args ) {
 
 Stack_Oliteral.prototype.invoke3 = function ( vm, lc, args ) {
     if ( args instanceof Nil ) {
-        this.invokeN0( vm );
+        this.invokeN0( vm, lc );
     } else {
         this.checkArgsLength( 1, args );
         this.invokeN1( vm, lc, args.car() );
@@ -17591,7 +17652,7 @@ Typing_st.init = function () {
             else if ( /i$/i.test( source ) )
                 return Typing_st.coerceComplex_( source );
             else if ( /\./.test( source )
-                || (base.toInt() < 15 && /.e./.test( source )) )
+                || (base.toInt() < 15 && /.e./i.test( source )) )
                 return Typing_st.coerceDouble_(
                     source, base.toInt() );
             else if ( /\//.test( source ) )
@@ -17704,8 +17765,18 @@ Typing_st.coerceDouble_ = function ( source, base ) {
     parts = parts[ 1 ].split( /E/g );
     if ( /^\+/.test( parts[ 1 ] ) )
         parts[ 1 ] = parts[ 1 ].substring( 1 );
+    // PORT NOTE: This was an implicit `NumberFormatException` in
+    // Java Rainbow. It's caught and turned into a "Can't coerce"
+    // error.
+    if ( parts[ 0 ] === "" )
+        throw new SyntaxError();
     var decimal = parseInt( parts[ 0 ], ~~base ) /
         Math.pow( base, parts[ 0 ].length );
+    // PORT NOTE: This was an implicit `NumberFormatException` in
+    // Java Rainbow. It's caught and turned into a "Can't coerce"
+    // error.
+    if ( parts[ 1 ] === "" )
+        throw new SyntaxError();
     var exponent = Math.pow( base, parseInt( parts[ 1 ], ~~base ) );
     
     var result = (integral + decimal) * exponent;
