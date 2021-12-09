@@ -12,6 +12,7 @@
     "build": "npm run build-custom && npm run build-closure",
     "build-custom": "node build.js",
     "build-closure": "mkdir -p dist/gh-pages/test/ && google-closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS --js src/web/index-first.js --js src/rainbow.js --js src/web/index-last.js --js_output_file dist/gh-pages/test/index-min.js",
+    "build-gh-pages": "npm run build",
     "test": "cd dist/node/ && node rainbow-node.js -e '(quit:if (<= 404/408 (rat)) 0 1)' -q",
     "prepare": "npm run build-custom"
   },
