@@ -95,6 +95,9 @@ cpOver( "src/arc", "test", function ( e ) {
 cpOver( "src/web/index.html", "test/index.html", function ( e ) {
     if ( e ) throw e;
 fs.writeFileSync( "bin/node/rainbow-node.js",
+    "#!/usr/bin/env node\n" +
+    "\"use strict\";\n" +
+    "\n" +
     "exports.makeRainbow = function (\n" +
     "    System_in, System_out, System_err, System_getenvAsync0,\n" +
     "    System_getenvAsync1, System_exitAsync, System_fs ) {\n" +
