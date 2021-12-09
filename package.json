@@ -7,7 +7,7 @@
     "rainbow-js": "./dist/node/rainbow-node.js"
   },
   "scripts": {
-    "all": "npm run clean && npm run build && npm run test",
+    "all": "npm run clean && npm run build && npm test",
     "clean": "rm -rf build dist",
     "build": "npm run build-custom && npm run build-closure",
     "build-custom": "node build.js",
