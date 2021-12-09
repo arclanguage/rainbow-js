@@ -1,6 +1,0 @@
-# Ignore some build artifacts but not others.
-/bin/
-#/test/
-
-# Ignore npm packages.
-/node_modules/
