@@ -86,15 +86,20 @@ function cpOver( from, to, then ) {
 }
 
 
-ensureDir( "bin", function ( e ) {
+ensureDir( "dist", function ( e ) {
     if ( e ) throw e;
-cpOver( "src/arc", "bin/node", function ( e ) {
+ensureDir( "dist/gh-pages", function ( e ) {
     if ( e ) throw e;
-cpOver( "src/arc", "test", function ( e ) {
+cpOver( "src/arc", "dist/node", function ( e ) {
     if ( e ) throw e;
-cpOver( "src/web/index.html", "test/index.html", function ( e ) {
+cpOver( "src/arc", "dist/gh-pages/test", function ( e ) {
     if ( e ) throw e;
-fs.writeFileSync( "bin/node/rainbow-node.js",
+cpOver( "src/web/index.html", "dist/gh-pages/test/index.html",
+    function ( e ) {
+    
+    if ( e ) throw e;
+
+fs.writeFileSync( "dist/node/rainbow-node.js",
     "#!/usr/bin/env node\n" +
     "\"use strict\";\n" +
     "\n" +
@@ -109,6 +114,8 @@ fs.writeFileSync( "bin/node/rainbow-node.js",
     "};\n" +
     "\n" +
     fs.readFileSync( "src/node/rainbow-node-src.js", "utf8" ) );
+
+} );
 } );
 } );
 } );

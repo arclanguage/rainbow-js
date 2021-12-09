@@ -1,6 +1,6 @@
-# Ignore some build artifacts but not others.
-/bin/
-#/test/
-
-# Ignore npm packages.
+# Added by external tools.
 /node_modules/
+
+# Added by our build processes.
+/build/
+/dist/

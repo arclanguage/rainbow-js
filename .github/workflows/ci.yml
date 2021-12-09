@@ -48,5 +48,5 @@ jobs:
       # PORT TODO: Consider adding a linting step.
       - name: Build
         run: npm run build
-      - name: Test
+      - name: Run unit tests
         run: npm run test
