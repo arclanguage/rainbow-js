@@ -101,7 +101,7 @@ jobs:
           fi
 
       # If there are any commits on our local branch, we push any new
-      # ones to the `gh-pages` branch. (This almost always be the
+      # ones to the `gh-pages` branch. (This will almost always be the
       # commit we just made, if any, but more than that may be pushed
       # if the branch's remote was force-pushed to a prior commit
       # behind our backs.) We specify the remote branch as
