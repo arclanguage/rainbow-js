@@ -83,7 +83,7 @@ jobs:
         run: |
           cd build/gh-pages-repo
           git rm -rf .
-          test ! -e build/gh-pages/.git
+          test ! -e dist/gh-pages/.git
           cp -r ../../dist/gh-pages/. .
           git add -A .
 
