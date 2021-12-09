@@ -9,9 +9,9 @@ on:
 jobs:
   cd-gh-pages:
     runs-on: ubuntu-latest
-    # We only update the GitHub Pages branch if this is the main repo (not a
-    # fork), only if the CI tests were caused by a push (not a pull request),
-    # and only if they succeeded.
+    # We only update the GitHub Pages branch if this is the main repo
+    # (not a fork), only if the CI tests were caused by a push (not a
+    # pull request), and only if they succeeded.
     if: |
       ${{
         github.repository == 'arclanguage/rainbow-js'
