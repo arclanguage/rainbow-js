@@ -1,11 +1,7 @@
 {
-  "name": "rainbow-js",
+  "name": "rainbow-js-arc",
   "version": "0.1.0",
   "description": "The Arc programming language, reimplemented in Java, then ported to JavaScript.",
-  "main": "dist/node/rainbow-node.js",
-  "bin": {
-    "rainbow-js": "./dist/node/rainbow-node.js"
-  },
   "scripts": {
     "all": "npm run clean && npm run build && npm test",
     "clean": "rm -rf build dist",
@@ -35,5 +31,16 @@
   "homepage": "https://github.com/arclanguage/rainbow-js#readme",
   "devDependencies": {
     "google-closure-compiler": "^20211107.0.0"
-  }
+  },
+  "main": "dist/node/rainbow-node.js",
+  "bin": "./dist/node/rainbow-node.js",
+  "files": [
+    "/src/arc/**",
+    "/src/node/**",
+    "/src/rainbow.js",
+    "/AUTHORS.md",
+    "/build.js",
+    "/LICENSE.md",
+    "/README.md"
+  ]
 }
