@@ -540,6 +540,7 @@ directory.`
     );
     
     program.command( "init-arc [dir]" )
+        .allowExcessArguments( false )
         .description(
             "copy files to `dir` to make it an Arc host directory" )
         .action( function ( dir ) {
