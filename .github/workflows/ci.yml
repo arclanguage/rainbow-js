@@ -12,9 +12,8 @@ jobs:
         # notice if it breaks.
         #
         #
-        # Version 12.2.0 added `Module#createRequire(...)`, which
-        # ESLint depends upon. (PORT TODO: Consider using ESLint
-        # someday.)
+        # Version 14.8.0 added top-level `await` support by default,
+        # which we use in build.mjs.
         #
         # Versions 14.18.1 and 16.13.0 are the two most recent LTS
         # versions at the time of writing, and we intend to support
@@ -30,7 +29,7 @@ jobs:
         # we may not reasonably be able to support it if it introduces
         # major regressions.
         #
-        node-version: ["12.2.0", "14.18.1", "16.13.0", "17", "lts/*"]
+        node-version: ["14.8.0", "14.18.1", "16.13.0", "17", "lts/*"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
