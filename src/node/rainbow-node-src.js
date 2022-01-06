@@ -1,10 +1,10 @@
-//   Copyright (c) 2012, 2021 the Rainbow.js authors.
+//   Copyright (c) 2012, 2021-2022 the Rainbow.js authors.
 //   Licensed under the Perl Foundations's Artistic License 2.0.
 
 var fs = require( "fs" );
 
 
-// This file is concatenated to some other text in build.js, which
+// This file is concatenated to some other text in build.mjs, which
 // provides this extra export:
 //
 //   exports.makeRainbow = function (
