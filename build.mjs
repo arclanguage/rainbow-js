@@ -5,9 +5,9 @@ import fs from "fs-extra";
 
 
 await fs.ensureDir( "dist/gh-pages" );
-await fs.copy( "src/arc", "dist/node" );
 await fs.copy( "src/arc", "dist/gh-pages/test" );
-await fs.copy( "src/web/index.html", "dist/gh-pages/test/index.html" );
+await fs.copy(
+    "src/web/index.html", "dist/gh-pages/test/index.html" );
 
 
 await fs.outputFile( "dist/node/rainbow-node.js",
@@ -24,4 +24,6 @@ return Console_st;
 
 };
 
-${await fs.readFile( "src/node/rainbow-node-src.js", "utf8" )}` );
+${await fs.readFile( "src/node/rainbow-node-src.js", "utf8" )}`
+
+);

@@ -2,6 +2,12 @@
 //   Licensed under the Perl Foundations's Artistic License 2.0.
 
 var fs = require( "fs" );
+var $path = require( "path" );
+
+var fse = require( "fs-extra" );
+var commander = require( "commander" );
+
+var pkg = require( "../../package.json" );
 
 
 // This file is concatenated to some other text in build.mjs, which
@@ -522,19 +528,52 @@ exports.getSharedRainbow = function () {
         function () { return process.stderr; } ));
 };
 
-if ( require.main === module )
-    exports.getSharedRainbow().mainCliAsync( process.argv.slice( 2 ),
-        function ( e ) {
-        
-        if ( e ) {
-            // TODO: See if we ever get here. We at least get to this
-            // callback when we exit the REPL using Ctrl+D or when we
-            // use the `--help` or `-q` option, but we haven't gotten
-            // here with an error yet.
-            console.log( e );
-            process.exit( 1 );
-            return;
-        }
-        
-        process.exit();
-    } );
+if ( require.main === module ) {
+    
+    var program = new commander.Command();
+    program.version( pkg.version );
+    program.enablePositionalOptions();
+    program.addHelpText( "after",
+`
+The \`run-compat\` command expects to be run from within an Arc host \
+directory.`
+    );
+    
+    program.command( "init-arc [dir]" )
+        .description(
+            "copy files to `dir` to make it an Arc host directory" )
+        .action( function ( dir ) {
+            return fse.copy( $path.join( __dirname, "../../src/arc" ),
+                dir );
+        } );
+    
+    program.command( "run-compat [args...]" )
+        .helpOption( false )
+        .allowUnknownOption()
+        .passThroughOptions()
+        .description( "run Rainbow.js with arguments compatible with Java Rainbow" )
+        .action( function ( args ) {
+            return new Promise( function ( resolve, reject ) {
+                exports.getSharedRainbow().mainCliAsync( args,
+                    function ( e ) {
+                    
+                    if ( e ) {
+                        // TODO: See if we ever get here. We at least get
+                        // to this callback when we exit the REPL using
+                        // Ctrl+D or when we use the `--help` or `-q`
+                        // option, but we haven't gotten here with an
+                        // error yet.
+                        console.log( e );
+                        process.exit( 1 );
+                        resolve();
+                        return;
+                    }
+                    
+                    process.exit();
+                    resolve();
+                } );
+            } );
+        } );
+    
+    program.parseAsync();
+}
