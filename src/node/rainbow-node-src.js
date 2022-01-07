@@ -539,7 +539,7 @@ The \`run-compat\` command expects to be run from within an Arc host \
 directory.`
     );
     
-    program.command( "init-arc [dir]" )
+    program.command( "init-arc <dir>" )
         .allowExcessArguments( false )
         .description(
             "copy files to `dir` to make it an Arc host directory" )
