@@ -6,21 +6,27 @@ Rainbow.js is an implementation of the [Arc programming language](https://arclan
 
 Compared to Rainbow, Rainbow.js isn't quite as full-featured. Pieces that are missing include threads, a Java FFI, the `system` function, and sockets. In principle, some of these features could be added. Some, like threads, were only ever skipped because Rocketnia didn't realize it was possible to translate them to JavaScript at first. :)
 
-To use Rainbow.js at the command line, first install Node.js, and then run:
+To use Rainbow.js at the command line, first install Node.js, and then run the following command to install the `rainbow-js-arc` command:
 
 ```bash
 npm install --global rainbow-js-arc
 ```
 
-Then you can run commands similar to those of Java Rainbow, using `rainbow-js-arc run-compat [args...]`. For instance, `rainbow-js-arc run-compat` runs a REPL, `rainbow-js-arc run-compat --help` displays information about other options, and `rainbow-js-arc run-compat -e '(prn "Hello, world!")' -q` displays "Hello, world!" and quits. More usage scenarios are documented in the [readme for Java Rainbow](https://github.com/conanite/rainbow#readme).
+Then, pick a directory you'd like to run Arc from. This directory will need a number of libraries like arc.arc in it. The rainbow-js-arc command lets you copy those libraries into your chosen directory like so, where `<my-arc-host-dir>` is the directory's path:
 
-For a better REPL experience, we recommend installing `rlwrap` and using `rlwrap rainbow-js-arc run-compat`.
+```bash
+rainbow-js-arc init-arc <my-arc-host-dir>
+```
 
-Besides being usable from the command line, Rainbow.js can also be used from the browser.
+Then you can run commands similar to those of Java Rainbow, using `rainbow-js-arc run-compat [args...]` from within that directory. For instance, `rainbow-js-arc run-compat` runs a REPL, `rainbow-js-arc run-compat --help` displays information about other options, and `rainbow-js-arc run-compat -e '(prn "Hello, world!")' -q` displays "Hello, world!" and quits. More usage scenarios are documented in the [readme for Java Rainbow](https://github.com/conanite/rainbow#readme).
 
-You can play around with a Rainbow.js REPL on the web [here](https://arclanguage.github.io/rainbow-js/test/) (or [here](https://arclanguage.github.io/rainbow-js/test/#libs), which loads the core Arc libraries and takes slightly more resources to do so).
+> ℹ️ For a better REPL experience, we recommend installing `rlwrap` and using `rlwrap rainbow-js-arc run-compat`.
 
-Minified with the Closure Compiler, and without the core Arc libraries Rainbow.js comes out to about 156KiB. The minification command we're using for the web REPL is like this, where index-first.js and index-last.js implement the REPL and the I/O primitives needed by Rainbow.js:
+Once you've copied the Arc core libraries into a directory, there isn't any easy way to upgrade or uninstall them except by deleting the directory and rebuilding it again. We recommend treating the Arc host directory as a build target and using a build script to copy in any libraries you want to add or patches you want to apply. Alternatively, you could use Git to track changes to the directory, so that in case it gets messed up when you try to upgrade or uninstall something by hand, you can restore a previous state.
+
+Besides being usable from the command line, Rainbow.js can also be used from the browser. You can play around with a Rainbow.js REPL on the web [here](https://arclanguage.github.io/rainbow-js/test/) (or [here](https://arclanguage.github.io/rainbow-js/test/#libs), which loads the core Arc libraries and takes slightly more resources to do so).
+
+Minified with the Closure Compiler, and without the core Arc libraries, Rainbow.js comes out to about 156KiB. The minification command we're using for the web REPL is like this, where index-first.js and index-last.js implement the REPL and the I/O primitives needed by Rainbow.js:
 
 ```bash
 java -jar compiler.jar --compilation_level ADVANCED_OPTIMIZATIONS \
@@ -44,6 +50,8 @@ Rainbow.js is maintained in basically one giant file of more than 10,000 lines o
 
 Rocketnia observed in 2012 that simple Rainbow.js-based test applications that *didn't* have a full REPL could minify down to a smaller size. However, it wasn't very much smaller at the time. Ideally, if a Rainbow.js application only uses the compiler during initialization, we'd like the Closure Compiler to be able to weed out the whole Rainbow.js compiler as dead code. In 2022, ihe Closure Compiler is still one of the go-to options for JavaScript applications where tree-shaking of dead code is critical, so we may just need to try again (and possibly add a lot more type annotations to the code).
 
+The JavaScript FFI capabilities of Rainbow.js could use some more attention. Presently, Rainbow.js just implements `java-invoke` in a way that imitates the way it works in Java Rainbow. Not only is "`java-invoke`" a misnomer in the Rainbow.js context, but it's not a full-featured FFI. The Rainbow.js web REPL also provides the `window` object, which makes it possible to `java-invoke` JavaScript's `eval` function to access JavaScript's other functionality, but some of the automatic type conversions `java-invoke` provides could make it difficult to pass certain JavaScript values around without them being subtly adjusted on their way through.
+
 
 ## Differences from Java Rainbow
 
@@ -58,6 +66,13 @@ Despite the focus on keeping the Rainbow.js code similar to the Java Rainbow cod
 * The Java version of Rainbow uses the Java/CC parser generator. As of 2012, we've found no suitable replacement for that in JavaScript. Most JavaScript-targeting parser generators support parsing from strings but don't support incremental parsing from streams (which was to be expected in 2012, considering the fact that JavaScript did't really have a standard, widely used stream type), and although ANTLR seemed to be a bit of an exception, ANTLR's support for JavaScript seemed unstable. Instead of bothering to port the Java/CC grammar specification to use with some other grammar-based parser that doesn't give us what we need, we've hand-rolled a recursive descent parser. Our parser actually implements a syntax that's not quite the same as Rainbow's, in order to make the implementation easier. Where it differs from Rainbow (e.g. the way it parses `(#\newlyne)` as an error rather than as `(#\n ewlyne)`), it may be closer in behavior to other implementations of Arc.
 
 * The `quit` function now uses its argument as the exit code if it's a number between 1 and 255, inclusive. Otherwise, it exits with an exit code of 0. This is consistent with the Racket implementations of Arc, which just use Racket's `exit` to implement `quit`, and it's handy for implementing continuous integration scripts. Currently, in Java Rainbow, `quit` ignores its argument and always exits with a status code of 0.
+
+* Rainbow.js has a modified version of rainbow/rainbow-libs.arc that doesn't load these Java-specific libraries:
+
+  * rainbow/welder.arc
+  * rainbow/fsb.arc
+  * rainbow/tetris.arc
+  * rainbow/mines.arc
 
 There are other significant design issues worth mentioning, which we *don't* consider code differences:
 
