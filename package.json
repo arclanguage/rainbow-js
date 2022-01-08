@@ -1,6 +1,6 @@
 {
   "name": "rainbow-js-arc",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The Arc programming language, reimplemented in Java, then ported to JavaScript.",
   "scripts": {
     "all": "npm run clean && npm run build && npm test",
