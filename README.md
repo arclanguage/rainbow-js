@@ -67,6 +67,8 @@ Despite the focus on keeping the Rainbow.js code similar to the Java Rainbow cod
 
 * The `quit` function now uses its argument as the exit code if it's a number between 1 and 255, inclusive. Otherwise, it exits with an exit code of 0. This is consistent with the Racket implementations of Arc, which just use Racket's `exit` to implement `quit`, and it's handy for implementing continuous integration scripts. Currently, in Java Rainbow, `quit` ignores its argument and always exits with a status code of 0.
 
+* Rainbow.js defines `peekc` from Arc, which Java Rainbow doesn't define.
+
 * Rainbow.js has a modified version of rainbow/rainbow-libs.arc that doesn't load these Java-specific libraries:
 
   * rainbow/welder.arc

@@ -17969,6 +17969,7 @@ Environment_st.init = function () {
     new Sread().init();
     new WriteB().init();
     new WriteC().init();
+    new PeekC().init();
     new ReadB().init();
     new ReadC().init();
     new FlushOut().init();
@@ -18807,6 +18808,72 @@ CallWStdOut.prototype.invoke = function ( vm, args ) {
     vm.pushFrame( i );
     IO_st.stdOut_.value = Output_st.cast( args.car(), this );
     args.cdr().car().invoke( vm, ArcObject_st.NIL );
+};
+
+
+// ===================================================================
+// as though from functions/io/PeekC.java
+// ===================================================================
+// Needed early: Builtin Instruction
+// Needed late: IO
+
+// PORT TODO: Contribute a corresponding functions/io/PeekC.java to
+// Java Rainbow.
+//
+// ASYNC PORT NOTE: This is an asynchronous design. The Java Rainbow
+// version wouldn't be one.
+
+/** @constructor */
+function PeekC() {
+}
+var PeekC_st = {};
+
+PeekC.prototype = new Builtin();
+PeekC.prototype.className = "PeekC";
+
+PeekC.prototype.init = function () {
+    return this.initBuiltin( "peekc" );
+};
+
+PeekC.prototype.invokef1 = function ( vm, arg ) {
+    vm.pushFrame( new PeekC_st.Go().init(
+        IO_st.chooseInputPort( arg, this ), this ) );
+};
+
+// ASYNC PORT NOTE: The original would have implemented
+// .invoke( Pair ), but we can't do that (since it's
+// synchronous), so we're implementing .invoke( VM, Pair ) instead.
+PeekC.prototype.invoke = function ( vm, args ) {
+    vm.pushFrame( new PeekC_st.Go().init(
+        IO_st.chooseInputPort( args.car(), this ), this ) );
+};
+
+// ASYNC PORT NOTE: This wouldn't have existed in Java.
+/** @constructor */
+PeekC_st.Go = function () {
+};
+
+PeekC_st.Go.prototype = new Instruction();
+PeekC_st.Go.prototype.implementsAsync = true;
+PeekC_st.Go.prototype.className = "PeekC.Go";
+
+PeekC_st.Go.prototype.init = function ( port, owner ) {
+    this.initInstruction();
+    this.port_ = port;
+    this.belongsTo( owner );
+    return this;
+};
+
+PeekC_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
+    return this.port_.peekCharacterAsync( function ( e, result ) {
+        if ( e ) return void then( e );
+        vm.pushA( result );
+        then( null );
+    }, opt_sync );
+};
+
+PeekC_st.Go.prototype.operate = function ( vm ) {
+    throw new Error();
 };
 
 
