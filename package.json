@@ -2,6 +2,25 @@
   "name": "rainbow-js-arc",
   "version": "0.2.1",
   "description": "The Arc programming language, reimplemented in Java, then ported to JavaScript.",
+  "keywords": [
+    "programming-language",
+    "arc",
+    "scheme",
+    "lisp"
+  ],
+  "homepage": "https://github.com/arclanguage/rainbow-js#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arclanguage/rainbow-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arclanguage/rainbow-js/issues"
+  },
+  "author": {
+    "name": "Arc language community",
+    "url": "https://github.com/arclanguage"
+  },
+  "license": "Artistic-2.0",
   "scripts": {
     "all": "npm run clean && npm run build && npm test",
     "clean": "rm -rf build dist",
@@ -12,28 +31,15 @@
     "test": "cd src/arc/ && node ../../dist/node/rainbow-node.js run-compat -e '(quit:if (<= 404/408 (rat)) 0 1)' -q",
     "prepare": "npm run build-custom"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/arclanguage/rainbow-js.git"
+  "main": "dist/node/rainbow-node.js",
+  "bin": "./dist/node/rainbow-node.js",
+  "dependencies": {
+    "commander": "^8.3.0",
+    "fs-extra": "^10.0.0"
   },
-  "keywords": [
-    "arc",
-    "language"
-  ],
-  "author": {
-    "name": "Arc language community",
-    "url": "https://github.com/arclanguage"
-  },
-  "license": "Artistic-2.0",
-  "bugs": {
-    "url": "https://github.com/arclanguage/rainbow-js/issues"
-  },
-  "homepage": "https://github.com/arclanguage/rainbow-js#readme",
   "devDependencies": {
     "google-closure-compiler": "^20211107.0.0"
   },
-  "main": "dist/node/rainbow-node.js",
-  "bin": "./dist/node/rainbow-node.js",
   "files": [
     "/src/arc/**",
     "/src/node/**",
@@ -42,9 +48,5 @@
     "/build.mjs",
     "/LICENSE.md",
     "/README.md"
-  ],
-  "dependencies": {
-    "commander": "^8.3.0",
-    "fs-extra": "^10.0.0"
-  }
+  ]
 }
