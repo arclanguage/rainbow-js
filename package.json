@@ -22,6 +22,7 @@
   },
   "license": "Artistic-2.0",
   "scripts": {
+    "rainbow-js-arc": "cd src/arc/ && ../../dist/node/rainbow-node.js",
     "all": "npm run clean && npm run build && npm test",
     "clean": "rm -rf build dist",
     "build": "npm run build-custom && npm run build-closure",
