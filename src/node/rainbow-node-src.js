@@ -357,18 +357,13 @@ exports.makeNodeRainbow = function ( stdin, getStdout, getStderr ) {
         // filesystem
         {
             dirAsync: function ( path, then, opt_sync ) {
-                function toArc( files ) {
-                    return rainbow.list( files.map( function ( it ) {
-                        return rainbow.string( it );
-                    } ) );
-                }
                 if ( opt_sync ) {
-                    then( null, toArc( fs.readdirSync( path ) ) );
+                    then( null, fs.readdirSync( path ) );
                     return true;
                 } else {
                     fs.readdir( path, function ( e, files ) {
                         if ( e ) return void then( e );
-                        then( null, toArc( files ) );
+                        then( null, files );
                     } );
                     return false;
                 }

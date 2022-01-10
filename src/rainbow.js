@@ -54,8 +54,8 @@
 //var System_fs = {
 //    dirAsync: function ( path, then, opt_sync ) {
 //        then( new ArcError().initAE( "No filesystem." ) );
-//        // This would have done then( null, arcListOfDirs ) on
-//        // success.
+//        // This would have done
+//        // `then( null, jsArrayOfFilenameStrings )` on success.
 //        return true;
 //    },
 //    dirExistsAsync: function ( path, then, opt_sync ) {
@@ -19112,7 +19112,12 @@ Dir_st.Go.prototype.init = function ( path, owner ) {
 Dir_st.Go.prototype.operateAsync = function ( vm, then, opt_sync ) {
     return System_fs.dirAsync( this.path_, function ( e, result ) {
         if ( e ) return void then( e );
-        vm.pushA( result );
+        
+        var arcStrings = [];
+        for ( var i = 0, n = result.length; i < n; i++ ) {
+            arcStrings.push( ArcString_st.make( result[ i ] ) );
+        }
+        vm.pushA( Pair_st.buildFrom1( arcStrings ) );
         then( null );
     }, opt_sync );
 };
