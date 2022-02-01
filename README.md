@@ -1,6 +1,6 @@
 # Rainbow.js
 
-<img align="right" width="200" height="200" src="assets/logo/rainbow-js-1-resized-414x414.png" alt="Rainbow.js logo" title="Rainbow.js logo" />
+<img align="right" width="150" height="150" src="assets/logo/rainbow-js-1-resized-162x162.png" alt="Rainbow.js logo" title="Rainbow.js logo" />
 
 [![CI](https://github.com/arclanguage/rainbow-js/actions/workflows/ci.yml/badge.svg)](https://github.com/arclanguage/rainbow-js/actions/workflows/ci.yml)
 
