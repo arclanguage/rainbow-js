@@ -1,6 +1,6 @@
-// http://rocketnia.github.com/rainbow-js/test/index-first.js
+// https://arclanguage.github.io/rainbow-js/test/index-first.js
 
-//   Copyright (c) 2011, 2021 the Rainbow.js authors.
+//   Copyright (c) 2011, 2021-2022 the Rainbow.js authors.
 //   Licensed under the Perl Foundations's Artistic License 2.0.
 
 

@@ -8,7 +8,8 @@ await fs.ensureDir( "dist/gh-pages" );
 await fs.copy( "src/arc", "dist/gh-pages/test" );
 await fs.copy(
     "src/web/index.html", "dist/gh-pages/test/index.html" );
-
+await fs.copy(
+    "assets/logo/rainbow-js-1-favicon.png", "dist/gh-pages/rainbow-js-1-favicon.png" );
 
 await fs.outputFile( "dist/node/rainbow-node.js",
 
